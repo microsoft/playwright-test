@@ -1,1 +1,10 @@
-{ "name": "jest-runner-playwright-e2e" }
+{
+  "name": "jest-runner-playwright-e2e",
+  "devDependencies": {
+    "@jest/test-result": "^25.2.6",
+    "@jest/types": "^25.2.6",
+    "jest": "^25.2.7",
+    "jest-runner": "^25.2.7",
+    "typescript": "^3.8.3"
+  }
+}
