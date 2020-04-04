@@ -22,7 +22,7 @@ class PlaywrightRunnerE2E {
         for (const testSuite of testSuites) {
             onStart(testSuite);
             const testResults = [];
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 1; i++) {
                 testResults.push(await fakeTest());
             }
             onResult(testSuite, makeSuiteResult(testResults));
