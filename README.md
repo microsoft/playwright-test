@@ -18,7 +18,7 @@ The runner comes in two flavors:
     - [x] it/describe
     - [ ] skip/focus tests
     - [x] watch mode
-    - [ ] playwright
+    - [x] playwright
     - [ ] state
     - [ ] beforeEach/afterEach/beforeAll/afterAll
 - [ ] run tests in unit mode

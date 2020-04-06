@@ -4,6 +4,7 @@ const {formatExecError} = require('jest-message-util')
 const globals = require('./globals');
 const {Test, testRunner} = require('./test-runner');
 const {tempRequire, clearTempRequires} = require('./tempRequire');
+const playwright = require('playwright');
 
 class PlaywrightRunnerE2E {
     /**
@@ -13,6 +14,7 @@ class PlaywrightRunnerE2E {
     constructor(globalConfig, context) {
         this._globalConfig = globalConfig;
         this._globalContext = context;
+        this._browserPromise = playwright.chromium.launch();
         installGlobals();
     }
 
@@ -56,12 +58,17 @@ class PlaywrightRunnerE2E {
             if (suiteTests.size === suiteResults.length)
                 onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
         }
+        if (!this._globalConfig.watch && !this._globalConfig.watchAll)
+            await (await this._browserPromise).close();
     }
 
     /**
      * @param {Test} test 
      */
     async _runTest(test) {
+        const browser = await this._browserPromise;
+        const context = await browser.newContext();
+        const page = await context.newPage();
         /** @type {import('@jest/types').TestResult.AssertionResult} */
         const result = {
             ancestorTitles: test.ancestorTitles(),
@@ -73,7 +80,7 @@ class PlaywrightRunnerE2E {
         };
 
         try {
-            await test.body()();
+            await test.body()({context, page});
         } catch(e) {
             result.status = 'failed';
             result.failureMessages.push( e instanceof Error ? formatExecError(e, {
@@ -83,6 +90,7 @@ class PlaywrightRunnerE2E {
                 noStackTrace: false,
             }) : String(e));
         }
+        await context.close();
         return result;    
     }
 }
