@@ -21,7 +21,7 @@ async function fakeJestRun(...paths) {
         watchman: false,
     });
     const watcher = new TestWatcher({ isWatchMode: false });
-    const results = await scheduler.scheduleTests(paths.map(path => ({path, context})), watcher);
+    const results = await scheduler.scheduleTests(paths.map(filePath => ({path: path.join(__dirname, 'assets', filePath), context})), watcher);
     return results;
 }
 

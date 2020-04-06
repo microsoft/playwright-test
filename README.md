@@ -14,13 +14,18 @@ The runner comes in two flavors:
 
 ## Todo List
 - [ ] run tests in e2e mode
+    - [x] expect
+    - [x] it/describe
+    - [ ] skip/focus tests
+    - [x] watch mode
+    - [ ] playwright
+    - [ ] state
+    - [ ] beforeEach/afterEach/beforeAll/afterAll
 - [ ] run tests in unit mode
 - [ ] parallel
 - [ ] multiple browsers
 - [ ] code coverage
-- [ ] expect
 - [ ] describes
-- [ ] watch mode
 - [ ] devices
 - [ ] transform code
 - [ ] typescript definitions
