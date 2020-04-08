@@ -1,15 +1,21 @@
 {
     "private": true,
     "devDependencies": {
-        "eslint": "^6.8.0",
+        "@babel/cli": "^7.8.4",
+        "@babel/core": "^7.9.0",
+        "@babel/preset-env": "^7.9.5",
+        "@babel/preset-typescript": "^7.9.0",
         "@jest/types": "^25.2.6",
         "@types/jest": "^25.2.1",
         "@types/node": "^13.11.0",
+        "eslint": "^6.8.0",
         "jest": "^25.2.7",
         "jest-runner": "^25.2.7",
         "typescript": "^3.8.3"
     },
-    "workspaces": ["packages/*"],
+    "workspaces": [
+        "packages/*"
+    ],
     "scripts": {
         "test": "jest",
         "lint": "eslint ."

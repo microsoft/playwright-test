@@ -1,19 +1,20 @@
 class Suite {
+  name: string;
+  parentSuite: Suite;
+  children: (Suite|Test)[] = [];
+  private _tests: Test[] = [];
+  private _callback: () => void | Promise<void>;
+  _beforeEaches: ((state: State) => void|Promise<void>)[] = [];
+
   /**
    * @param {string} name
    * @param {Suite|null=} parent
    * @param {() => void|Promise<void>|null=} callback
    */
-  constructor(name, parent = null, callback = null) {
+  constructor(name: string, parent: (Suite | null) | undefined = null, callback: (() => void | Promise<void> | null) | undefined = null) {
     this.name = name;
     this.parentSuite = parent;
-    /** @type {(Suite|Test)[]} */
-    this.children = [];
-    /** @type {Test[]} */
-    this._tests = [];
     this._callback = callback;
-    /** @type {Callback[]} */
-    this._beforeEaches = [];
 
     if (parent)
       parent.children.push(this);
@@ -26,7 +27,7 @@ class Suite {
   async runTestsSerially() {
     const tests = await this.tests();
     /** @type {TestResult[]} */
-    const results = [];
+    const results: TestResult[] = [];
     for (const test of tests)
       results.push(await test.run());
     return results;
@@ -52,11 +53,14 @@ class Suite {
 }
 
 class Test {
+  _callback: (state: any) => void | Promise<void>;
+  name: string;
+  suite: Suite;
   /**
    * @param {string} name
    * @param {(state: State) => void|Promise<void>} callback
    */
-  constructor(name, callback) {
+  constructor(name: string, callback: (state: State) => void | Promise<void>) {
     this._callback = callback;
     this.name = name;
     this.suite = currentSuite;
@@ -70,9 +74,9 @@ class Test {
   /**
    * @param {State=} state
    */
-  async run(state = {}) {
+  async run(state: State | undefined = {}) {
     /** @type {TestResult} */
-    const result = {
+    const result: TestResult = {
       success: true,
       name: this.fullName()
     };
@@ -92,28 +96,20 @@ class Test {
   }
 }
 
-/**
- * @typedef {Object<string, any>} State
- */
-/**
- * @typedef {(state: State) => void|Promise<void>} Callback
- */
-/**
- * @typedef {Object} TestResult
- * @property {string} name
- * @property {boolean} success
- * @property {any=} error
- */
+type State = {[key: string]: any};
 
-/**
- * @param {string} name
- * @param {() => void|Promise<void>} callback
- */
-function describe(name, callback) {
-  if (!callback) {
-    callback = name;
-    name = '';
-  }
+type TestResult = {
+  name: string,
+  success: boolean,
+  error?: any,
+};
+
+export function describe(name: string, callback: () => void | Promise<void>);
+export function describe(callback: () => void | Promise<void>);
+export function describe(callbackOrName: string|(() => void|Promise<void>), callback?: () => void | Promise<void>) {
+  const name = callback ? callbackOrName as string : '';
+  if (!callback)
+    callback = callbackOrName as () => void|Promise<void>;
   const suite = new Suite(name, currentSuite, callback);
   return suite;
 }
@@ -122,7 +118,7 @@ function describe(name, callback) {
  * @param {string} name
  * @param {(state: State) => void|Promise<void>} callback
  */
-function it(name, callback) {
+export function it(name: string, callback: (state: State) => void | Promise<void>) {
   const test = new Test(name, callback);
   return test;
 }
@@ -130,11 +126,9 @@ function it(name, callback) {
 /**
  * @param {(state: State) => void|Promise<void>} callback
  */
-function beforeEach(callback) {
+export function beforeEach(callback: (state: State) => void | Promise<void>) {
   currentSuite._beforeEaches.push(callback);
 }
 
 const rootSuite = new Suite('', null);
 let currentSuite = rootSuite;
-
-module.exports = {describe, it, beforeEach, rootSuite};
