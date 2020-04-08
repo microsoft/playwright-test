@@ -19,6 +19,7 @@
     "scripts": {
         "test": "jest",
         "lint": "eslint .",
-        "build": "tsc -p ."
+        "build": "tsc -p .",
+        "prepare": "yarn run build"
     }
 }

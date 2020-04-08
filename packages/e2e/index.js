@@ -9,9 +9,9 @@ const {describe} = require('describers');
 
 class PlaywrightRunnerE2E {
   /**
-     * @param {import('@jest/types').Config.GlobalConfig} globalConfig
-     * @param {import('jest-runner').TestRunnerContext=} context
-     */
+   * @param {import('@jest/types').Config.GlobalConfig} globalConfig
+   * @param {import('jest-runner').TestRunnerContext=} context
+   */
   constructor(globalConfig, context) {
     this._globalConfig = globalConfig;
     this._globalContext = context;
@@ -20,13 +20,13 @@ class PlaywrightRunnerE2E {
   }
 
   /**
-     * @param {import('jest-runner').Test[]} testSuites
-     * @param {import('jest-runner').TestWatcher} watcher
-     * @param {import('jest-runner').OnTestStart} onStart
-     * @param {import('jest-runner').OnTestSuccess} onResult
-     * @param {import('jest-runner').OnTestFailure} onFailure
-     * @param {import('jest-runner').TestRunnerOptions} options
-     */
+   * @param {import('jest-runner').Test[]} testSuites
+   * @param {import('jest-runner').TestWatcher} watcher
+   * @param {import('jest-runner').OnTestStart} onStart
+   * @param {import('jest-runner').OnTestSuccess} onResult
+   * @param {import('jest-runner').OnTestFailure} onFailure
+   * @param {import('jest-runner').TestRunnerOptions} options
+   */
   async runTests(testSuites, watcher, onStart, onResult, onFailure, options) {
     clearLastRun();
     /** @type {WeakMap<Test, import('jest-runner').Test>} */
@@ -68,8 +68,8 @@ class PlaywrightRunnerE2E {
   }
 
   /**
-     * @param {Test} test
-     */
+   * @param {Test} test
+   */
   async _runTest(test) {
     const browser = await this._browserPromise;
     const context = await browser.newContext();
