@@ -18,6 +18,7 @@
     ],
     "scripts": {
         "test": "jest",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "build": "tsc -p ."
     }
 }

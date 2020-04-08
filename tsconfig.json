@@ -1,0 +1,6 @@
+{
+  "references": [
+    {"path": "./packages/e2e/"},
+    {"path": "./packages/describers/"}
+  ]
+}
