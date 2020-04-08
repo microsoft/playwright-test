@@ -9,5 +9,9 @@ module.exports = {
       displayName: 'e2e tests',
       testMatch: ['<rootDir>/packages/e2e/tests/**/**.spec.js'],
     },
+    {
+      displayName: 'describers',
+      testMatch: ['<rootDir>/packages/describers/tests/**/**.spec.js'],
+    },
   ]
 };
