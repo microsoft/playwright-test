@@ -23,6 +23,15 @@ class Suite {
     return this.parentSuite ? (this.parentSuite.fullName() + ' ' + this.name).trim() : this.name;
   }
 
+  async runTestsSerially() {
+    const tests = await this.tests();
+    /** @type {TestResult[]} */
+    const results = [];
+    for (const test of tests)
+      results.push(await test.run());
+    return results;
+  }
+
   async tests() {
     if (this._callback) {
       const callback = this._callback;
@@ -62,10 +71,10 @@ class Test {
    * @param {State=} state
    */
   async run(state = {}) {
+    /** @type {TestResult} */
     const result = {
       success: true,
-      name: this.fullName(),
-      error: undefined
+      name: this.fullName()
     };
     let suite = this.suite;
     while (suite) {
@@ -88,6 +97,12 @@ class Test {
  */
 /**
  * @typedef {(state: State) => void|Promise<void>} Callback
+ */
+/**
+ * @typedef {Object} TestResult
+ * @property {string} name
+ * @property {boolean} success
+ * @property {any=} error
  */
 
 /**

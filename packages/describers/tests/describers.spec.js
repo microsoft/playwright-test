@@ -109,7 +109,7 @@ describe('describe', () => {
 });
 
 describe('beforeEach', () => {
-  it('should work', async () => {
+  it('should run with every test', async () => {
     let ranCount = 0;
 
     const suite = api.describe(() => {
@@ -119,9 +119,46 @@ describe('beforeEach', () => {
       api.it('first test', () => void 0);
       api.it('second test', () => void 0);
     });
-    const tests = await suite.tests();
-    for (const test of tests)
-      await test.run();
-    expect(ranCount).toBe(2);
+    await suite.runTestsSerially();
+    expect(ranCount).toEqual(2);
+  });
+  it('should setup state', async () => {
+    const suite = api.describe(() => {
+      api.beforeEach(state => state.foo = true);
+      api.it('test', ({foo}) => expect(foo).toEqual(true));
+    });
+    const results = await suite.runTestsSerially();
+    expect(results).toEqual([
+      {name: 'test', success: true}
+    ]);
+  });
+  it('should run in order', async () => {
+    const suite = api.describe(() => {
+      api.beforeEach(state => state.foo = 1);
+      api.beforeEach(state => state.foo *= 3);
+      api.beforeEach(state => state.foo += 3);
+      api.beforeEach(state => state.foo *= 2);
+      api.it('test', ({foo}) => expect(foo).toEqual(12));
+    });
+    const results = await suite.runTestsSerially();
+    expect(results).toEqual([
+      {name: 'test', success: true}
+    ]);
+  });
+  it('should work with nested describes', async () => {
+    const suite = api.describe(() => {
+      api.beforeEach(state => state.foo = true);
+      api.describe(() => {
+        api.describe(() => {
+          api.describe(() => {
+            api.it('test', ({foo}) => expect(foo).toEqual(true));
+          });
+        });
+      });
+    });
+    const results = await suite.runTestsSerially();
+    expect(results).toEqual([
+      {name: 'test', success: true}
+    ]);
   });
 });
