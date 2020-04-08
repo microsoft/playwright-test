@@ -12,6 +12,8 @@ class Suite {
     /** @type {Test[]} */
     this._tests = [];
     this._callback = callback;
+    /** @type {Callback[]} */
+    this._beforeEaches = [];
 
     if (parent)
       parent.children.push(this);
@@ -62,8 +64,15 @@ class Test {
   async run(state = {}) {
     const result = {
       success: true,
+      name: this.fullName(),
       error: undefined
     };
+    let suite = this.suite;
+    while (suite) {
+      for (const beforeEach of suite._beforeEaches)
+        await beforeEach(state);
+      suite = suite.parentSuite;
+    }
     try {
       await this._callback(state);
     } catch (e) {
@@ -77,12 +86,19 @@ class Test {
 /**
  * @typedef {Object<string, any>} State
  */
+/**
+ * @typedef {(state: State) => void|Promise<void>} Callback
+ */
 
 /**
  * @param {string} name
  * @param {() => void|Promise<void>} callback
  */
 function describe(name, callback) {
+  if (!callback) {
+    callback = name;
+    name = '';
+  }
   const suite = new Suite(name, currentSuite, callback);
   return suite;
 }
@@ -94,9 +110,16 @@ function describe(name, callback) {
 function it(name, callback) {
   const test = new Test(name, callback);
   return test;
-
 }
+
+/**
+ * @param {(state: State) => void|Promise<void>} callback
+ */
+function beforeEach(callback) {
+  currentSuite._beforeEaches.push(callback);
+}
+
 const rootSuite = new Suite('', null);
 let currentSuite = rootSuite;
 
-module.exports = {describe, it, rootSuite};
+module.exports = {describe, it, beforeEach, rootSuite};
