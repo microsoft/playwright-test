@@ -6,5 +6,8 @@
         "strict": true,
         "moduleResolution": "node",
         "noEmit": true
-    }
+    },
+    "exclude": [
+        "demo"
+    ]
 }

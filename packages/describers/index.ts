@@ -125,10 +125,13 @@ export function describe(callbackOrName: string|UserCallback, callback?: UserCal
   return suite;
 }
 
-export function it(name: string, callback: (state: State) => void | Promise<void>) {
+export function it(name: string, callback: UserCallback<State>) {
   const test = new Test(name, callback);
   return test;
 }
+
+export type It<T> = (name: string, callback: UserCallback<T & State>) => Test;
+export type BeforeOrAfter<T> = (callback: UserCallback<T & State>) => Test;
 
 export function beforeEach(callback: (state: State) => void | Promise<void>) {
   currentSuite._beforeEaches.push(callback);

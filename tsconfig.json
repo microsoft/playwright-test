@@ -9,6 +9,9 @@
     "declarationMap": true,
     "sourceMap": true,
   },
+  "exclude": [
+    "packages/e2e"
+  ],
   "references": [
     {"path": "./packages/describers/"}
   ]
