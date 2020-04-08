@@ -17,374 +17,374 @@
 
 const { EventEmitter } = require('events');
 const TestExpectation = {
-    Ok: 'ok',
-    Fail: 'fail',
+  Ok: 'ok',
+  Fail: 'fail',
 };
 
 /**
- * @param {function} callback 
- * @param {string} name 
+ * @param {function} callback
+ * @param {string} name
  */
 function createHook(callback, name) {
-    return { name, body: callback };
+  return { name, body: callback };
 }
 
 class Test {
-    /**
-     * 
-     * @param {Suite} suite 
-     * @param {string} name 
-     * @param {function} callback 
+  /**
+     *
+     * @param {Suite} suite
+     * @param {string} name
+     * @param {function} callback
      */
-    constructor(suite, name, callback) {
-        this._suite = suite;
-        this._name = name;
-        this._fullName = (suite.fullName() + ' ' + name).trim();
-        this._skipped = false;
-        this._focused = false;
-        this._expectation = TestExpectation.Ok;
-        this._body = callback;
-        this._repeat = 1;
-    }
+  constructor(suite, name, callback) {
+    this._suite = suite;
+    this._name = name;
+    this._fullName = (suite.fullName() + ' ' + name).trim();
+    this._skipped = false;
+    this._focused = false;
+    this._expectation = TestExpectation.Ok;
+    this._body = callback;
+    this._repeat = 1;
+  }
 
-    suite() {
-        return this._suite;
-    }
+  suite() {
+    return this._suite;
+  }
 
-    name() {
-        return this._name;
-    }
+  name() {
+    return this._name;
+  }
 
-    fullName() {
-        return this._fullName;
-    }
+  fullName() {
+    return this._fullName;
+  }
 
-    body() {
-        return this._body;
-    }
+  body() {
+    return this._body;
+  }
 
-    ancestorTitles() {
-        const ancestorTitles = [];
-        /** @type {Suite|null} */
-        let suite = this._suite;
-        while (suite) {
-            ancestorTitles.push(suite.name());
-            suite = suite.parentSuite();
-        }
-        return ancestorTitles;
+  ancestorTitles() {
+    const ancestorTitles = [];
+    /** @type {Suite|null} */
+    let suite = this._suite;
+    while (suite) {
+      ancestorTitles.push(suite.name());
+      suite = suite.parentSuite();
     }
+    return ancestorTitles;
+  }
 
-    skipped() {
-        return this._skipped;
-    }
+  skipped() {
+    return this._skipped;
+  }
 
-    /**
-     * @param {boolean} skipped 
+  /**
+     * @param {boolean} skipped
      */
-    setSkipped(skipped) {
-        this._skipped = skipped;
-        return this;
-    }
+  setSkipped(skipped) {
+    this._skipped = skipped;
+    return this;
+  }
 
-    focused() {
-        return this._focused;
-    }
+  focused() {
+    return this._focused;
+  }
 
-    /**
-     * @param {boolean} focused 
+  /**
+     * @param {boolean} focused
      */
-    setFocused(focused) {
-        this._focused = focused;
-        return this;
-    }
+  setFocused(focused) {
+    this._focused = focused;
+    return this;
+  }
 
-    expectation() {
-        return this._expectation;
-    }
+  expectation() {
+    return this._expectation;
+  }
 
-    /**
-     * @param {string} expectation 
+  /**
+     * @param {string} expectation
      */
-    setExpectation(expectation) {
-        this._expectation = expectation;
-        return this;
-    }
+  setExpectation(expectation) {
+    this._expectation = expectation;
+    return this;
+  }
 
-    repeat() {
-        return this._repeat;
-    }
+  repeat() {
+    return this._repeat;
+  }
 
-    /**
-     * @param {number} repeat 
+  /**
+     * @param {number} repeat
      */
-    setRepeat(repeat) {
-        this._repeat = repeat;
-        return this;
-    }
+  setRepeat(repeat) {
+    this._repeat = repeat;
+    return this;
+  }
 }
 
 class Suite {
-    /**
-     * @param {Suite|null} parentSuite 
-     * @param {string} name 
+  /**
+     * @param {Suite|null} parentSuite
+     * @param {string} name
      */
-    constructor(parentSuite, name) {
-        this._parentSuite = parentSuite;
-        this._name = name;
-        /** @type {string} */
-        this._fullName = (parentSuite ? parentSuite.fullName() + ' ' + name : name).trim();
-        /** @type {{name: string, body: function}[]} */
-        this._hooks = [];
-        this._skipped = false;
-        this._focused = false;
-        this._expectation = TestExpectation.Ok;
-        this._repeat = 1;
-    }
+  constructor(parentSuite, name) {
+    this._parentSuite = parentSuite;
+    this._name = name;
+    /** @type {string} */
+    this._fullName = (parentSuite ? parentSuite.fullName() + ' ' + name : name).trim();
+    /** @type {{name: string, body: function}[]} */
+    this._hooks = [];
+    this._skipped = false;
+    this._focused = false;
+    this._expectation = TestExpectation.Ok;
+    this._repeat = 1;
+  }
 
-    skipped() {
-        return this._skipped;
-    }
+  skipped() {
+    return this._skipped;
+  }
 
-    /**
-     * @param {boolean} skipped 
+  /**
+     * @param {boolean} skipped
      */
-    setSkipped(skipped) {
-        this._skipped = skipped;
-        return this;
-    }
+  setSkipped(skipped) {
+    this._skipped = skipped;
+    return this;
+  }
 
-    focused() {
-        return this._focused;
-    }
+  focused() {
+    return this._focused;
+  }
 
-    /**
+  /**
      * @param {boolean} focused
      */
-    setFocused(focused) {
-        this._focused = focused;
-        return this;
-    }
+  setFocused(focused) {
+    this._focused = focused;
+    return this;
+  }
 
-    expectation() {
-        return this._expectation;
-    }
+  expectation() {
+    return this._expectation;
+  }
 
-    /**
-     * @param {string} expectation 
+  /**
+     * @param {string} expectation
      */
-    setExpectation(expectation) {
-        this._expectation = expectation;
-        return this;
-    }
+  setExpectation(expectation) {
+    this._expectation = expectation;
+    return this;
+  }
 
-    repeat() {
-        return this._repeat;
-    }
+  repeat() {
+    return this._repeat;
+  }
 
-    /**
-     * @param {number} repeat 
+  /**
+     * @param {number} repeat
      */
-    setRepeat(repeat) {
-        this._repeat = repeat;
-        return this;
-    }
-    
-    parentSuite() {
-        return this._parentSuite;
-    }
+  setRepeat(repeat) {
+    this._repeat = repeat;
+    return this;
+  }
 
-    name() {
-        return this._name;
-    }
+  parentSuite() {
+    return this._parentSuite;
+  }
 
-    fullName() {
-        return this._fullName;
-    }
+  name() {
+    return this._name;
+  }
 
-    /**
-     * @param {function} callback 
+  fullName() {
+    return this._fullName;
+  }
+
+  /**
+     * @param {function} callback
      */
-    beforeEach(callback) {
-        this._hooks.push(createHook(callback, 'beforeEach'));
-    }
+  beforeEach(callback) {
+    this._hooks.push(createHook(callback, 'beforeEach'));
+  }
 
-    /**
-     * @param {function} callback 
+  /**
+     * @param {function} callback
      */
-    afterEach(callback) {
-        this._hooks.push(createHook(callback, 'afterEach'));
-    }
+  afterEach(callback) {
+    this._hooks.push(createHook(callback, 'afterEach'));
+  }
 
-    /**
-     * @param {function} callback 
+  /**
+     * @param {function} callback
      */
-    beforeAll(callback) {
-        this._hooks.push(createHook(callback, 'beforeAll'));
-    }
+  beforeAll(callback) {
+    this._hooks.push(createHook(callback, 'beforeAll'));
+  }
 
-    /**
-     * @param {function} callback 
+  /**
+     * @param {function} callback
      */
-    afterAll(callback) {
-        this._hooks.push(createHook(callback, 'afterAll'));
-    }
+  afterAll(callback) {
+    this._hooks.push(createHook(callback, 'afterAll'));
+  }
 
-    /**
-     * @param {string} name 
+  /**
+     * @param {string} name
      */
-    hooks(name) {
-        return this._hooks.filter(hook => !name || hook.name === name);
-    }
+  hooks(name) {
+    return this._hooks.filter(hook => !name || hook.name === name);
+  }
 }
 
 class TestRunner extends EventEmitter {
-    constructor() {
-        super();
-        this._rootSuite = new Suite(null, '');
-        this._currentSuite = this._rootSuite;
-        /** @type {Test[]} */
-        this._tests = [];
-        /** @type {Suite[]} */
-        this._suites = [];
-        /** @type {Map<string|symbol|number, function>} */
-        this._suiteModifiers = new Map();
-        /** @type {Map<string|symbol|number, function>} */
-        this._testModifiers = new Map();
-        this.clear();
-    }
+  constructor() {
+    super();
+    this._rootSuite = new Suite(null, '');
+    this._currentSuite = this._rootSuite;
+    /** @type {Test[]} */
+    this._tests = [];
+    /** @type {Suite[]} */
+    this._suites = [];
+    /** @type {Map<string|symbol|number, function>} */
+    this._suiteModifiers = new Map();
+    /** @type {Map<string|symbol|number, function>} */
+    this._testModifiers = new Map();
+    this.clear();
+  }
 
-    api() {
-        return {
-            /** @type {(callback: function) => void} */
-            beforeAll: callback => this._currentSuite.beforeAll(callback),
-            /** @type {(callback: function) => void} */
-            beforeEach: callback => this._currentSuite.beforeEach(callback),
-            /** @type {(callback: function) => void} */
-            afterAll: callback => this._currentSuite.afterAll(callback),
-            /** @type {(callback: function) => void} */
-            afterEach: callback => this._currentSuite.afterEach(callback),
-            fdescribe: this._suiteBuilder(s => s.setFocused(true)),
-            xdescribe: this._suiteBuilder(s => s.setSkipped(true)),
-            fit: this._testBuilder(t => t.setFocused(true)),
-            xit: this._testBuilder(t => t.setSkipped(true)),
-            it: this._testBuilder(),
-            describe: this._suiteBuilder(),
-        }
-    }
+  api() {
+    return {
+      /** @type {(callback: function) => void} */
+      beforeAll: callback => this._currentSuite.beforeAll(callback),
+      /** @type {(callback: function) => void} */
+      beforeEach: callback => this._currentSuite.beforeEach(callback),
+      /** @type {(callback: function) => void} */
+      afterAll: callback => this._currentSuite.afterAll(callback),
+      /** @type {(callback: function) => void} */
+      afterEach: callback => this._currentSuite.afterEach(callback),
+      fdescribe: this._suiteBuilder(s => s.setFocused(true)),
+      xdescribe: this._suiteBuilder(s => s.setSkipped(true)),
+      fit: this._testBuilder(t => t.setFocused(true)),
+      xit: this._testBuilder(t => t.setSkipped(true)),
+      it: this._testBuilder(),
+      describe: this._suiteBuilder(),
+    };
+  }
 
-    /**
+  /**
      * @param {(suite: Suite) => void} modifySuite
      */
-    _suiteBuilder(modifySuite = () => void 0) {
-        /**
+  _suiteBuilder(modifySuite = () => void 0) {
+    /**
          * @this {TestRunner}
-         * @param {string} name 
-         * @param {() => void} callback 
+         * @param {string} name
+         * @param {() => void} callback
          */
-        function buildSuite(name, callback) {
-            const suite = new Suite(this._currentSuite, name);
+    function buildSuite(name, callback) {
+      const suite = new Suite(this._currentSuite, name);
+      modifySuite(suite);
+      const prevSuite = this._currentSuite;
+      this._currentSuite = suite;
+      callback();
+      this._suites.push(suite);
+      this._currentSuite = prevSuite;
+      return suite;
+    }
+
+    return new Proxy(buildSuite.bind(this), {
+      get: (obj, prop) => {
+        const modifier = this._suiteModifiers.get(prop);
+        if (modifier) {
+          return (/** @type {any[]} */...args) => this._suiteBuilder(suite => {
             modifySuite(suite);
-            const prevSuite = this._currentSuite;
-            this._currentSuite = suite;
-            callback();
-            this._suites.push(suite);
-            this._currentSuite = prevSuite;
-            return suite;
+            modifier(suite, ...args);
+          });
         }
+        return /** @type {any} */ (obj)[prop];
+      },
+    });
+  }
 
-        return new Proxy(buildSuite.bind(this), {
-            get: (obj, prop) => {
-                const modifier = this._suiteModifiers.get(prop);
-                if (modifier) {
-                    return (/** @type {any[]} */...args) => this._suiteBuilder(suite => {
-                        modifySuite(suite);
-                        modifier(suite, ...args);
-                    });
-                }
-                return /** @type {any} */ (obj)[prop];
-            },
-        });
-    }
-
-    /**
-     * @param {(test: Test) => void} modifyTest 
+  /**
+     * @param {(test: Test) => void} modifyTest
      */
-    _testBuilder(modifyTest = () => void 0) {
-        /**
+  _testBuilder(modifyTest = () => void 0) {
+    /**
          * @this {TestRunner}
-         * @param {string} name 
-         * @param {() => void} callback 
+         * @param {string} name
+         * @param {() => void} callback
          */
-        function buildTest(name, callback) {
-            const test = new Test(this._currentSuite, name, callback);
+    function buildTest(name, callback) {
+      const test = new Test(this._currentSuite, name, callback);
+      modifyTest(test);
+      this._tests.push(test);
+      return test;
+    }
+    return new Proxy(buildTest.bind(this), {
+      get: (obj, prop) => {
+        const modifier = this._testModifiers.get(prop);
+        if (modifier) {
+          return (/** @type {any[]} */...args) => this._testBuilder(test => {
             modifyTest(test);
-            this._tests.push(test);
-            return test;
+            modifier(test, ...args);
+          });
         }
-        return new Proxy(buildTest.bind(this), {
-            get: (obj, prop) => {
-                const modifier = this._testModifiers.get(prop);
-                if (modifier) {
-                    return (/** @type {any[]} */...args) => this._testBuilder(test => {
-                        modifyTest(test);
-                        modifier(test, ...args);
-                    });
-                }
-                return /** @type {any} */ (obj)[prop];
-            },
-        });
-    }
+        return /** @type {any} */ (obj)[prop];
+      },
+    });
+  }
 
-    /**
-     * @param {string} name 
-     * @param {function} callback 
+  /**
+     * @param {string} name
+     * @param {function} callback
      */
-    testModifier(name, callback) {
-        this._testModifiers.set(name, callback);
-    }
+  testModifier(name, callback) {
+    this._testModifiers.set(name, callback);
+  }
 
-    /**
-     * @param {string} name 
-     * @param {function} callback 
+  /**
+     * @param {string} name
+     * @param {function} callback
      */
-    suiteModifier(name, callback) {
-        this._suiteModifiers.set(name, callback);
-    }
+  suiteModifier(name, callback) {
+    this._suiteModifiers.set(name, callback);
+  }
 
-    hasFocusedTestsOrSuites() {
-        return this._tests.some(test => test.focused()) || this._suites.some(suite => suite.focused());
-    }
+  hasFocusedTestsOrSuites() {
+    return this._tests.some(test => test.focused()) || this._suites.some(suite => suite.focused());
+  }
 
-    /**
-     * @param {RegExp} fullNameRegex 
+  /**
+     * @param {RegExp} fullNameRegex
      */
-    focusMatchingTests(fullNameRegex) {
-        for (const test of this._tests) {
-            if (fullNameRegex.test(test.fullName()))
-                test.setFocused(true);
-        }
+  focusMatchingTests(fullNameRegex) {
+    for (const test of this._tests) {
+      if (fullNameRegex.test(test.fullName()))
+        test.setFocused(true);
     }
+  }
 
-    tests() {
-        return this._tests.slice();
-    }
+  tests() {
+    return this._tests.slice();
+  }
 
-    suites() {
-        return this._suites.slice();
-    }
+  suites() {
+    return this._suites.slice();
+  }
 
-    clear() {
-        this._rootSuite = new Suite(null, '');
-        this._currentSuite = this._rootSuite;
-        this._tests = [];
-        this._suites = [];
-        this._suiteModifiers.clear();
-        this._testModifiers.clear();
-    }
+  clear() {
+    this._rootSuite = new Suite(null, '');
+    this._currentSuite = this._rootSuite;
+    this._tests = [];
+    this._suites = [];
+    this._suiteModifiers.clear();
+    this._testModifiers.clear();
+  }
 }
 
 
 module.exports = {
-    Test,
-    testRunner: new TestRunner(),
-}
+  Test,
+  testRunner: new TestRunner(),
+};
