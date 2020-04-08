@@ -2,9 +2,10 @@ const path = require('path');
 const {createEmptyTestResult} = require('@jest/test-result');
 const {formatExecError} = require('jest-message-util');
 const globals = require('./globals');
-const {Test, testRunner} = require('./test-runner');
 const {tempRequire, clearTempRequires} = require('./tempRequire');
 const playwright = require('playwright');
+const {describe} = require('describers');
+/** @typedef {import('describers').Test} Test */
 
 class PlaywrightRunnerE2E {
   /**
@@ -34,18 +35,22 @@ class PlaywrightRunnerE2E {
     const suiteToTests = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
-    for (const testSuite of testSuites) {
-      resultsForSuite.set(testSuite, []);
-      suiteToTests.set(testSuite, new Set());
-      tempRequire(testSuite.path);
-      for (const test of testRunner.tests()) {
-        if (testToSuite.has(test))
-          continue;
-        testToSuite.set(test, testSuite);
-        /** @type {Set<Test>} */ (suiteToTests.get(testSuite)).add(test);
+    const rootSuite = describe(async () => {
+      for (const testSuite of testSuites) {
+        resultsForSuite.set(testSuite, []);
+        suiteToTests.set(testSuite, new Set());
+        const suite = describe(() => {
+          tempRequire(testSuite.path);
+        });
+        for (const test of await suite.tests()) {
+          if (testToSuite.has(test))
+            continue;
+          testToSuite.set(test, testSuite);
+          /** @type {Set<Test>} */ (suiteToTests.get(testSuite)).add(test);
+        }
       }
-    }
-    for (const test of testRunner.tests()) {
+    });
+    for (const test of await rootSuite.tests()) {
       const suite = /** @type {import('jest-runner').Test} */(testToSuite.get(test));
       if (!startedSuites.has(suite)) {
         startedSuites.add(suite);
@@ -76,19 +81,18 @@ class PlaywrightRunnerE2E {
       fullName: test.fullName(),
       numPassingAsserts: 0,
       status: 'passed',
-      title: test.name(),
+      title: test.name,
     };
 
-    try {
-      await test.body()({context, page});
-    } catch (e) {
+    const {success, error} = await test.run({context, page});
+    if (!success) {
       result.status = 'failed';
-      result.failureMessages.push(e instanceof Error ? formatExecError(e, {
+      result.failureMessages.push(error instanceof Error ? formatExecError(error, {
         rootDir: this._globalConfig.rootDir,
         testMatch: [],
       }, {
         noStackTrace: false,
-      }) : String(e));
+      }) : String(error));
     }
     await context.close();
     return result;
@@ -96,7 +100,6 @@ class PlaywrightRunnerE2E {
 }
 
 function clearLastRun() {
-  testRunner.clear();
   clearTempRequires();
 }
 

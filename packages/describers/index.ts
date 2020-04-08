@@ -20,6 +20,17 @@ class Suite {
     return this.parentSuite ? (this.parentSuite.fullName() + ' ' + this.name).trim() : this.name;
   }
 
+  ancestorTitles(): string[] {
+    if (!this.parentSuite) {
+      if (!this.name)
+        return [];
+      return [this.name];
+    }
+    if (!this.name)
+      return this.parentSuite.ancestorTitles();
+    return [...this.parentSuite.ancestorTitles(), this.name];
+  }
+
   async runTestsSerially() {
     const tests = await this.tests();
     /** @type {TestResult[]} */
@@ -61,6 +72,10 @@ class Test {
     this.name = name;
     this.suite = currentSuite;
     currentSuite.children.push(this);
+  }
+
+  ancestorTitles() {
+    return [...this.suite.ancestorTitles(), this.name];
   }
 
   fullName() {
