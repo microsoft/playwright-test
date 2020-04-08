@@ -10,7 +10,6 @@
     "sourceMap": true,
   },
   "references": [
-    {"path": "./packages/e2e/"},
     {"path": "./packages/describers/"}
   ]
 }

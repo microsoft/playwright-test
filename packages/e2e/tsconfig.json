@@ -5,7 +5,6 @@
         "target": "ESNext",
         "strict": true,
         "moduleResolution": "node",
-        "noEmit": true,
-        "composite": true
+        "noEmit": true
     }
 }
