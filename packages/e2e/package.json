@@ -4,14 +4,11 @@
     "@jest/test-result": "^25.2.6",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
-    "playwright": "^0.12.1"
+    "playwright": "^0.12.1",
+    "describers": "0.0.1"
   },
-  "devDependencies": {
-    "@jest/types": "^25.2.6",
-    "@types/jest": "^25.2.1",
-    "@types/node": "^13.11.0",
-    "jest": "^25.2.7",
-    "jest-runner": "^25.2.7",
-    "typescript": "^3.8.3"
-  }
+  "version": "0.0.1",
+  "description": "Runs end-to-end browser tests",
+  "main": "index.js",
+  "license": "MIT"
 }

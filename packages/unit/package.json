@@ -1,2 +1,6 @@
-{ "name": "jest-runner-playwright-unit" }
-
+{
+  "name": "jest-runner-playwright-unit",
+  "version": "0.0.1",
+  "description": "Runs unit tests inside a web browser",
+  "main": "index.js"
+}
