@@ -1,17 +1,13 @@
+type UserCallback<T = void> = (state: T) => (void | Promise<void>);
 class Suite {
   name: string;
-  parentSuite: Suite;
+  parentSuite: Suite | null;
   children: (Suite|Test)[] = [];
   private _tests: Test[] = [];
-  private _callback: () => void | Promise<void>;
-  _beforeEaches: ((state: State) => void|Promise<void>)[] = [];
+  private _callback: UserCallback | null;
+  _beforeEaches: UserCallback<State>[] = [];
 
-  /**
-   * @param {string} name
-   * @param {Suite|null=} parent
-   * @param {() => void|Promise<void>|null=} callback
-   */
-  constructor(name: string, parent: (Suite | null) | undefined = null, callback: (() => void | Promise<void> | null) | undefined = null) {
+  constructor(name: string, parent: Suite | null = null, callback: UserCallback | null = null) {
     this.name = name;
     this.parentSuite = parent;
     this._callback = callback;
@@ -20,7 +16,7 @@ class Suite {
       parent.children.push(this);
   }
 
-  fullName() {
+  fullName() : string {
     return this.parentSuite ? (this.parentSuite.fullName() + ' ' + this.name).trim() : this.name;
   }
 
@@ -58,7 +54,7 @@ class Test {
   suite: Suite;
   /**
    * @param {string} name
-   * @param {(state: State) => void|Promise<void>} callback
+   * @param {(state: State) => UserCallback} callback
    */
   constructor(name: string, callback: (state: State) => void | Promise<void>) {
     this._callback = callback;
@@ -80,7 +76,7 @@ class Test {
       success: true,
       name: this.fullName()
     };
-    let suite = this.suite;
+    let suite : Suite | null = this.suite;
     while (suite) {
       for (const beforeEach of suite._beforeEaches)
         await beforeEach(state);
@@ -104,31 +100,26 @@ type TestResult = {
   error?: any,
 };
 
-export function describe(name: string, callback: () => void | Promise<void>);
-export function describe(callback: () => void | Promise<void>);
-export function describe(callbackOrName: string|(() => void|Promise<void>), callback?: () => void | Promise<void>) {
+export function describe(name: string, callback: UserCallback) : Suite;
+export function describe(callback: UserCallback) : Suite;
+export function describe(callbackOrName: string|UserCallback, callback?: UserCallback) {
   const name = callback ? callbackOrName as string : '';
   if (!callback)
-    callback = callbackOrName as () => void|Promise<void>;
+    callback = callbackOrName as UserCallback;
   const suite = new Suite(name, currentSuite, callback);
   return suite;
 }
 
-/**
- * @param {string} name
- * @param {(state: State) => void|Promise<void>} callback
- */
 export function it(name: string, callback: (state: State) => void | Promise<void>) {
   const test = new Test(name, callback);
   return test;
 }
 
-/**
- * @param {(state: State) => void|Promise<void>} callback
- */
 export function beforeEach(callback: (state: State) => void | Promise<void>) {
   currentSuite._beforeEaches.push(callback);
 }
 
 const rootSuite = new Suite('', null);
 let currentSuite = rootSuite;
+
+export type {Test};

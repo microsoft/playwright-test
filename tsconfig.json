@@ -1,4 +1,14 @@
 {
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "lib": ["esnext"],
+    "strict": true,
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+  },
   "references": [
     {"path": "./packages/e2e/"},
     {"path": "./packages/describers/"}
