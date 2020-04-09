@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "composite": true
+    },
+    "exclude": [
+        "demo",
+        "babel.config.js",
+        "jest.config.js"
+    ]
+    
+}

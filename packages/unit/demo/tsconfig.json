@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+      "allowJs": true,
+      "checkJs": true,
+      "target": "ESNext",
+      "moduleResolution": "node",
+      "noEmit": true,
+      "jsx": "react"
+    }
+}

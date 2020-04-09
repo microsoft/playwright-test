@@ -2,5 +2,9 @@
   "name": "jest-runner-playwright-unit",
   "version": "0.0.1",
   "description": "Runs unit tests inside a web browser",
-  "main": "index.js"
+  "main": "index.js",
+  "devDependencies": {
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
 }
