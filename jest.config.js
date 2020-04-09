@@ -1,17 +1,11 @@
-module.exports = {
-  projects: [
-    {
-      displayName: 'e2e demo',
-      runner: './packages/e2e',
-      testMatch: ['<rootDir>/packages/e2e/demo/**/**.spec.[jt]s'],
-    },
-    {
-      displayName: 'e2e tests',
-      testMatch: ['<rootDir>/packages/e2e/tests/**/**.spec.[jt]s'],
-    },
-    {
-      displayName: 'describers',
-      testMatch: ['<rootDir>/packages/describers/tests/**/**.spec.[jt]s'],
-    },
-  ]
-};
+const {GlobSync} = require('glob');
+const projects = GlobSync('./packages/*/jest.config.js').found.map(filePath => flattenProjects(require(filePath)));
+module.exports = {projects};
+
+function flattenProjects(project) {
+  const {projects} = project;
+  if (!projects)
+    return project;
+  delete project.projects;
+  return projects.map(overrides => flattenProjects({...project, ...overrides}));
+}
