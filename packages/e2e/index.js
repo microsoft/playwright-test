@@ -1,8 +1,8 @@
 const path = require('path');
 const {createEmptyTestResult} = require('@jest/test-result');
 const {formatExecError} = require('jest-message-util');
+const {ScriptTransformer} = require('@jest/transform');
 const globals = require('./globals');
-const {tempRequire, clearTempRequires} = require('./tempRequire');
 const playwright = require('playwright');
 const {describe} = require('describers');
 /** @typedef {import('describers').Test} Test */
@@ -28,7 +28,6 @@ class PlaywrightRunnerE2E {
    * @param {import('jest-runner').TestRunnerOptions} options
    */
   async runTests(testSuites, watcher, onStart, onResult, onFailure, options) {
-    clearLastRun();
     /** @type {WeakMap<Test, import('jest-runner').Test>} */
     const testToSuite = new WeakMap();
     /** @type {Map<any, Set<Test>>} */
@@ -37,10 +36,11 @@ class PlaywrightRunnerE2E {
     const resultsForSuite = new Map();
     const rootSuite = describe(async () => {
       for (const testSuite of testSuites) {
+        const transformer = new ScriptTransformer(testSuite.context.config);
         resultsForSuite.set(testSuite, []);
         suiteToTests.set(testSuite, new Set());
-        const suite = describe(() => {
-          tempRequire(testSuite.path);
+        const suite = describe(async () => {
+          transformer.requireAndTranspileModule(testSuite.path);
         });
         for (const test of await suite.tests()) {
           if (testToSuite.has(test))
@@ -63,6 +63,7 @@ class PlaywrightRunnerE2E {
       if (suiteTests.size === suiteResults.length)
         onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
     }
+    purgeRequireCache(testSuites.map(suite => suite.path));
     if (!this._globalConfig.watch && !this._globalConfig.watchAll)
       await (await this._browserPromise).close();
   }
@@ -99,8 +100,23 @@ class PlaywrightRunnerE2E {
   }
 }
 
-function clearLastRun() {
-  clearTempRequires();
+/**
+ * @param {string[]} files
+ */
+function purgeRequireCache(files) {
+  const blackList = new Set(files);
+  for (const filePath of Object.keys(require.cache)) {
+    /** @type {NodeModule|null} */
+    let module = require.cache[filePath];
+    while (module) {
+      if (blackList.has(module.filename)) {
+        delete require.cache[filePath];
+        break;
+      }
+      module = module.parent;
+    }
+
+  }
 }
 
 function installGlobals() {

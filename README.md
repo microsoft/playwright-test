@@ -27,7 +27,7 @@ The runner comes in two flavors:
 - [ ] code coverage
 - [ ] describes
 - [ ] devices
-- [ ] transform code
+- [x] transform code
 - [ ] typescript definitions
 - [ ] screenshots
 - [ ] expect from the page

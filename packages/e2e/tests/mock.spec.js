@@ -24,3 +24,10 @@ it('should report a failing test', async function() {
   const testResult = result.testResults[0];
   expect(testResult.failureMessage).toContain('failingTest.js');
 });
+
+it('should work with typescript files', async function() {
+  const result = await fakeJestRun('typescriptTest.ts');
+  const [testResult] = result.testResults;
+  expect(testResult.testFilePath).toEqual(path.join(__dirname, 'assets', 'typescriptTest.ts'));
+  expect(result.success).toEqual(true);
+});
