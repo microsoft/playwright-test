@@ -10,9 +10,11 @@
     "sourceMap": true,
   },
   "exclude": [
-    "packages/e2e"
+    "packages/e2e",
+    "packages/unit/demo"
   ],
   "references": [
-    {"path": "./packages/describers/"}
+    {"path": "./packages/describers/"},
+    {"path": "./packages/unit/"},
   ]
 }
