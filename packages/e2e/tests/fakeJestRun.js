@@ -22,6 +22,7 @@ async function fakeJestRun(...paths) {
   });
   const watcher = new TestWatcher({ isWatchMode: false });
   const results = await scheduler.scheduleTests(paths.map(filePath => ({path: path.join(__dirname, 'assets', filePath), context})), watcher);
+  jest.resetModules();
   return results;
 }
 

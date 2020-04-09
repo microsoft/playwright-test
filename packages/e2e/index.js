@@ -111,11 +111,12 @@ function installGlobals() {
 /**
  * @param {import('@jest/types').TestResult.AssertionResult[]} assertionResults
  * @param {string} rootDir
- * @param {string=} testPath
+ * @param {string} testPath
  * @return {import('@jest/test-result').TestResult}
  */
 function makeSuiteResult(assertionResults, rootDir, testPath) {
   const result = createEmptyTestResult();
+  result.testFilePath = testPath;
   const failureMessages = [];
   for (const assertionResult of assertionResults) {
     if (assertionResult.status === 'passed')
