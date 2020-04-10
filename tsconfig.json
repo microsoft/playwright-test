@@ -10,11 +10,11 @@
     "sourceMap": true,
   },
   "exclude": [
+    "packages/babel-plugin-third-party-imports",
     "packages/e2e",
     "packages/unit/demo"
   ],
   "references": [
     {"path": "./packages/describers/"},
-    {"path": "./packages/unit/"},
   ]
 }
