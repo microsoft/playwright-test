@@ -1,20 +1,8 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "commonjs",
-    "lib": ["esnext"],
-    "strict": true,
-    "moduleResolution": "node",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-  },
-  "exclude": [
-    "packages/babel-plugin-third-party-imports",
-    "packages/e2e",
-    "packages/unit/demo"
-  ],
+  "files": [],
+  "include": [],
   "references": [
-    {"path": "./packages/describers/"},
+      { "path": "./packages/describers/" },
+      { "path": "./packages/unit" }
   ]
 }

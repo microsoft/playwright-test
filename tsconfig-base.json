@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+      "target": "ESNext",
+      "composite": true,
+      "moduleResolution": "node",
+      "module": "commonjs",
+      "strict": true,
+      "sourceMap": true,
+      "declarationMap": true,
+      "lib": ["esnext", "dom"],
+  }
+}

@@ -2,7 +2,7 @@
   "name": "describers",
   "version": "0.0.1",
   "description": "A small library providing it/describe syntax for tests.",
-  "main": "index.js",
+  "main": "out/index.js",
   "scripts": {
     "prepare": "tsc -p ."
   }

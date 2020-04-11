@@ -1,4 +1,4 @@
-const api = require('../index');
+const api = require('../out/index');
 
 describe('it', () => {
   it('should run a test', async () => {

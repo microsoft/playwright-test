@@ -1,11 +1,14 @@
 {
+    "extends": "../../tsconfig-base.json",
     "compilerOptions": {
-        "composite": true
+        "outDir": "out",
+        "rootDir": "src",
     },
+    "include": [
+        "src"
+    ],
     "exclude": [
-        "demo",
-        "babel.config.js",
-        "jest.config.js"
+        "out",
+        "demo"
     ]
-    
 }

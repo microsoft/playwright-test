@@ -3,4 +3,5 @@ package-lock.json
 yarn.lock
 yarn-error.log
 .vscode
-
+/packages/*/out/
+tsconfig.tsbuildinfo
