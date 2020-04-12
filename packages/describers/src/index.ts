@@ -109,7 +109,7 @@ class Test {
 
 type State = {[key: string]: any};
 
-type TestResult = {
+export type TestResult = {
   name: string,
   success: boolean,
   error?: any,
