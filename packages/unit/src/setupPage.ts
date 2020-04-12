@@ -2,11 +2,9 @@ import type {Page, Request} from 'playwright';
 import * as url from 'url';
 import * as fs from 'fs';
 import { transformLocalFile } from './transform';
-import * as browserify from 'browserify';
-import {promisify} from 'util';
 import * as path from 'path';
 import { requireResolve } from './requireResolve';
-import validJSIdentifier from './validJSIdentifier';
+import { findAndBundleModule } from './loadThirdPartyModule';
 
 const THIRD_PARTY = 'https://third_party/';
 const LOCAL_URL = 'https://local_url';
@@ -65,12 +63,6 @@ export async function setupPage(page: Page) {
   await page.goto(ROOT_PAGE);
 }
 
-export async function getBundledModule(moduleName: string, resolvedModulePath: string) {
-  const bundle = new browserify();
-  bundle.require(resolvedModulePath, {expose: moduleName});
-  const buffer = await promisify(bundle.bundle.bind(bundle))();
-  return buffer;
-}
 
 function localUrlToFilePath(localUrl: string) {
   const fileURL = 'file://' + url.parse(localUrl).pathname;
@@ -81,45 +73,8 @@ function filePathToLocalUrl(filePath: string) {
   return LOCAL_URL + url.pathToFileURL(filePath).pathname;
 }
 
-/**
- * @param {import('playwright').Request} request
- * @return {Promise<string>}
- */
 async function requestToThirdParty(request: Request) {
-  const url = request.url();
-  const moduleName = url.substring(THIRD_PARTY.length);
+  const moduleName = request.url().substring(THIRD_PARTY.length);
   const {referer} = request.headers() as {[key: string]: string};
-  const parentFile = localUrlToFilePath(referer);
-  console.assert(parentFile, `${referer} is not a local url`);
-  const resolvedModulePath = require.resolve(moduleName, {paths: [parentFile]});
-  const buffer = await getBundledModule(moduleName, resolvedModulePath);
-  const {keys, autoDefault} = exportsForModule(resolvedModulePath);
-  const exports = keys.filter(key => validJSIdentifier.test(key)).map(key => {
-    return `export const ${key} = value.${key};`
-  });
-  if (autoDefault)
-    exports.push('export default value;');
-  return `var ${buffer.toString('utf8')}
-const value = require('${moduleName}');
-${exports.join('\n')}`;
-}
-
-function exportsForModule(modulePath: string) {
-  const mod = require(modulePath);
-  const autoDefault = mod && !mod.__esModule;
-  const keys = mod ? Object.keys(mod) : [];
-  for (const [filePath, value] of Object.entries(require.cache)) {
-    let currentModule: NodeModule|null = value;
-    while (currentModule) {
-      if (currentModule.filename === modulePath) {
-        delete require.cache[filePath];
-        break;
-      }
-      currentModule = currentModule.parent;
-    }
-  }
-  return {
-    autoDefault,
-    keys,
-  };
+  return await findAndBundleModule(moduleName, localUrlToFilePath(referer));
 }
