@@ -3,16 +3,14 @@ import * as playwright from 'playwright';
 import type {Test, TestWatcher, OnTestStart, OnTestFailure, OnTestSuccess, TestRunnerOptions, TestRunnerContext} from 'jest-runner';
 import type * as Jest from '@jest/types';
 import { setupPage } from './setupPage';
-import * as url from 'url';
+import url from 'url';
 import {formatExecError} from 'jest-message-util';
 
 class PlaywrightRunnerUnit {
   private _globalConfig: Jest.Config.GlobalConfig;
-  private _globalContext?:  TestRunnerContext;
   private _browserPromise: Promise<playwright.Browser>;
   constructor(globalConfig: Jest.Config.GlobalConfig, context?: TestRunnerContext) {
     this._globalConfig = globalConfig;
-    this._globalContext = context;
     this._browserPromise = playwright.chromium.launch();
   }
 

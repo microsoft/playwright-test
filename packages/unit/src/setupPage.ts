@@ -1,8 +1,8 @@
 import type {Page, Request} from 'playwright';
-import * as url from 'url';
-import * as fs from 'fs';
+import url from 'url';
+import fs from 'fs';
 import { transformLocalFile } from './transform';
-import * as path from 'path';
+import path from 'path';
 import { requireResolve } from './requireResolve';
 import { findAndBundleModule } from './loadThirdPartyModule';
 
