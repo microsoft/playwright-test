@@ -61,8 +61,7 @@ class PlaywrightRunnerUnit {
       await page.close();
       await onResult(testSuite, makeSuiteResult(assertionResults, testSuite.path));
     }
-    if (!this._globalConfig.watch && !this._globalConfig.watchAll)
-      await browser.close();
+    await browser.close();
   }
 }
 
