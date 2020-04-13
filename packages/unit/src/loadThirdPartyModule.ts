@@ -9,12 +9,12 @@ const {readFile, stat, mkdir, writeFile} = fs.promises;
 
 const playwrightRunnerCacheVersion = 0;
 
-async function getBundledModule(moduleName: string, resolvedModulePath: string) {
+async function getBundledModule(resolvedModulePath: string) {
   const bundle = new browserify();
   const files: string[] = [];
   bundle.on('file', file => files.push(file));
   bundle.on('package', pkg => files.push(path.join(pkg.__dirname, 'package.json')));
-  bundle.require(resolvedModulePath, {expose: moduleName});
+  bundle.require(resolvedModulePath, {expose: resolvedModulePath});
   const buffer = await promisify(bundle.bundle.bind(bundle))();
   const {keys, autoDefault} = exportsForModule(resolvedModulePath);
   const exports = keys.filter(key => validJSIdentifier.test(key)).map(key => {
@@ -23,7 +23,7 @@ async function getBundledModule(moduleName: string, resolvedModulePath: string) 
   if (autoDefault)
     exports.push('export default value;');
   const code = `var ${buffer.toString('utf8')}
-const value = require('${moduleName}');
+const value = require('${resolvedModulePath}');
 ${exports.join('\n')}`;
 
   return {code, files};
@@ -63,13 +63,12 @@ async function attemptToGetCachedBundledModule(hashModulePath: string): Promise<
   return readFile(path.join(cacheDir, hashModulePath + '.js'), 'utf8');
 }
 
-export async function findAndBundleModule(moduleName: string, parentFile: string) {
-  const resolvedModulePath = require.resolve(moduleName, {paths: [parentFile]});
+export async function findAndBundleModule(resolvedModulePath: string) {
   const hashModulePath = hashForFilePath(resolvedModulePath);
   const cachedBundle = await attemptToGetCachedBundledModule(hashModulePath);
   if (cachedBundle)
     return cachedBundle;
-  const {code, files} = await getBundledModule(moduleName, resolvedModulePath);
+  const {code, files} = await getBundledModule(resolvedModulePath);
   const cacheDir = await ensureCacheDir();
   const cacheJSON = await Promise.all(files.map(async file => {
     const {mtimeMs} = await stat(file);

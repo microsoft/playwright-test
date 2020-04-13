@@ -2,40 +2,40 @@ const babelUtils = require('@babel/helper-plugin-utils');
 const babel = require('@babel/core');
 
 /**
- * @param {string} modulePath
+ * @param {string} moduleName
  * @param {string=} fileName
  * @return {string}
  */
-function transformModulePath(modulePath, fileName) {
-  if (modulePath.startsWith('.') || modulePath.startsWith('/') || modulePath.startsWith('https://'))
-    return modulePath;
-  return `https://third_party/${modulePath}`;
+function transformModulePath(moduleName, fileName = '') {
+  if (moduleName.startsWith('.') || moduleName.startsWith('/') || moduleName.startsWith('https://'))
+    return moduleName;
+  return `https://third_party/?name=${moduleName}&from=${fileName}`;
 }
 
 module.exports = babelUtils.declare(api => {
   return {
     visitor: {
-      ImportDeclaration: nodePath => {
+      ImportDeclaration: (nodePath, /** @type {{filename?: string}} */ {filename}) => {
         const modulePath = nodePath.node.source.value;
-        const transformedPath = transformModulePath(nodePath.node.source.value);
+        const transformedPath = transformModulePath(nodePath.node.source.value, filename);
         if (transformedPath === modulePath)
           return;
         const newPath = babel.types.importDeclaration(nodePath.node.specifiers, babel.types.stringLiteral(transformedPath));
         nodePath.replaceWith(newPath);
       },
-      ExportNamedDeclaration: nodePath => {
+      ExportNamedDeclaration: (nodePath, /** @type {{filename?: string}} */ {filename}) => {
         if (!nodePath.node.source)
           return;
         const modulePath = nodePath.node.source.value;
-        const transformedPath = transformModulePath(nodePath.node.source.value);
+        const transformedPath = transformModulePath(nodePath.node.source.value, filename);
         if (transformedPath === modulePath)
           return;
         const newPath = babel.types.exportNamedDeclaration(nodePath.node.declaration, nodePath.node.specifiers, babel.types.stringLiteral(transformedPath));
         nodePath.replaceWith(newPath);
       },
-      ExportAllDeclaration: nodePath => {
+      ExportAllDeclaration: (nodePath, /** @type {{filename?: string}} */ {filename}) => {
         const modulePath = nodePath.node.source.value;
-        const transformedPath = transformModulePath(nodePath.node.source.value);
+        const transformedPath = transformModulePath(nodePath.node.source.value, filename);
         if (transformedPath === modulePath)
           return;
         const newPath = babel.types.exportAllDeclaration(babel.types.stringLiteral(transformedPath));
