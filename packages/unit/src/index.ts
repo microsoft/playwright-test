@@ -8,14 +8,12 @@ import {formatExecError} from 'jest-message-util';
 
 class PlaywrightRunnerUnit {
   private _globalConfig: Jest.Config.GlobalConfig;
-  private _browserPromise: Promise<playwright.Browser>;
   constructor(globalConfig: Jest.Config.GlobalConfig, context?: TestRunnerContext) {
     this._globalConfig = globalConfig;
-    this._browserPromise = playwright.chromium.launch();
   }
 
   async runTests(testSuites: Test[], watcher: TestWatcher, onStart: OnTestStart, onResult: OnTestSuccess, onFailure: OnTestFailure, options: TestRunnerOptions) {
-    const browser = await this._browserPromise;
+    const browser = await playwright.chromium.launch();
     
     for (const testSuite of testSuites) {
       await onStart(testSuite);

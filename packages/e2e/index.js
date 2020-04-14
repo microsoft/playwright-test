@@ -15,8 +15,6 @@ class PlaywrightRunnerE2E {
   constructor(globalConfig, context) {
     this._globalConfig = globalConfig;
     this._globalContext = context;
-    this._browserPromise = playwright.chromium.launch();
-    installGlobals();
   }
 
   /**
@@ -28,6 +26,8 @@ class PlaywrightRunnerE2E {
    * @param {import('jest-runner').TestRunnerOptions} options
    */
   async runTests(testSuites, watcher, onStart, onResult, onFailure, options) {
+    const browser = await playwright.chromium.launch();
+    installGlobals();
     /** @type {WeakMap<Test, import('jest-runner').Test>} */
     const testToSuite = new WeakMap();
     /** @type {Map<any, Set<Test>>} */
@@ -57,22 +57,21 @@ class PlaywrightRunnerE2E {
         onStart(suite);
       }
       const suiteResults = resultsForSuite.get(suite);
-      const result = await this._runTest(test);
+      const result = await this._runTest(browser, test);
       suiteResults.push(result);
       const suiteTests = /** @type {Set<Test>} */ (suiteToTests.get(suite));
       if (suiteTests.size === suiteResults.length)
         onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
     }
     purgeRequireCache(testSuites.map(suite => suite.path));
-    if (!this._globalConfig.watch && !this._globalConfig.watchAll)
-      await (await this._browserPromise).close();
+    await browser.close();
   }
 
   /**
+   * @param {playwright.Browser} browser
    * @param {Test} test
    */
-  async _runTest(test) {
-    const browser = await this._browserPromise;
+  async _runTest(browser, test) {
     const context = await browser.newContext();
     const page = await context.newPage();
     /** @type {import('@jest/types').TestResult.AssertionResult} */
