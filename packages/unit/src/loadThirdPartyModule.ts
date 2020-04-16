@@ -52,11 +52,11 @@ async function attemptToGetCachedBundledModule(hashModulePath: string): Promise<
     return null;
   const files: [string, number][] = JSON.parse(jsonData);
   let allFilesGood = true;
-  await Promise.all([files.map(async ([file, time]) => {
-    const {mtimeMs} = await stat(file);
+  await Promise.all(files.map(async ([file, time]) => {
+    const {mtimeMs} = await stat(file).catch(() => ({mtimeMs: -1}));
     if (mtimeMs !== time)
       allFilesGood = false;
-  })]);
+  }));
   if (!allFilesGood)
     return null;
 
