@@ -1,7 +1,10 @@
 # 🎭 Playwright Jest Runners
-
 > This repository is not ready for use. If you want to run tests with [playwright](https://github.com/Microsoft/playwright), checkout [jest-playwright](https://github.com/mmarkelov/jest-playwright) for Jest or [karma-playwright-launcher](https://github.com/JoelEinbinder/karma-playwright-launcher) for Karma.
 
+## Usage
+See [playwright-runner](packages/playwright-runner/README.md)
+
+## About
 To provide the best web testing experience, we need to write our own web test runner. To make the test runner, we use the [jest platform](https://www.youtube.com/watch?v=NtjyeojAOBs).
 
 ![Diagram](./docs/diagram.png)

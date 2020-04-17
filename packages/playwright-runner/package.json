@@ -1,0 +1,14 @@
+{
+  "name": "playwright-runner",
+  "version": "0.0.4",
+  "license": "MIT",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner",
+  "description": "A Jest preset for running tests with Playwright.",
+  "dependencies": {
+    "jest-runner-playwright-e2e": "0.0.4",
+    "jest-runner-playwright-unit": "0.0.4"
+  }
+}
