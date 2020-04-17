@@ -3,17 +3,8 @@ if (!version) {
   console.error('must specify a version');
   process.exit(1);
 }
-const {GlobSync} = require('glob');
-const path = require('path');
-const root = path.join(__dirname, '..');
 const fs = require('fs');
-const packages = GlobSync('./packages/*/package.json', {cwd: root})
-    .found
-    .map(file => {
-      const fileName = path.join(root, file);
-      const json = require(fileName);
-      return {fileName, json};
-    });
+const packages = require('./packages');
 const names = new Set(packages.filter(({json}) => !json.private).map(({json}) => json.name));
 for (const {fileName, json} of packages) {
   if (!json.private)

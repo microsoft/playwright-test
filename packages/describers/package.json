@@ -5,5 +5,10 @@
   "main": "out/index.js",
   "scripts": {
     "prepare": "tsc -p ."
-  }
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner"
 }

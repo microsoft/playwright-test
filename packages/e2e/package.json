@@ -11,5 +11,9 @@
   "version": "0.0.1",
   "description": "Runs end-to-end browser tests",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner"
 }
