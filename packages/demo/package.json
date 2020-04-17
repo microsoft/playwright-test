@@ -2,7 +2,7 @@
   "private": true,
   "dependencies": {
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"    
+    "react-dom": "^16.13.1"
   },
   "devDependencies": {
     "jest-runner-playwright-e2e": "0.0.1",

@@ -23,6 +23,7 @@
         "lint": "eslint .",
         "build": "tsc --build tsconfig.json",
         "watch": "tsc --build tsconfig.json --watch",
-        "prepare": "yarn run build"
+        "prepare": "yarn run build",
+        "update-version": "node/scripts updateVersion.js"
     }
 }
