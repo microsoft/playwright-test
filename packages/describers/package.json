@@ -3,9 +3,6 @@
   "version": "0.0.2",
   "description": "A small library providing it/describe syntax for tests.",
   "main": "out/index.js",
-  "scripts": {
-    "prepare": "tsc -p ."
-  },
   "license": "MIT",
   "author": {
     "name": "Microsoft Corporation"
