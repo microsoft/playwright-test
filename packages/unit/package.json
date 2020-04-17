@@ -1,6 +1,6 @@
 {
   "name": "jest-runner-playwright-unit",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Runs unit tests inside a web browser",
   "main": "out/index.js",
   "devDependencies": {
@@ -13,9 +13,9 @@
   "license": "MIT",
   "dependencies": {
     "@jest/test-result": "^25.3.0",
-    "babel-plugin-third-party-imports": "0.0.5",
+    "babel-plugin-third-party-imports": "0.0.6",
     "browserify": "^16.5.1",
-    "describers": "0.0.5",
+    "describers": "0.0.6",
     "expect": "^25.2.7",
     "jest-message-util": "^25.3.0",
     "md5.js": "^1.3.5"

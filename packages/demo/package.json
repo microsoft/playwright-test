@@ -7,6 +7,6 @@
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
-    "playwright-runner": "0.0.5"
+    "playwright-runner": "0.0.6"
   }
 }
