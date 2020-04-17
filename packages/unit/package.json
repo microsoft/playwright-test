@@ -2,7 +2,7 @@
   "name": "jest-runner-playwright-unit",
   "version": "0.0.3",
   "description": "Runs unit tests inside a web browser",
-  "main": "./out/index.js",
+  "main": "out/index.js",
   "devDependencies": {
     "@jest/types": "^25.3.0",
     "@types/browserify": "^12.0.36",

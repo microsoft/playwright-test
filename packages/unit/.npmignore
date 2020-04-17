@@ -2,4 +2,6 @@
 # see https://docs.npmjs.com/misc/developers
 **/*
 
-!out
+!out/**/*.d.ts
+!out/**/*.js
+!out/**/*.js.map

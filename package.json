@@ -14,6 +14,7 @@
         "glob": "^7.1.6",
         "jest": "^25.2.7",
         "jest-runner": "^25.2.7",
+        "rimraf": "^3.0.2",
         "typescript": "^3.8.3"
     },
     "workspaces": [
@@ -24,7 +25,7 @@
         "lint": "node scripts/lintPackages.js && eslint .",
         "build": "tsc --build tsconfig.json",
         "watch": "tsc --build tsconfig.json --watch",
-        "clean": "tsc --build tsconfig.json --clean",
+        "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
         "prepare": "yarn run build",
         "update-version": "node/scripts updateVersion.js"
     }

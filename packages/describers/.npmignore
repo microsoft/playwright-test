@@ -1,2 +1,4 @@
 **/*
-!out
+!out/**/*.d.ts
+!out/**/*.js
+!out/**/*.js.map
