@@ -87,7 +87,7 @@ function exportsForModule(modulePath: string) {
   const autoDefault = mod && !mod.__esModule;
   const keys = mod ? Object.keys(mod) : [];
   for (const [filePath, value] of Object.entries(require.cache)) {
-    let currentModule: NodeModule|null = value;
+    let currentModule: NodeModule|null = value!;
     while (currentModule) {
       if (currentModule.filename === modulePath) {
         delete require.cache[filePath];
