@@ -13,20 +13,22 @@ The runner comes in two flavors:
 - **jest-runner-playwright-unit** Tests run in the browser. Code is transformed from node-style to web-style on the fly. This is a mostly drop-in replacement for JSDOM. Perliminary tests show this to be faster to startup and faster to run than JSDOM code!
 
 ## Todo List
-- [ ] run tests in e2e mode
-    - [x] expect
-    - [x] it/describe
-    - [ ] skip/focus tests
-    - [x] watch mode
-    - [x] playwright
-    - [ ] state
-    - [ ] beforeEach/afterEach/beforeAll/afterAll
-- [ ] run tests in unit mode
+- [x] run tests in e2e mode
+- [x] run tests in unit mode
+- [x] expect
+- [ ] skip/focus tests
+- [x] watch mode
+- [x] playwright
+- [x] state
+- [x] beforeEach
+- [ ] afterEach
+- [ ] beforeAll
+- [ ] afterAll
 - [ ] parallel
 - [ ] multiple browsers
 - [ ] code coverage
 - [ ] describes
-- [ ] devices
+- [x] devices
 - [x] transform code
 - [ ] typescript definitions
 - [ ] screenshots
