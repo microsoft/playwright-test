@@ -30,8 +30,8 @@ The runner comes in two flavors:
 - [ ] parallel
 - [ ] multiple browsers
 - [ ] code coverage
-- [ ] describes
-- [x] devices
+- [x] describes
+- [ ] devices
 - [x] transform code
 - [ ] typescript definitions
 - [ ] screenshots

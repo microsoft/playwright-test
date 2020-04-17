@@ -29,7 +29,8 @@ it('should work', function() {
 // e2e/basic.test.js
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
-  expect(page.title()).toContain('playwright');
+  const home = await page.waitForSelector('home-navigation');
+  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
 });
 ```
 5. Run all of your tests with `jest`
