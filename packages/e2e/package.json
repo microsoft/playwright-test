@@ -6,7 +6,7 @@
     "describers": "0.0.6",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
-    "playwright": "^0.12.1"
+    "playwright": "^0.13.0"
   },
   "version": "0.0.6",
   "description": "Runs end-to-end browser tests",
