@@ -1,0 +1,16 @@
+{
+  "name": "playwright-superpowers",
+  "version": "0.0.6",
+  "description": "Injects playwright apis into a page.",
+  "main": "out/index.js",
+  "devDependencies": {
+    "playwright": "^0.13.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+  },
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner"
+}
