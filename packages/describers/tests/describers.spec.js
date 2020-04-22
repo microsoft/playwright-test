@@ -3,7 +3,7 @@ const api = require('../out/index');
 describe('it', () => {
   it('should run a test', async () => {
     let tested = false;
-    const test = api.it('is a test', () => tested = true);
+    const test = api.createTest('is a test', () => tested = true);
     const {success, error} = await test.run();
     expect(success).toBe(true);
     expect(tested).toBe(true);
@@ -11,7 +11,7 @@ describe('it', () => {
   });
 
   it('should fail test', async () => {
-    const test = api.it('is a test', () => {
+    const test = api.createTest('is a test', () => {
       throw 'not an error';
     });
     const {success, error} = await test.run();
@@ -22,7 +22,7 @@ describe('it', () => {
 
 describe('describe', () => {
   it('should use describe to group tests', async () => {
-    const suite = api.describe('', () => {
+    const suite = api.createSuite('', () => {
       api.it('first test', () => void 0);
       api.it('second test', () => void 0);
       api.it('third test', () => void 0);
@@ -37,9 +37,9 @@ describe('describe', () => {
 
   it('should support nested describe', async () => {
     let secondSuite;
-    const suite = api.describe('outer', () => {
+    const suite = api.createSuite('outer', () => {
       api.it('first test', () => void 0);
-      secondSuite = api.describe('inner', () => {
+      secondSuite = api.createSuite('inner', () => {
         api.it('second test', () => void 0);
       });
     });
@@ -52,7 +52,7 @@ describe('describe', () => {
   });
 
   it('should support async describe', async () => {
-    const suite = await api.describe('async describe', async () => {
+    const suite = await api.createSuite('async describe', async () => {
       api.it('first test', () => void 0);
       await new Promise(x => setTimeout(x, 0));
       api.it('second test', () => void 0);
@@ -65,7 +65,7 @@ describe('describe', () => {
   });
 
   it('should tricky async scenarios', async () => {
-    const suite = await api.describe('async describe', async () => {
+    const suite = await api.createSuite('async describe', async () => {
       api.it('first test', () => void 0);
       await new Promise(x => setTimeout(x, 0));
       api.describe('suite a', async () => {
@@ -108,23 +108,30 @@ describe('describe', () => {
   });
 });
 
-describe('beforeEach', () => {
+describe('beforeEach/afterEach', () => {
   it('should run with every test', async () => {
-    let ranCount = 0;
-
-    const suite = api.describe(() => {
+    const log = [];
+    const suite = api.createSuite(() => {
       api.beforeEach(() => {
-        ranCount ++;
+        log.push('before');
       });
-      api.it('first test', () => void 0);
-      api.it('second test', () => void 0);
+      api.afterEach(() => {
+        log.push('after');
+      });
+      api.it('first test', () => {
+        log.push('first');
+      });
+      api.it('second test', () => {
+        log.push('second');
+      });
     });
     await suite.runTestsSerially();
-    expect(ranCount).toEqual(2);
+    expect(log).toEqual(['before', 'first', 'after', 'before', 'second', 'after']);
   });
-  it('should setup state', async () => {
-    const suite = api.describe(() => {
+  it('should setup and teardown state', async () => {
+    const suite = api.createSuite(() => {
       api.beforeEach(state => state.foo = true);
+      api.afterEach(state => expect(state.foo).toEqual(true));
       api.it('test', ({foo}) => expect(foo).toEqual(true));
     });
     const results = await suite.runTestsSerially();
@@ -133,25 +140,31 @@ describe('beforeEach', () => {
     ]);
   });
   it('should run in order', async () => {
-    const suite = api.describe(() => {
-      api.beforeEach(state => state.foo = 1);
-      api.beforeEach(state => state.foo *= 3);
-      api.beforeEach(state => state.foo += 3);
-      api.beforeEach(state => state.foo *= 2);
-      api.it('test', ({foo}) => expect(foo).toEqual(12));
+    const log = [];
+    const suite = api.createSuite(() => {
+      api.beforeEach(() => log.push('b1'));
+      api.beforeEach(() => log.push('b2'));
+      api.beforeEach(() => log.push('b3'));
+      api.afterEach(() => log.push('a1'));
+      api.afterEach(() => log.push('a2'));
+      api.afterEach(() => log.push('a3'));
+      api.it('test', () => log.push('test'));
     });
-    const results = await suite.runTestsSerially();
-    expect(results).toEqual([
-      {name: 'test', success: true}
-    ]);
+    await suite.runTestsSerially();
+    expect(log).toEqual(['b1', 'b2', 'b3', 'test', 'a1', 'a2', 'a3']);
   });
   it('should work with nested describes', async () => {
-    const suite = api.describe(() => {
+    let saved;
+    const suite = api.createSuite(() => {
       api.beforeEach(state => state.foo = true);
+      api.afterEach(state => state.foo = 'done');
       api.describe(() => {
         api.describe(() => {
           api.describe(() => {
-            api.it('test', ({foo}) => expect(foo).toEqual(true));
+            api.it('test', state => {
+              expect(state.foo).toEqual(true);
+              saved = state;
+            });
           });
         });
       });
@@ -160,5 +173,6 @@ describe('beforeEach', () => {
     expect(results).toEqual([
       {name: 'test', success: true}
     ]);
+    expect(saved.foo).toBe('done');
   });
 });

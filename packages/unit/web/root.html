@@ -10,16 +10,18 @@
     <script type="module">
       import * as describers from 'https://third_party/?name=describers';
       import expect from 'https://third_party/?name=expect';
-      
+
       // We don't need to tell people to download React DevTools every test.
       if (!window.__REACT_DEVTOOLS_GLOBAL_HOOK__)
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__= { isDisabled: true };
 
-      for (const name in describers)
-        window[name] = describers[name];
+      window.it = describers.it;
+      window.describe = describers.describe;
+      window.beforeEach = describers.beforeEach;
+      window.afterEach = describers.afterEach;
       window.expect = expect;
       let finishedGatheringTests;
-      const rootSuite = describers.describe(() => new Promise(x => finishedGatheringTests = x));
+      const rootSuite = describers.createSuite(() => new Promise(x => finishedGatheringTests = x));
       const testsPromise = rootSuite.tests();
       window.__playwright__runAllTests = async function() {
         finishedGatheringTests();
