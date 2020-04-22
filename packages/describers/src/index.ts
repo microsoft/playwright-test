@@ -6,6 +6,7 @@ class Suite {
   private _tests: Test[] = [];
   private _callback: UserCallback | null;
   _beforeEaches: UserCallback<State>[] = [];
+  _afterEaches: UserCallback<State>[] = [];
 
   constructor(name: string, parent: Suite | null = null, callback: UserCallback | null = null) {
     this.name = name;
@@ -91,11 +92,14 @@ class Test {
       success: true,
       name: this.fullName()
     };
-    let suite : Suite | null = this.suite;
-    while (suite) {
+
+    const suites: Suite[] = [];
+    for (let suite : Suite | null = this.suite; suite; suite = suite.parentSuite)
+      suites.push(suite);
+
+    for (const suite of suites) {
       for (const beforeEach of suite._beforeEaches)
         await beforeEach(state);
-      suite = suite.parentSuite;
     }
     try {
       await this._callback(state);
@@ -103,6 +107,13 @@ class Test {
       result.success = false;
       result.error = e;
     }
+
+    suites.reverse();
+    for (const suite of suites) {
+      for (const afterEach of suite._afterEaches)
+        await afterEach(state);
+    }
+
     return result;
   }
 }
@@ -115,26 +126,38 @@ export type TestResult = {
   error?: any,
 };
 
-export function describe(name: string, callback: UserCallback) : Suite;
-export function describe(callback: UserCallback) : Suite;
+export function describe(name: string, callback: UserCallback) : void;
+export function describe(callback: UserCallback) : void;
 export function describe(callbackOrName: string|UserCallback, callback?: UserCallback) {
+  createSuite(callbackOrName as any, callback as any);
+}
+
+export function createSuite(name: string, callback: UserCallback) : Suite;
+export function createSuite(callback: UserCallback) : Suite;
+export function createSuite(callbackOrName: string|UserCallback, callback?: UserCallback) : Suite {
   const name = callback ? callbackOrName as string : '';
   if (!callback)
     callback = callbackOrName as UserCallback;
-  const suite = new Suite(name, currentSuite, callback);
-  return suite;
+  return new Suite(name, currentSuite, callback);
 }
 
 export function it(name: string, callback: UserCallback<State>) {
-  const test = new Test(name, callback);
-  return test;
+  new Test(name, callback);
 }
 
-export type It<T> = (name: string, callback: UserCallback<T & State>) => Test;
-export type BeforeOrAfter<T> = (callback: UserCallback<T & State>) => Test;
+export function createTest(name: string, callback: UserCallback<State>) {
+  return new Test(name, callback);
+}
+
+export type It<T> = (name: string, callback: UserCallback<T & State>) => void;
+export type BeforeOrAfter<T> = (callback: UserCallback<T & State>) => void;
 
 export function beforeEach(callback: (state: State) => void | Promise<void>) {
   currentSuite._beforeEaches.push(callback);
+}
+
+export function afterEach(callback: (state: State) => void | Promise<void>) {
+  currentSuite._afterEaches.push(callback);
 }
 
 const rootSuite = new Suite('', null);

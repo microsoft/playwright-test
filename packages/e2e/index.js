@@ -4,7 +4,7 @@ const {formatExecError} = require('jest-message-util');
 const {ScriptTransformer} = require('@jest/transform');
 const globals = require('./globals');
 const playwright = require('playwright');
-const {describe} = require('describers');
+const {createSuite} = require('describers');
 /** @typedef {import('describers').Test} Test */
 
 class PlaywrightRunnerE2E {
@@ -34,12 +34,12 @@ class PlaywrightRunnerE2E {
     const suiteToTests = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
-    const rootSuite = describe(async () => {
+    const rootSuite = createSuite(async () => {
       for (const testSuite of testSuites) {
         const transformer = new ScriptTransformer(testSuite.context.config);
         resultsForSuite.set(testSuite, []);
         suiteToTests.set(testSuite, new Set());
-        const suite = describe(async () => {
+        const suite = createSuite(async () => {
           transformer.requireAndTranspileModule(testSuite.path);
         });
         for (const test of await suite.tests()) {
@@ -105,7 +105,7 @@ class PlaywrightRunnerE2E {
 function purgeRequireCache(files) {
   const blackList = new Set(files);
   for (const filePath of Object.keys(require.cache)) {
-    /** @type {NodeModule|null} */
+    /** @type {NodeModule|null|undefined} */
     let module = require.cache[filePath];
     while (module) {
       if (blackList.has(module.filename)) {
