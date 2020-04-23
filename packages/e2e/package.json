@@ -10,7 +10,7 @@
   },
   "version": "0.0.6",
   "description": "Runs end-to-end browser tests",
-  "main": "index.js",
+  "main": "out/index.js",
   "license": "MIT",
   "author": {
     "name": "Microsoft Corporation"

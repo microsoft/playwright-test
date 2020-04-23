@@ -3,6 +3,7 @@
   "include": [],
   "references": [
       { "path": "./packages/describers/" },
+      { "path": "./packages/e2e/" },
       { "path": "./packages/unit/" },
       { "path": "./packages/superpowers/" }
   ]
