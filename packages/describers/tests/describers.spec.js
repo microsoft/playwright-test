@@ -108,6 +108,32 @@ describe('describe', () => {
   });
 });
 
+describe('timeout', () => {
+  it('should handle test timeout', async () => {
+    const suite = api.createSuite(() => {
+      api.it('test', () => new Promise(() => {}));
+    });
+    const results = await suite.runTestsSerially({}, 1);
+    expect(results[0].success).toEqual(false);
+    expect(results[0].error).toEqual('timed out while running test');
+  });
+  it('should handle hook timeout and still run hooks but not tests', async () => {
+    const log = [];
+    const suite = api.createSuite(() => {
+      api.beforeEach(() => {
+        log.push('before');
+        return new Promise(() => {});
+      });
+      api.afterEach(() => log.push('after'));
+      api.it('test', () => log.push('test'));
+    });
+    const results = await suite.runTestsSerially({}, 1);
+    expect(log).toEqual(['before', 'after']);
+    expect(results[0].success).toEqual(false);
+    expect(results[0].error).toEqual('timed out while running hook');
+  });
+});
+
 describe('beforeEach/afterEach', () => {
   it('should run with every test', async () => {
     const log = [];
