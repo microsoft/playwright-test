@@ -9,12 +9,13 @@ export type TestResult = {
 
 const TimeoutError = new Error('Timeout');
 const TerminatedError = new Error('Terminated');
+const NoError = Symbol('NoError');
 
 function runUserCallback(callback: (...args: any[]) => any, timeout: number, args: any[]) {
   let terminateCallback: (error: Error) => void;
   let timeoutId: any;
   const promise: Promise<any> = Promise.race([
-    Promise.resolve().then(callback.bind(null, ...args)).then(() => null).catch((e: any) => e),
+    Promise.resolve().then(callback.bind(null, ...args)).then(() => NoError).catch((e: any) => e),
     new Promise(resolve => {
       timeoutId = timeout ? setTimeout(resolve.bind(null, TimeoutError), timeout) : undefined;
     }),
@@ -73,7 +74,7 @@ class Suite {
       currentSuite = this;
       const { promise } = runUserCallback(callback, timeout, []);
       const error = await promise;
-      if (error)
+      if (error !== NoError)
         throw error;
       currentSuite = previousSuite;
       for (const testOrSuite of this.children) {
@@ -125,7 +126,7 @@ class Test {
     if (result.success) {
       const { promise } = runUserCallback(this._callback, timeout, [state]);
       const error = await promise;
-      if (error && result.success) {
+      if (error !== NoError && result.success) {
         result.success = false;
         if (error === TimeoutError)
           result.error = `timed out while running test`;
@@ -148,7 +149,7 @@ class Test {
   async _runHook(result: TestResult, hook: UserCallback<State>, state: State, hookTimeout: number) {
     const { promise } = runUserCallback(hook, hookTimeout, [state]);
     const error = await promise;
-    if (error && result.success) {
+    if (error !== NoError && result.success) {
       result.success = false;
       if (error === TimeoutError)
         result.error = `timed out while running hook`;

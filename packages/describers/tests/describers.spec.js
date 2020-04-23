@@ -18,6 +18,24 @@ describe('it', () => {
     expect(success).toBe(false);
     expect(error).toBe('not an error');
   });
+
+  it('should allow throwing null', async () => {
+    const test = api.createTest('is a test', () => {
+      throw null;
+    });
+    const {success, error} = await test.run();
+    expect(success).toBe(false);
+    expect(error).toBe(null);
+  });
+
+  it('should allow throwing undefined', async () => {
+    const test = api.createTest('is a test', () => {
+      throw undefined;
+    });
+    const {success, error} = await test.run();
+    expect(success).toBe(false);
+    expect(error).toBe(undefined);
+  });
 });
 
 describe('describe', () => {
