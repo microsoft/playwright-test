@@ -1,10 +1,35 @@
 type UserCallback<T = void> = (state: T) => (void | Promise<void>);
+type State = {[key: string]: any};
+
+export type TestResult = {
+  name: string,
+  success: boolean,
+  error?: any,
+};
+
+const TimeoutError = new Error('Timeout');
+const TerminatedError = new Error('Terminated');
+
+function runUserCallback(callback: (...args: any[]) => any, timeout: number, args: any[]) {
+  let terminateCallback: (error: Error) => void;
+  let timeoutId: any;
+  const promise: Promise<any> = Promise.race([
+    Promise.resolve().then(callback.bind(null, ...args)).then(() => null).catch((e: any) => e),
+    new Promise(resolve => {
+      timeoutId = timeout ? setTimeout(resolve.bind(null, TimeoutError), timeout) : undefined;
+    }),
+    new Promise(resolve => terminateCallback = resolve),
+  ]).catch(e => e).finally(() => timeoutId && clearTimeout(timeoutId));
+  const terminate = () => terminateCallback(TerminatedError);
+  return { promise, terminate };
+}
+
 class Suite {
   name: string;
   parentSuite: Suite | null;
   children: (Suite|Test)[] = [];
-  private _tests: Test[] = [];
-  private _callback: UserCallback | null;
+  _tests: Test[] = [];
+  _callback: UserCallback | null;
   _beforeEaches: UserCallback<State>[] = [];
   _afterEaches: UserCallback<State>[] = [];
 
@@ -32,22 +57,24 @@ class Suite {
     return [...this.parentSuite.ancestorTitles(), this.name];
   }
 
-  async runTestsSerially() {
+  async runTestsSerially(state: State = {}, timeout: number = 0, hookTimeout = timeout) {
     const tests = await this.tests();
-    /** @type {TestResult[]} */
     const results: TestResult[] = [];
     for (const test of tests)
-      results.push(await test.run());
+      results.push(await test.run(state, timeout, hookTimeout));
     return results;
   }
 
-  async tests() {
+  async tests(timeout: number = 0) {
     if (this._callback) {
       const callback = this._callback;
       this._callback = null;
       const previousSuite = currentSuite;
       currentSuite = this;
-      await callback();
+      const { promise } = runUserCallback(callback, timeout, []);
+      const error = await promise;
+      if (error)
+        throw error;
       currentSuite = previousSuite;
       for (const testOrSuite of this.children) {
         if (testOrSuite instanceof Test)
@@ -61,13 +88,10 @@ class Suite {
 }
 
 class Test {
-  _callback: (state: any) => void | Promise<void>;
+  _callback: UserCallback<State>;
   name: string;
   suite: Suite;
-  /**
-   * @param {string} name
-   * @param {(state: State) => UserCallback} callback
-   */
+
   constructor(name: string, callback: (state: State) => void | Promise<void>) {
     this._callback = callback;
     this.name = name;
@@ -83,11 +107,7 @@ class Test {
     return (this.suite.fullName() + ' ' + this.name).trim();
   }
 
-  /**
-   * @param {State=} state
-   */
-  async run(state: State | undefined = {}) {
-    /** @type {TestResult} */
+  async run(state: State = {}, timeout = 0, hookTimeout = timeout) {
     const result: TestResult = {
       success: true,
       name: this.fullName()
@@ -99,32 +119,47 @@ class Test {
 
     for (const suite of suites) {
       for (const beforeEach of suite._beforeEaches)
-        await beforeEach(state);
+        await this._runHook(result, beforeEach, state, hookTimeout);
     }
-    try {
-      await this._callback(state);
-    } catch (e) {
-      result.success = false;
-      result.error = e;
+
+    if (result.success) {
+      const { promise } = runUserCallback(this._callback, timeout, [state]);
+      const error = await promise;
+      if (error && result.success) {
+        result.success = false;
+        if (error === TimeoutError)
+          result.error = `timed out while running test`;
+        else if (error === TerminatedError)
+          result.error = `terminated while running test`;
+        else
+          result.error = error;
+      }
     }
 
     suites.reverse();
     for (const suite of suites) {
       for (const afterEach of suite._afterEaches)
-        await afterEach(state);
+        await this._runHook(result, afterEach, state, hookTimeout);
     }
 
     return result;
   }
+
+  async _runHook(result: TestResult, hook: UserCallback<State>, state: State, hookTimeout: number) {
+    const { promise } = runUserCallback(hook, hookTimeout, [state]);
+    const error = await promise;
+    if (error && result.success) {
+      result.success = false;
+      if (error === TimeoutError)
+        result.error = `timed out while running hook`;
+      else if (error === TerminatedError)
+        result.error = '';  // Do not report hook termination details - it's just noise.
+      else
+        result.error = error;
+    }
+    return !error;
+  }
 }
-
-type State = {[key: string]: any};
-
-export type TestResult = {
-  name: string,
-  success: boolean,
-  error?: any,
-};
 
 export function describe(name: string, callback: UserCallback) : void;
 export function describe(callback: UserCallback) : void;

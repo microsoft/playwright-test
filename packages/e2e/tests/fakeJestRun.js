@@ -5,10 +5,11 @@ const {DefaultReporter, SummaryReporter} = require('@jest/reporters');
 const cacheDirectory = path.join(require('os').tmpdir(), 'pw_e2e_cache');
 
 /**
- * @param  {...string} paths
+ * @param {string[]} paths
+ * @param {Partial<import('@jest/types').Config.GlobalConfig>} config
  */
-async function fakeJestRun(...paths) {
-  const scheduler = new TestScheduler(makeGlobalConfig(), {
+async function fakeJestRun(paths, config = {}) {
+  const scheduler = new TestScheduler({...makeGlobalConfig(), ...config}, {
     startRun: config => void 0
   }, {
     firstRun: true,

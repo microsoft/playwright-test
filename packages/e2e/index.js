@@ -84,7 +84,7 @@ class PlaywrightRunnerE2E {
       title: test.name,
     };
 
-    const {success, error} = await test.run({context, page});
+    const {success, error} = await test.run({context, page}, this._globalConfig.testTimeout);
     if (!success) {
       result.status = 'failed';
       result.failureMessages.push(error instanceof Error ? formatExecError(error, {
