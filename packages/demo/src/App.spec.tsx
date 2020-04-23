@@ -7,3 +7,11 @@ it('should work', function() {
   ReactDOM.render(<App />, container);
   expect(container.textContent).toBe('Hello World');
 });
+
+it('should type into an input', async function() {
+  const input = document.createElement('input');
+  document.body.appendChild(input);
+  input.focus();
+  await (window as any).keyboard.type('Hello World');
+  expect(input.value).toBe('Hello World');
+});

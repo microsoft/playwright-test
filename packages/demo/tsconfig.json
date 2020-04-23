@@ -1,10 +1,13 @@
 {
-  "extends": "../../tsconfig-base.json",
   "compilerOptions": {
       "allowJs": true,
       "checkJs": true,
       "target": "ESNext",
       "moduleResolution": "node",
+      "strict": true,
+      "module": "commonjs",
+      "lib": ["esnext", "dom"],
+      "esModuleInterop": true,
       "noEmit": true,
       "jsx": "react"
     }

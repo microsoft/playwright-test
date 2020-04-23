@@ -19,7 +19,8 @@
     "expect": "^25.2.7",
     "jest-message-util": "^25.3.0",
     "md5.js": "^1.3.5",
-    "playwright": "^0.13.0"
+    "playwright": "^0.13.0",
+    "playwright-superpowers": "0.0.6"
   },
   "author": {
     "name": "Microsoft Corporation"

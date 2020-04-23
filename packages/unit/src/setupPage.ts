@@ -5,6 +5,7 @@ import { transformLocalFile } from './transform';
 import path from 'path';
 import { requireResolve } from './requireResolve';
 import { findAndBundleModule } from './loadThirdPartyModule';
+import { installSuperpowers } from 'playwright-superpowers';
 
 const THIRD_PARTY = 'https://third_party';
 const LOCAL_URL = 'https://local_url';
@@ -14,6 +15,7 @@ const ROOT_PAGE = LOCAL_URL + filePathToUrlPathname(path.join(WEB_FOLDER, 'root.
 export async function setupPage(page: Page) {
   page.on('console', message => console.log(message.text()));
   page.on('pageerror', message => console.log(message.stack));
+  await installSuperpowers(page);
   await page.route('**/*', async (route, request) => {
     if (request.url().startsWith(THIRD_PARTY + '/')) {
       const searchParams = new url.URLSearchParams(url.parse(request.url()).search || '?');
