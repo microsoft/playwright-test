@@ -31,4 +31,4 @@ jobs:
     - name: lint
       run: yarn lint
     - name: test
-      run: DEBUG=* yarn test
+      run: DEBUG=* yarn jest packages/superpowers
