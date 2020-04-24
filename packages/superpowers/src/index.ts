@@ -61,33 +61,33 @@ export async function installSuperpowers(page: Page) {
               continue: obj => superpowers('network', '_continue', routeId, obj),
               request: () => request,
             };
-            await superpowers.functions.get(handlerIndex).call(null, route, request);
+            superpowers.functions.get(handlerIndex).call(null, route, request);
           }, {
             handlerIndex: handler.index,
             requestObj,
             routeId,
-          });
+          }).catch(e => null);
         });
       },
-      _fulfill(routeId: number, params: Parameters<Route["fulfill"]>[0]) {
+      async _fulfill(routeId: number, params: Parameters<Route["fulfill"]>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
-        route.fulfill(params || undefined);
+        await route.fulfill(params || undefined);
         routes.delete(routeId);
       },
-      _abort(routeId: number, params: Parameters<Route["abort"]>[0]) {
+      async _abort(routeId: number, params: Parameters<Route["abort"]>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
-        route.abort(params || undefined);
+        await route.abort(params || undefined);
         routes.delete(routeId);
       },
-      _continue(routeId: number, params: Parameters<Route["continue"]>[0]) {
+      async _continue(routeId: number, params: Parameters<Route["continue"]>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
-        route.continue(params || undefined);
+        await route.continue(params || undefined);
         routes.delete(routeId);
       }
     }
