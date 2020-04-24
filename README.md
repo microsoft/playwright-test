@@ -1,45 +1,39 @@
-# 🎭 Playwright Jest Runners
+# 🎭 Playwright Runner
 > This repository is not ready for use. If you want to run tests with [playwright](https://github.com/Microsoft/playwright), checkout [jest-playwright](https://github.com/mmarkelov/jest-playwright) for Jest or [karma-playwright-launcher](https://github.com/JoelEinbinder/karma-playwright-launcher) for Karma.
 
 ## Usage
-See [playwright-runner](packages/playwright-runner/README.md)
 
-## About
-To provide the best web testing experience, we need to write our own web test runner. To make the test runner, we use the [jest platform](https://www.youtube.com/watch?v=NtjyeojAOBs).
+1. `npm i --save-dev jest playwright-runner ` or `yarn add --dev jest playwright-runner`
+2. Specify `playwright-runner` in your Jest configuration:
+```json
+//jest.config.js
+{
+  "preset": "playwright-runner"
+}
+```
+3. Place unit tests in files ending with `.spec.*` or `.test.*`.
+```js
+// src/App.spec.jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { App } from './App';
 
-![Diagram](./docs/diagram.png)
-
-The runner comes in two flavors:
-
-- **jest-runner-playwright-e2e** Tests run in node, and control one or more web pages. Code coverage and other metadata is taken from the browser, rather than node. One node process is used to connect to mulitple parallel browser processes.
-
-- **jest-runner-playwright-unit** Tests run in the browser. Code is transformed from node-style to web-style on the fly. This is a mostly drop-in replacement for JSDOM. Perliminary tests show this to be faster to startup and faster to run than JSDOM code!
-
-## Todo List
-- [x] run tests in e2e mode
-- [x] run tests in unit mode
-- [x] expect
-- [ ] skip/focus tests
-- [x] watch mode
-- [x] playwright
-- [x] state
-- [x] beforeEach
-- [ ] afterEach
-- [ ] beforeAll
-- [ ] afterAll
-- [ ] parallel
-- [ ] multiple browsers
-- [ ] code coverage
-- [x] describes
-- [ ] devices
-- [x] transform code
-- [ ] typescript definitions
-- [ ] screenshots
-- [ ] expect from the page
-- [ ] benchmarks
-- [ ] templates
-- [ ] run [create-react-app](https://github.com/facebook/create-react-app) test
-- [ ] run [excalidraw](https://github.com/excalidraw/excalidraw) tests
+it('should work', function() {
+  const container = document.createElement('div');
+  ReactDOM.render(<App />, container);
+  expect(container.textContent).toBe('Hello World');
+});
+```
+4. Place end-to-end tests inside an `e2e` folder.
+```js
+// e2e/basic.test.js
+it('is a basic test with the page', async ({page}) => {
+  await page.goto('https://playwright.dev/');
+  const home = await page.waitForSelector('home-navigation');
+  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
+});
+```
+5. Run all of your tests with `npx jest` or `yarn jest`
 
 # Contributing
 
