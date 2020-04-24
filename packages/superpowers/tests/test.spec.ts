@@ -139,4 +139,13 @@ describe('route', function() {
     expect(request.postData).toEqual(null);
     expect(request.headers['user-agent']).toContain('Mozilla');
   });
+  it('should not crash if the router takes awhile to evaluate', async () => {
+    await page.evaluate(async () => {
+      await window['network'].route('https://fake_url/', async route => {
+        await route.abort();
+        await new Promise(x => setTimeout(x, 500));
+      });
+      await fetch('https://fake_url/').catch(e => e);
+    });
+  });
 });
