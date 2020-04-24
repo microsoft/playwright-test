@@ -5,8 +5,8 @@
 
 1. `npm i --save-dev jest playwright-runner ` or `yarn add --dev jest playwright-runner`
 2. Specify `playwright-runner` in your Jest configuration:
-```json
-//jest.config.js
+```js
+// jest.config.js
 module.exports = {
   "preset": "playwright-runner"
 }
