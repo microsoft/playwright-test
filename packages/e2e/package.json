@@ -3,12 +3,12 @@
   "dependencies": {
     "@jest/test-result": "^25.2.6",
     "@jest/transform": "^25.3.0",
-    "describers": "0.0.6",
+    "describers": "0.0.7",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
     "playwright": "^0.13.0"
   },
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Runs end-to-end browser tests",
   "main": "index.js",
   "license": "MIT",

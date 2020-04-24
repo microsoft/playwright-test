@@ -27,6 +27,6 @@
         "watch": "tsc --build tsconfig.json --watch",
         "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
         "prepare": "yarn run build",
-        "update-version": "node/scripts updateVersion.js"
+        "update-version": "node scripts/updateVersion.js"
     }
 }

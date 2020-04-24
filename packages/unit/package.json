@@ -1,6 +1,6 @@
 {
   "name": "jest-runner-playwright-unit",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Runs unit tests inside a web browser",
   "main": "out/index.js",
   "devDependencies": {
@@ -13,14 +13,14 @@
   "license": "MIT",
   "dependencies": {
     "@jest/test-result": "^25.3.0",
-    "babel-plugin-third-party-imports": "0.0.6",
+    "babel-plugin-third-party-imports": "0.0.7",
     "browserify": "^16.5.1",
-    "describers": "0.0.6",
+    "describers": "0.0.7",
     "expect": "^25.2.7",
     "jest-message-util": "^25.3.0",
     "md5.js": "^1.3.5",
     "playwright": "^0.13.0",
-    "playwright-superpowers": "0.0.6"
+    "playwright-superpowers": "0.0.7"
   },
   "author": {
     "name": "Microsoft Corporation"
