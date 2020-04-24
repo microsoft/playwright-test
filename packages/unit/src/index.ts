@@ -14,7 +14,7 @@ class PlaywrightRunnerUnit {
 
   async runTests(testSuites: Test[], watcher: TestWatcher, onStart: OnTestStart, onResult: OnTestSuccess, onFailure: OnTestFailure, options: TestRunnerOptions) {
     const browser = await playwright.chromium.launch();
-    
+
     for (const testSuite of testSuites) {
       await onStart(testSuite);
       const page = await browser.newPage();
@@ -25,7 +25,7 @@ class PlaywrightRunnerUnit {
         url: `https://local_url${fileUrl.pathname}`,
       });
       const resultsString: string = await page.evaluate(() => (window as any)['__playwright__runAllTests']());
-      const testResults : {result: import('describers').TestResult, name:string, fullName:string, ancestorTitles: string[]}[] = JSON.parse(resultsString, (key, value) => {
+      const testResults : {result: {success: boolean, error?: any}, name:string, fullName:string, ancestorTitles: string[]}[] = JSON.parse(resultsString, (key, value) => {
         if (value.__isError__) {
           const error = new Error(value.message);
           error.name = value.name;
