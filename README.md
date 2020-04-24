@@ -7,7 +7,7 @@
 2. Specify `playwright-runner` in your Jest configuration:
 ```json
 //jest.config.js
-{
+module.exports = {
   "preset": "playwright-runner"
 }
 ```
