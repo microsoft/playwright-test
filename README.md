@@ -28,9 +28,9 @@ it('should work', function() {
 ```js
 // e2e/basic.test.js
 it('is a basic test with the page', async ({page}) => {
-  await page.goto('https://playwright.dev/');
-  const home = await page.waitForSelector('home-navigation');
-  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
+  await page.goto('https://github.com/microsoft/playwright-runner/blob/master/README.md');
+  const title = await page.waitForSelector('article h1');
+  expect(await title.evaluate(element => element.textContent)).toBe('🎭 Playwright Runner');
 });
 ```
 5. Run all of your tests with `npx jest` or `yarn jest`
