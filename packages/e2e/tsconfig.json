@@ -1,13 +1,13 @@
 {
+    "extends": "../../tsconfig-base.json",
     "compilerOptions": {
-        "allowJs": true,
-        "checkJs": true,
-        "target": "ESNext",
-        "strict": true,
-        "moduleResolution": "node",
-        "noEmit": true
+        "outDir": "out",
+        "rootDir": "src",
     },
     "exclude": [
-        "demo"
+        "out"
+    ],
+    "include": [
+        "src"
     ]
 }

@@ -1,14 +1,11 @@
-const {TestScheduler, TestWatcher} = require('@jest/core');
-const {createContext} = require('jest-runtime');
-const path = require('path');
-const {DefaultReporter, SummaryReporter} = require('@jest/reporters');
-const cacheDirectory = path.join(require('os').tmpdir(), 'pw_e2e_cache');
+import {TestScheduler, TestWatcher} from '@jest/core';
+import {createContext} from 'jest-runtime';
+import path from 'path';
+import {DefaultReporter, SummaryReporter} from '@jest/reporters';
+import {tmpdir} from 'os';
+const cacheDirectory = path.join(tmpdir(), 'pw_e2e_cache');
 
-/**
- * @param {string[]} paths
- * @param {Partial<import('@jest/types').Config.GlobalConfig>} config
- */
-async function fakeJestRun(paths, config = {}) {
+export async function fakeJestRun(paths: string[], config: Partial<import('@jest/types').Config.GlobalConfig> = {}) {
   const scheduler = new TestScheduler({...makeGlobalConfig(), ...config}, {
     startRun: config => void 0
   }, {
@@ -27,10 +24,7 @@ async function fakeJestRun(paths, config = {}) {
   return results;
 }
 
-/**
- * @return {import('@jest/types').Config.ProjectConfig}
- */
-function makeProjectConfig() {
+function makeProjectConfig(): import('@jest/types').Config.ProjectConfig {
   return {
     automock: false,
     browser: false,
@@ -59,7 +53,7 @@ function makeProjectConfig() {
     restoreMocks: false,
     rootDir: 'root',
     roots: [],
-    runner: path.join(__dirname, '..', 'index.js'),
+    runner: path.join(__dirname, '..'),
     setupFiles: [],
     setupFilesAfterEnv: [],
     skipFilter: false,
@@ -82,7 +76,7 @@ function makeProjectConfig() {
 /**
  * @return {import('@jest/types').Config.GlobalConfig}
  */
-function makeGlobalConfig() {
+function makeGlobalConfig(): import('@jest/types').Config.GlobalConfig {
   return {
     bail: 0,
     changedFilesWithAncestor: false,
@@ -124,4 +118,3 @@ function makeGlobalConfig() {
     watchman: false,
   };
 }
-module.exports = {fakeJestRun};
