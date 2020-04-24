@@ -30,7 +30,7 @@ it('should work', function() {
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://github.com/microsoft/playwright-runner/blob/master/README.md');
   const title = await page.waitForSelector('article h1');
-  expect(await title.evaluate(element => element.textContent)).toBe('🎭 Playwright Runner');
+  expect(await title.textContent()).toBe('🎭 Playwright Runner');
 });
 ```
 5. Run all of your tests with `npx jest` or `yarn jest`
