@@ -121,8 +121,8 @@ class Test {
 }
 
 export class TestWorker {
-  _suiteStack: Suite[] = [];
-  _state: State = {};
+  private _suiteStack: Suite[] = [];
+  private _state: State = {};
 
   async run(test: Test, timeout: number = 0, hookTimeout = timeout): Promise<TestRun> {
     const run: TestRun = {
