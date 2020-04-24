@@ -1,37 +1,30 @@
-const path = require('path');
-const {createEmptyTestResult} = require('@jest/test-result');
-const {formatExecError} = require('jest-message-util');
-const {ScriptTransformer} = require('@jest/transform');
-const globals = require('./globals');
-const playwright = require('playwright');
-const {createSuite} = require('describers');
-/** @typedef {import('describers').Test} Test */
+import type {Test} from 'describers';
+import type {Config, TestResult} from '@jest/types';
+import type {TestRunnerContext} from 'jest-runner';
+
+import {createEmptyTestResult, TestResult as SuiteResult} from '@jest/test-result';
+import {formatExecError} from 'jest-message-util';
+import {ScriptTransformer} from '@jest/transform';
+import * as globals from './globals';
+import playwright from 'playwright';
+import {createSuite} from 'describers';
+
 
 class PlaywrightRunnerE2E {
-  /**
-   * @param {import('@jest/types').Config.GlobalConfig} globalConfig
-   * @param {import('jest-runner').TestRunnerContext=} context
-   */
-  constructor(globalConfig, context) {
+  _globalConfig: Config.GlobalConfig;
+  _globalContext?: TestRunnerContext;
+
+  constructor(globalConfig: Config.GlobalConfig, context?: TestRunnerContext) {
     this._globalConfig = globalConfig;
     this._globalContext = context;
   }
 
-  /**
-   * @param {import('jest-runner').Test[]} testSuites
-   * @param {import('jest-runner').TestWatcher} watcher
-   * @param {import('jest-runner').OnTestStart} onStart
-   * @param {import('jest-runner').OnTestSuccess} onResult
-   * @param {import('jest-runner').OnTestFailure} onFailure
-   * @param {import('jest-runner').TestRunnerOptions} options
-   */
-  async runTests(testSuites, watcher, onStart, onResult, onFailure, options) {
+  async runTests(testSuites: import('jest-runner').Test[], watcher: import('jest-runner').TestWatcher, onStart: import('jest-runner').OnTestStart, onResult: import('jest-runner').OnTestSuccess, onFailure: import('jest-runner').OnTestFailure, options: import('jest-runner').TestRunnerOptions) {
     const browser = await playwright.chromium.launch();
     installGlobals();
-    /** @type {WeakMap<Test, import('jest-runner').Test>} */
-    const testToSuite = new WeakMap();
+    const testToSuite: WeakMap<Test, import('jest-runner').Test> = new WeakMap();
     /** @type {Map<any, Set<Test>>} */
-    const suiteToTests = new Map();
+    const suiteToTests: Map<any, Set<Test>> = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
     const rootSuite = createSuite(async () => {
@@ -46,12 +39,12 @@ class PlaywrightRunnerE2E {
           if (testToSuite.has(test))
             continue;
           testToSuite.set(test, testSuite);
-          /** @type {Set<Test>} */ (suiteToTests.get(testSuite)).add(test);
+         suiteToTests.get(testSuite)!.add(test);
         }
       }
     });
     for (const test of await rootSuite.tests()) {
-      const suite = /** @type {import('jest-runner').Test} */(testToSuite.get(test));
+      const suite: import('jest-runner').Test = testToSuite.get(test)!;
       if (!startedSuites.has(suite)) {
         startedSuites.add(suite);
         onStart(suite);
@@ -59,7 +52,7 @@ class PlaywrightRunnerE2E {
       const suiteResults = resultsForSuite.get(suite);
       const result = await this._runTest(browser, test);
       suiteResults.push(result);
-      const suiteTests = /** @type {Set<Test>} */ (suiteToTests.get(suite));
+      const suiteTests: Set<Test> = suiteToTests.get(suite)!;
       if (suiteTests.size === suiteResults.length)
         onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
     }
@@ -67,15 +60,11 @@ class PlaywrightRunnerE2E {
     await browser.close();
   }
 
-  /**
-   * @param {playwright.Browser} browser
-   * @param {Test} test
-   */
-  async _runTest(browser, test) {
+  async _runTest(browser: playwright.Browser, test: Test) {
     const context = await browser.newContext();
     const page = await context.newPage();
-    /** @type {import('@jest/types').TestResult.AssertionResult} */
-    const result = {
+    /** @type {TestResult.AssertionResult} */
+    const result: TestResult.AssertionResult = {
       ancestorTitles: test.ancestorTitles(),
       failureMessages: [],
       fullName: test.fullName(),
@@ -99,14 +88,11 @@ class PlaywrightRunnerE2E {
   }
 }
 
-/**
- * @param {string[]} files
- */
-function purgeRequireCache(files) {
+function purgeRequireCache(files: string[]) {
   const blackList = new Set(files);
   for (const filePath of Object.keys(require.cache)) {
     /** @type {NodeModule|null|undefined} */
-    let module = require.cache[filePath];
+    let module: NodeModule | null | undefined = require.cache[filePath];
     while (module) {
       if (blackList.has(module.filename)) {
         delete require.cache[filePath];
@@ -120,16 +106,10 @@ function purgeRequireCache(files) {
 
 function installGlobals() {
   for (const [name, value] of Object.entries(globals))
-  /** @type {any} */ (global)[name] = value;
+    (global as any)[name] = value;
 }
 
-/**
- * @param {import('@jest/types').TestResult.AssertionResult[]} assertionResults
- * @param {string} rootDir
- * @param {string} testPath
- * @return {import('@jest/test-result').TestResult}
- */
-function makeSuiteResult(assertionResults, rootDir, testPath) {
+function makeSuiteResult(assertionResults: TestResult.AssertionResult[], rootDir: string, testPath: string): SuiteResult {
   const result = createEmptyTestResult();
   result.testFilePath = testPath;
   const failureMessages = [];
