@@ -19,6 +19,8 @@
       window.describe = describers.describe;
       window.beforeEach = describers.beforeEach;
       window.afterEach = describers.afterEach;
+      window.beforeAll = describers.beforeAll;
+      window.afterAll = describers.afterAll;
       window.expect = expect;
       let finishedGatheringTests;
       const rootSuite = describers.createSuite(() => new Promise(x => finishedGatheringTests = x));
@@ -27,8 +29,14 @@
         finishedGatheringTests();
         const tests = await testsPromise;
         const results = [];
+        const worker = new describers.TestWorker();
         for (const test of tests) {
-          const result = await test.run();
+          const run = await worker.run(test);
+          const result = {
+            name: test.fullName(),
+            success: run.success,
+            error: run.error,
+          };
           results.push({
             result,
             fullName: test.fullName(),
@@ -36,6 +44,7 @@
             ancestorTitles: test.ancestorTitles(),
           });
         }
+        await worker.shutdown();
         return JSON.stringify(results, (key, value) => {
           if (value instanceof Error)
             return {stack: value.stack, message: value.message, name: value.name, __isError__:true}
