@@ -13,8 +13,8 @@ import path from 'path';
 const NoHookTimeouts = 0;
 
 class PlaywrightRunnerE2E {
-  _globalConfig: Config.GlobalConfig;
-  _globalContext?: TestRunnerContext;
+  private _globalConfig: Config.GlobalConfig;
+  private _globalContext?: TestRunnerContext;
 
   constructor(globalConfig: Config.GlobalConfig, context?: TestRunnerContext) {
     this._globalConfig = globalConfig;
@@ -62,42 +62,46 @@ class PlaywrightRunnerE2E {
       __proto__: null,
     };
 
+    const tasks = [];
     for (const test of await rootSuite.tests(NoHookTimeouts)) {
       const suite: JestSuite = testToSuite.get(test)!;
       const config = configForTestSuite(suite);
       for (const browserName of config.browsers) {
         assertBrowserName(browserName);
-        if (!startedSuites.has(suite)) {
-          startedSuites.add(suite);
-          onStart(suite);
-        }
-
-        const run = await browserWorkers[browserName].run(test, this._globalConfig.testTimeout, NoHookTimeouts);
-        const result: TestResult.AssertionResult = {
-          ancestorTitles: config.browsers.length > 1 ? [browserName, ...test.ancestorTitles()] : test.ancestorTitles(),
-          failureMessages: [],
-          fullName: (config.browsers.length > 1 ? browserName + ' ' : '') + test.fullName(),
-          numPassingAsserts: 0,
-          status: 'passed',
-          title: test.name,
-        };
-        if (!run.success) {
-          result.status = 'failed';
-          result.failureMessages.push(run.error instanceof Error ? formatExecError(run.error, {
-            rootDir: this._globalConfig.rootDir,
-            testMatch: [],
-          }, {
-            noStackTrace: false,
-          }) : String(run.error));
-        }
-
-        const suiteResults = resultsForSuite.get(suite);
-        suiteResults.push(result);
-        const suiteTests: Set<Test> = suiteToTests.get(suite)!;
-        if (suiteTests.size * config.browsers.length === suiteResults.length)
-          onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
+        tasks.push(async (worker: TestWorker) => {
+          if (!startedSuites.has(suite)) {
+            startedSuites.add(suite);
+            onStart(suite);
+          }
+          worker.state.browserName = browserName;
+          const run = await worker.run(test, this._globalConfig.testTimeout, NoHookTimeouts);
+          const result: TestResult.AssertionResult = {
+            ancestorTitles: config.browsers.length > 1 ? [browserName, ...test.ancestorTitles()] : test.ancestorTitles(),
+            failureMessages: [],
+            fullName: (config.browsers.length > 1 ? browserName + ' ' : '') + test.fullName(),
+            numPassingAsserts: 0,
+            status: 'passed',
+            title: test.name,
+          };
+          if (!run.success) {
+            result.status = 'failed';
+            result.failureMessages.push(run.error instanceof Error ? formatExecError(run.error, {
+              rootDir: this._globalConfig.rootDir,
+              testMatch: [],
+            }, {
+              noStackTrace: false,
+            }) : String(run.error));
+          }
+  
+          const suiteResults = resultsForSuite.get(suite);
+          suiteResults.push(result);
+          const suiteTests: Set<Test> = suiteToTests.get(suite)!;
+          if (suiteTests.size * config.browsers.length === suiteResults.length)
+            onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));  
+        });
       }
     }
+    await runTasksConcurrently(tasks, options.serial ? 1 : this._globalConfig.maxWorkers);
     purgeRequireCache(testSuites.map(suite => suite.path));
     await Promise.all([
       browserWorkers.chromium.shutdown(NoHookTimeouts),
@@ -112,6 +116,22 @@ class PlaywrightRunnerE2E {
         browserPromiseForName.set(browserName, playwright[browserName].launch());
       return browserPromiseForName.get(browserName)!;
     }
+  }
+}
+
+async function runTasksConcurrently(tasks: ((worker: TestWorker) => Promise<void>)[], maxWorkers: number) {
+  const workerCount = Math.min(maxWorkers, tasks.length);
+  const threads: Promise<void>[] = [];
+  const workStack = tasks.reverse();
+  for (let i = 0; i < workerCount; i++)
+    threads.push(spin(i));
+  await Promise.all(threads);
+
+  async function spin(workerId: number) {
+    const worker = new TestWorker({workerId});
+    let task;
+    while (task = workStack.pop())
+      await task(worker);
   }
 }
 
@@ -173,4 +193,4 @@ function makeSuiteResult(assertionResults: TestResult.AssertionResult[], rootDir
   return result;
 }
 
-module.exports = PlaywrightRunnerE2E;
+export = PlaywrightRunnerE2E;
