@@ -122,10 +122,10 @@ class Test {
 
 export class TestWorker {
   private _suiteStack: Suite[] = [];
-  private _state: State;
+  state: State;
 
   constructor(state: State = {}) {
-    this._state = state;
+    this.state = state;
   }
 
   async run(test: Test, timeout: number = 0, hookTimeout = timeout): Promise<TestRun> {
@@ -168,7 +168,7 @@ export class TestWorker {
     }
 
     if (run.success) {
-      const { promise } = runUserCallback(test._callback, timeout, [this._state]);
+      const { promise } = runUserCallback(test._callback, timeout, [this.state]);
       const error = await promise;
       if (error !== NoError && run.success) {
         run.success = false;
@@ -197,8 +197,8 @@ export class TestWorker {
     }
   }
 
-  async _runHook(run: TestRun | null, hook: UserCallback<State>, hookTimeout: number) {
-    const { promise } = runUserCallback(hook, hookTimeout, [this._state]);
+  private async _runHook(run: TestRun | null, hook: UserCallback<State>, hookTimeout: number) {
+    const { promise } = runUserCallback(hook, hookTimeout, [this.state]);
     const error = await promise;
     if (error === NoError)
       return true;
