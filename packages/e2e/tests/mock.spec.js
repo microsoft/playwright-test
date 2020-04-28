@@ -51,3 +51,28 @@ it('should work with typescript files', async function() {
   expect(testResult.testFilePath).toEqual(path.join(__dirname, 'assets', 'typescriptTest.ts'));
   expect(result.success).toEqual(true);
 });
+
+describe('playwright.config', function() {
+  it('should specify a config file', async function() {
+    let gotMockConfig = false;
+    global.getMockConfig = () => {
+      gotMockConfig = true;
+      return {
+      };
+    };
+    const result = await fakeJestRun(['oneTest.js'], {rootDir: path.join(__dirname, 'assets')});
+    expect(result.numPassedTests).toBe(1);
+    expect(gotMockConfig).toBe(true);
+  });
+  it('should run two browsers', async function() {
+    global.getMockConfig = () => {
+      return {
+        browsers: ['chromium', 'webkit']
+      };
+    };
+    const result = await fakeJestRun(['onlyChrome.js'], {rootDir: path.join(__dirname, 'assets')});
+    expect(result.numTotalTests).toBe(2);
+    expect(result.numFailedTests).toBe(1);
+    expect(result.numPassedTests).toBe(1);
+  });
+});

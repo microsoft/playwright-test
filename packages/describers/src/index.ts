@@ -122,7 +122,11 @@ class Test {
 
 export class TestWorker {
   private _suiteStack: Suite[] = [];
-  private _state: State = {};
+  private _state: State;
+
+  constructor(state: State = {}) {
+    this._state = state;
+  }
 
   async run(test: Test, timeout: number = 0, hookTimeout = timeout): Promise<TestRun> {
     const run: TestRun = {
