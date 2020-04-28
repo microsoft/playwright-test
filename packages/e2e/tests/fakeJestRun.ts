@@ -3,10 +3,13 @@ import {createContext} from 'jest-runtime';
 import path from 'path';
 import {DefaultReporter, SummaryReporter} from '@jest/reporters';
 import {tmpdir} from 'os';
+import type {Config} from '@jest/types';
+
 const cacheDirectory = path.join(tmpdir(), 'pw_e2e_cache');
 
-export async function fakeJestRun(paths: string[], config: Partial<import('@jest/types').Config.GlobalConfig> = {}) {
-  const scheduler = new TestScheduler({...makeGlobalConfig(), ...config}, {
+export async function fakeJestRun(paths: string[], config: Partial<Config.GlobalConfig> = {}) {
+  const globalConfig = {...makeGlobalConfig(), ...config};
+  const scheduler = new TestScheduler(globalConfig, {
     startRun: config => void 0
   }, {
     firstRun: true,
@@ -14,7 +17,8 @@ export async function fakeJestRun(paths: string[], config: Partial<import('@jest
   });
   scheduler.removeReporter(DefaultReporter);
   scheduler.removeReporter(SummaryReporter);
-  const context = await createContext(makeProjectConfig(), {
+  globalConfig.coverage
+  const context = await createContext(makeProjectConfig(globalConfig), {
     maxWorkers: 1,
     watchman: false,
   });
@@ -24,7 +28,7 @@ export async function fakeJestRun(paths: string[], config: Partial<import('@jest
   return results;
 }
 
-function makeProjectConfig(): import('@jest/types').Config.ProjectConfig {
+function makeProjectConfig(globalConfig: Config.GlobalConfig): Config.ProjectConfig {
   return {
     automock: false,
     browser: false,
@@ -51,7 +55,7 @@ function makeProjectConfig(): import('@jest/types').Config.ProjectConfig {
     resetMocks: false,
     resetModules: false,
     restoreMocks: false,
-    rootDir: 'root',
+    rootDir: globalConfig.rootDir,
     roots: [],
     runner: path.join(__dirname, '..'),
     setupFiles: [],
@@ -73,10 +77,7 @@ function makeProjectConfig(): import('@jest/types').Config.ProjectConfig {
   };
 }
 
-/**
- * @return {import('@jest/types').Config.GlobalConfig}
- */
-function makeGlobalConfig(): import('@jest/types').Config.GlobalConfig {
+function makeGlobalConfig(): Config.GlobalConfig {
   return {
     bail: 0,
     changedFilesWithAncestor: false,

@@ -1,13 +1,13 @@
 import {Test, TestWorker} from 'describers';
 import type {Config, TestResult} from '@jest/types';
-import type {TestRunnerContext} from 'jest-runner';
-
+import type {TestRunnerContext, TestWatcher, OnTestStart, OnTestSuccess, Test as JestSuite, TestRunnerOptions, OnTestFailure} from 'jest-runner';
 import {createEmptyTestResult, TestResult as SuiteResult} from '@jest/test-result';
 import {formatExecError} from 'jest-message-util';
 import {ScriptTransformer} from '@jest/transform';
 import * as globals from './globals';
 import playwright from 'playwright';
 import {createSuite, beforeEach, afterEach} from 'describers';
+import path from 'path';
 
 // TODO: figure out hook timeouts.
 const NoHookTimeouts = 0;
@@ -21,17 +21,17 @@ class PlaywrightRunnerE2E {
     this._globalContext = context;
   }
 
-  async runTests(testSuites: import('jest-runner').Test[], watcher: import('jest-runner').TestWatcher, onStart: import('jest-runner').OnTestStart, onResult: import('jest-runner').OnTestSuccess, onFailure: import('jest-runner').OnTestFailure, options: import('jest-runner').TestRunnerOptions) {
-    const browser = await playwright.chromium.launch();
+  async runTests(testSuites: JestSuite[], watcher: TestWatcher, onStart: OnTestStart, onResult: OnTestSuccess, onFailure: OnTestFailure, options: TestRunnerOptions) {
+    const browserPromiseForName = new Map<string, Promise<playwright.Browser>>(); 
     installGlobals();
-    const testToSuite: WeakMap<Test, import('jest-runner').Test> = new WeakMap();
+    const testToSuite: WeakMap<Test, JestSuite> = new WeakMap();
     /** @type {Map<any, Set<Test>>} */
     const suiteToTests: Map<any, Set<Test>> = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
     const rootSuite = createSuite(async () => {
       beforeEach(async state => {
-        state.context = await browser.newContext();
+        state.context = await (await ensureBrowserForName(state.browserName)).newContext();
         state.page = await state.context.newPage();
       });
       afterEach(async state => {
@@ -55,42 +55,80 @@ class PlaywrightRunnerE2E {
       }
     });
 
-    const worker = new TestWorker();
+    const browserWorkers = {
+      chromium: new TestWorker({browserName: 'chromium'}),
+      firefox: new TestWorker({browserName: 'firefox'}),
+      webkit: new TestWorker({browserName: 'webkit'}),
+      __proto__: null,
+    };
+
     for (const test of await rootSuite.tests(NoHookTimeouts)) {
-      const suite: import('jest-runner').Test = testToSuite.get(test)!;
-      if (!startedSuites.has(suite)) {
-        startedSuites.add(suite);
-        onStart(suite);
-      }
+      const suite: JestSuite = testToSuite.get(test)!;
+      const config = configForTestSuite(suite);
+      for (const browserName of config.browsers) {
+        assertBrowserName(browserName);
+        if (!startedSuites.has(suite)) {
+          startedSuites.add(suite);
+          onStart(suite);
+        }
 
-      const run = await worker.run(test, this._globalConfig.testTimeout, NoHookTimeouts);
-      const result: TestResult.AssertionResult = {
-        ancestorTitles: test.ancestorTitles(),
-        failureMessages: [],
-        fullName: test.fullName(),
-        numPassingAsserts: 0,
-        status: 'passed',
-        title: test.name,
-      };
-      if (!run.success) {
-        result.status = 'failed';
-        result.failureMessages.push(run.error instanceof Error ? formatExecError(run.error, {
-          rootDir: this._globalConfig.rootDir,
-          testMatch: [],
-        }, {
-          noStackTrace: false,
-        }) : String(run.error));
-      }
+        const run = await browserWorkers[browserName].run(test, this._globalConfig.testTimeout, NoHookTimeouts);
+        const result: TestResult.AssertionResult = {
+          ancestorTitles: config.browsers.length > 1 ? [browserName, ...test.ancestorTitles()] : test.ancestorTitles(),
+          failureMessages: [],
+          fullName: (config.browsers.length > 1 ? browserName + ' ' : '') + test.fullName(),
+          numPassingAsserts: 0,
+          status: 'passed',
+          title: test.name,
+        };
+        if (!run.success) {
+          result.status = 'failed';
+          result.failureMessages.push(run.error instanceof Error ? formatExecError(run.error, {
+            rootDir: this._globalConfig.rootDir,
+            testMatch: [],
+          }, {
+            noStackTrace: false,
+          }) : String(run.error));
+        }
 
-      const suiteResults = resultsForSuite.get(suite);
-      suiteResults.push(result);
-      const suiteTests: Set<Test> = suiteToTests.get(suite)!;
-      if (suiteTests.size === suiteResults.length)
-        onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
+        const suiteResults = resultsForSuite.get(suite);
+        suiteResults.push(result);
+        const suiteTests: Set<Test> = suiteToTests.get(suite)!;
+        if (suiteTests.size * config.browsers.length === suiteResults.length)
+          onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
+      }
     }
     purgeRequireCache(testSuites.map(suite => suite.path));
-    await worker.shutdown(NoHookTimeouts);
-    await browser.close();
+    await Promise.all([
+      browserWorkers.chromium.shutdown(NoHookTimeouts),
+      browserWorkers.firefox.shutdown(NoHookTimeouts),
+      browserWorkers.webkit.shutdown(NoHookTimeouts),
+    ]);
+    await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
+
+    function ensureBrowserForName(browserName: string) {
+      assertBrowserName(browserName);
+      if (!browserPromiseForName.has(browserName))
+        browserPromiseForName.set(browserName, playwright[browserName].launch());
+      return browserPromiseForName.get(browserName)!;
+    }
+  }
+}
+
+function assertBrowserName(browserName: string): asserts browserName is 'webkit'|'chromium'|'firefox' {
+  if (browserName !== 'firefox' && browserName !== 'chromium' && browserName !== 'webkit')
+    throw new Error(`Unknown browser: ${browserName}`);
+}
+
+function configForTestSuite(suite: JestSuite) {
+  let config = {};
+  try {
+    config = require(path.join(suite.context.config.rootDir, 'playwright.config'));
+  } catch {
+  }
+  return {
+    browsers: ['chromium'],
+    ...config
   }
 }
 
