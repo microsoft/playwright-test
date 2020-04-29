@@ -4,8 +4,8 @@ describe('it', () => {
   it('should run a test', async () => {
     let tested = false;
     const test = api.createTest('is a test', () => tested = true);
-    const {success, error} = await test.runInIsolation();
-    expect(success).toBe(true);
+    const {status, error} = await test.runInIsolation();
+    expect(status).toBe('pass');
     expect(tested).toBe(true);
     expect(error).toBeUndefined();
   });
@@ -14,8 +14,8 @@ describe('it', () => {
     const test = api.createTest('is a test', () => {
       throw 'not an error';
     });
-    const {success, error} = await test.runInIsolation();
-    expect(success).toBe(false);
+    const {status, error} = await test.runInIsolation();
+    expect(status).toBe('fail');
     expect(error).toBe('not an error');
   });
 
@@ -23,8 +23,8 @@ describe('it', () => {
     const test = api.createTest('is a test', () => {
       throw null;
     });
-    const {success, error} = await test.runInIsolation();
-    expect(success).toBe(false);
+    const {status, error} = await test.runInIsolation();
+    expect(status).toBe('fail');
     expect(error).toBe(null);
   });
 
@@ -32,8 +32,8 @@ describe('it', () => {
     const test = api.createTest('is a test', () => {
       throw undefined;
     });
-    const {success, error} = await test.runInIsolation();
-    expect(success).toBe(false);
+    const {status, error} = await test.runInIsolation();
+    expect(status).toBe('fail');
     expect(error).toBe(undefined);
   });
 });
@@ -126,13 +126,57 @@ describe('describe', () => {
   });
 });
 
+describe('focus and skip', () => {
+  it('should run only the focused test', async () => {
+    const ran = [];
+    const suite = api.createSuite(() => {
+      api.it('a', () => ran.push('a'));
+      api.fit('b', () => ran.push('b'));
+      api.it('c', () => ran.push('c'));
+    });
+    const results = await suite.runTestsSerially();
+    expect(ran).toEqual(['b']);
+    expect(results.map(result => result.status)).toEqual(['skip', 'pass', 'skip']);
+  });
+  it('should not run the skipped test', async () => {
+    const ran = [];
+    const suite = api.createSuite(() => {
+      api.it('a', () => ran.push('a'));
+      api.xit('b', () => ran.push('b'));
+      api.it('c', () => ran.push('c'));
+    });
+    const results = await suite.runTestsSerially();
+    expect(ran).toEqual(['a', 'c']);
+    expect(results.map(result => result.status)).toEqual(['pass', 'skip', 'pass']);
+  });
+  it('should work with describes', async () => {
+    const ran = [];
+    const suite = api.createSuite(() => {
+      api.fdescribe(() => {
+        api.it('a', () => ran.push('a'));
+      });
+      api.describe(() => {
+        api.fit('b', () => ran.push('b'));
+        api.it('c', () => ran.push('c'));
+      });
+      api.fdescribe(() => {
+        api.fit('d', () => ran.push('d'));
+        api.it('e', () => ran.push('e'));
+      });
+    });
+    const results = await suite.runTestsSerially();
+    expect(ran).toEqual(['a', 'b', 'd']);
+    expect(results.map(result => result.status)).toEqual(['pass', 'pass', 'skip', 'pass', 'skip']);
+  });
+});
+
 describe('timeout', () => {
   it('should handle test timeout', async () => {
     const suite = api.createSuite(() => {
       api.it('test', () => new Promise(() => {}));
     });
     const results = await suite.runTestsSerially(1);
-    expect(results[0].success).toEqual(false);
+    expect(results[0].status).toEqual('fail');
     expect(results[0].error).toEqual('timed out while running test');
   });
   it('should handle hook timeout and still run hooks but not tests', async () => {
@@ -147,7 +191,7 @@ describe('timeout', () => {
     });
     const results = await suite.runTestsSerially(1);
     expect(log).toEqual(['before', 'after']);
-    expect(results[0].success).toEqual(false);
+    expect(results[0].status).toEqual('fail');
     expect(results[0].error).toEqual('timed out while running hook');
   });
 });
@@ -189,7 +233,7 @@ describe('hooks', () => {
     });
     const results = await suite.runTestsSerially();
     expect(results.map(r => r.test.fullName())).toEqual(['test']);
-    expect(results.map(r => r.success)).toEqual([true]);
+    expect(results.map(r => r.status)).toEqual(['pass']);
   });
   it('should run in order', async () => {
     const log = [];
@@ -235,7 +279,7 @@ describe('hooks', () => {
     });
     const results = await suite.runTestsSerially();
     expect(results.map(r => r.test.fullName())).toEqual(['inner', 'outer']);
-    expect(results.map(r => r.success)).toEqual([true, true]);
+    expect(results.map(r => r.status)).toEqual(['pass', 'pass']);
     expect(saved.foo).toBe('done');
   });
 });

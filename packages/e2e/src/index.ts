@@ -25,7 +25,6 @@ class PlaywrightRunnerE2E {
     const browserPromiseForName = new Map<string, Promise<playwright.Browser>>(); 
     installGlobals();
     const testToSuite: WeakMap<Test, JestSuite> = new WeakMap();
-    /** @type {Map<any, Set<Test>>} */
     const suiteToTests: Map<any, Set<Test>> = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
@@ -46,11 +45,15 @@ class PlaywrightRunnerE2E {
         const suite = createSuite(async () => {
           transformer.requireAndTranspileModule(testSuite.path);
         });
-        for (const test of await suite.tests()) {
+        
+        // to match jest-runner behavior, all of our file suites are focused.
+        suite.focused = true;
+
+        for (const test of await suite.tests(NoHookTimeouts)) {
           if (testToSuite.has(test))
             continue;
           testToSuite.set(test, testSuite);
-         suiteToTests.get(testSuite)!.add(test);
+          suiteToTests.get(testSuite)!.add(test);
         }
       }
     });
@@ -80,10 +83,10 @@ class PlaywrightRunnerE2E {
             failureMessages: [],
             fullName: (config.browsers.length > 1 ? browserName + ' ' : '') + test.fullName(),
             numPassingAsserts: 0,
-            status: 'passed',
+            status: run.status === 'pass' ? 'passed' : 'pending',
             title: test.name,
           };
-          if (!run.success) {
+          if (run.status === 'fail') {
             result.status = 'failed';
             result.failureMessages.push(run.error instanceof Error ? formatExecError(run.error, {
               rootDir: this._globalConfig.rootDir,
@@ -183,7 +186,7 @@ function makeSuiteResult(assertionResults: TestResult.AssertionResult[], rootDir
     else if (assertionResult.status === 'failed')
       result.numFailingTests++;
     else if (assertionResult.status === 'pending')
-      result.numPassingTests++;
+      result.numPendingTests++;
     else if (assertionResult.status === 'todo')
       result.numTodoTests++;
     result.testResults.push(assertionResult);
