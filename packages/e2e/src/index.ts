@@ -152,7 +152,12 @@ function configForTestSuite(suite: JestSuite) {
   }
 }
 
+declare var jest : never;
 function purgeRequireCache(files: string[]) {
+  // Jest returns an annoying warning if we try to purge the cache
+  // while being tested.
+  if (typeof jest !== 'undefined')
+    return;
   const blackList = new Set(files);
   for (const filePath of Object.keys(require.cache)) {
     /** @type {NodeModule|null|undefined} */
