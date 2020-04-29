@@ -25,7 +25,7 @@ class PlaywrightRunnerUnit {
         url: `https://local_url${fileUrl.pathname}`,
       });
       const resultsString: string = await page.evaluate(() => (window as any)['__playwright__runAllTests']());
-      const testResults : {result: {success: boolean, error?: any}, name:string, fullName:string, ancestorTitles: string[]}[] = JSON.parse(resultsString, (key, value) => {
+      const testResults : {result: {status: 'pass'|'fail'|'skip', error?: any}, name:string, fullName:string, ancestorTitles: string[]}[] = JSON.parse(resultsString, (key, value) => {
         if (value.__isError__) {
           const error = new Error(value.message);
           error.name = value.name;
@@ -35,17 +35,17 @@ class PlaywrightRunnerUnit {
         return value;
       });
       const assertionResults = testResults.map(({ancestorTitles, fullName, result, name}) => {
+        const {status, error} = result;
         const assertionResult: Jest.TestResult.AssertionResult = {
           ancestorTitles: ancestorTitles,
           failureMessages: [],
           fullName: fullName,
           numPassingAsserts: 0,
-          status: 'passed',
+          status: status === 'skip' ? 'pending' : 'passed',
           title: name,
         };
 
-        const {success, error} = result;
-        if (!success) {
+        if (status === 'fail') {
           assertionResult.status = 'failed';
           assertionResult.failureMessages.push(error instanceof Error ? formatExecError(error, {
             rootDir: this._globalConfig.rootDir,
@@ -73,7 +73,7 @@ function makeSuiteResult(assertionResults: Jest.TestResult.AssertionResult[], te
     else if (assertionResult.status === 'failed')
       result.numFailingTests++;
     else if (assertionResult.status === 'pending')
-      result.numPassingTests++;
+      result.numPendingTests++;
     else if (assertionResult.status === 'todo')
       result.numTodoTests++;
     result.testResults.push(assertionResult);

@@ -16,7 +16,11 @@
         window.__REACT_DEVTOOLS_GLOBAL_HOOK__= { isDisabled: true };
 
       window.it = describers.it;
+      window.fit = describers.fit;
+      window.xit = describers.xit;
       window.describe = describers.describe;
+      window.fdescribe = describers.fdescribe;
+      window.xdescribe = describers.xdescribe;
       window.beforeEach = describers.beforeEach;
       window.afterEach = describers.afterEach;
       window.beforeAll = describers.beforeAll;
@@ -34,7 +38,7 @@
           const run = await worker.run(test);
           const result = {
             name: test.fullName(),
-            success: run.success,
+            status: run.status,
             error: run.error,
           };
           results.push({

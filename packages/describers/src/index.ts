@@ -3,7 +3,7 @@ type State = {[key: string]: any};
 
 export type TestRun = {
   test: Test,
-  success: boolean,
+  status: 'pass'|'fail'|'skip',
   error?: any,
 };
 
@@ -35,6 +35,8 @@ class Suite {
   _afterEaches: UserCallback<State>[] = [];
   _beforeAlls: UserCallback<State>[] = [];
   _afterAlls: UserCallback<State>[] = [];
+  focused = false;
+  skipped = false;
 
   constructor(name: string, parent: Suite | null = null, callback: UserCallback | null = null) {
     this.name = name;
@@ -61,11 +63,14 @@ class Suite {
   }
 
   async runTestsSerially(timeout: number = 0, hookTimeout = timeout) {
-    const tests = await this.tests();
+    const tests = await this.tests(hookTimeout);
+    const wasFocused = this.focused;
     const results: TestRun[] = [];
     const worker = new TestWorker();
+    this.focused = true;
     for (const test of tests)
       results.push(await worker.run(test, timeout, hookTimeout));
+    this.focused = wasFocused;
     await worker.shutdown();
     return results;
   }
@@ -85,10 +90,16 @@ class Suite {
         if (testOrSuite instanceof Test)
           this._tests.push(testOrSuite);
         else
-          this._tests.push(...await testOrSuite.tests());
+          this._tests.push(...await testOrSuite.tests(timeout));
       }
     }
     return this._tests;
+  }
+
+  _hasFocusedDescendant(): boolean {
+    return this.children.some(child => {
+      return child.focused || (child instanceof Suite && child._hasFocusedDescendant());
+    });
   }
 }
 
@@ -96,12 +107,36 @@ class Test {
   _callback: UserCallback<State>;
   name: string;
   suite: Suite;
+  focused = false;
+  skipped = false;
 
   constructor(name: string, callback: UserCallback<State>) {
     this._callback = callback;
     this.name = name;
     this.suite = currentSuite;
     currentSuite.children.push(this);
+  }
+
+  shouldRun() {
+    if (this.skipped)
+      return false;
+    if (this.focused)
+      return true;
+    let suite: Suite|null = this.suite;
+    while (suite) {
+      if (suite.skipped)
+        return false;
+      suite = suite.parentSuite;
+    }
+    suite = this.suite;
+    while (suite.parentSuite) {
+      if (suite.focused)
+        break;
+      suite = suite.parentSuite;
+    }
+    if (suite._hasFocusedDescendant())
+      return false;
+    return true;
   }
 
   ancestorTitles() {
@@ -129,9 +164,11 @@ export class TestWorker {
   }
 
   async run(test: Test, timeout: number = 0, hookTimeout = timeout): Promise<TestRun> {
+    if (!test.shouldRun())
+      return {test, status: 'skip'};
     const run: TestRun = {
       test,
-      success: true,
+      status: 'pass',
     };
 
     const suiteStack: Suite[] = [];
@@ -167,11 +204,11 @@ export class TestWorker {
         await this._runHook(run, beforeEach, hookTimeout);
     }
 
-    if (run.success) {
+    if (run.status === 'pass') {
       const { promise } = runUserCallback(test._callback, timeout, [this.state]);
       const error = await promise;
-      if (error !== NoError && run.success) {
-        run.success = false;
+      if (error !== NoError && run.status === 'pass') {
+        run.status = 'fail';
         if (error === TimeoutError)
           run.error = `timed out while running test`;
         else if (error === TerminatedError)
@@ -202,8 +239,8 @@ export class TestWorker {
     const error = await promise;
     if (error === NoError)
       return true;
-    if (run && run.success) {
-      run.success = false;
+    if (run && run.status === 'pass') {
+      run.status = 'fail';
       if (error === TimeoutError)
         run.error = `timed out while running hook`;
       else if (error === TerminatedError)
@@ -215,15 +252,26 @@ export class TestWorker {
   }
 }
 
-export function describe(name: string, callback: UserCallback) : void;
-export function describe(callback: UserCallback) : void;
-export function describe(callbackOrName: string|UserCallback, callback?: UserCallback) {
+type Describe<ReturnValue=void> = {
+  (name: string, callback: UserCallback): ReturnValue;
+  (callback: UserCallback) : ReturnValue;
+}
+
+export const describe: Describe & {only: Describe} = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   createSuite(callbackOrName as any, callback as any);
 }
 
-export function createSuite(name: string, callback: UserCallback) : Suite;
-export function createSuite(callback: UserCallback) : Suite;
-export function createSuite(callbackOrName: string|UserCallback, callback?: UserCallback) : Suite {
+export const fdescribe : Describe = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
+  const suite = createSuite(callbackOrName as any, callback as any);
+  suite.focused = true;
+}
+describe.only = fdescribe;
+
+export const xdescribe : Describe = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
+  const suite = createSuite(callbackOrName as any, callback as any);
+  suite.skipped = true;
+}
+export const createSuite: Describe<Suite> = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const name = callback ? callbackOrName as string : '';
   if (!callback)
     callback = callbackOrName as UserCallback;
@@ -232,6 +280,17 @@ export function createSuite(callbackOrName: string|UserCallback, callback?: User
 
 export function it(name: string, callback: UserCallback<State>) {
   new Test(name, callback);
+}
+
+export function fit(name: string, callback: UserCallback<State>) {
+  const test = new Test(name, callback);
+  test.focused = true;
+}
+it.only = fit;
+
+export function xit(name: string, callback: UserCallback<State>) {
+  const test = new Test(name, callback);
+  test.skipped = true;
 }
 
 export function createTest(name: string, callback: UserCallback<State>) {

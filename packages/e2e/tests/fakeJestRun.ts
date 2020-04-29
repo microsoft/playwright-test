@@ -17,7 +17,6 @@ export async function fakeJestRun(paths: string[], config: Partial<Config.Global
   });
   scheduler.removeReporter(DefaultReporter);
   scheduler.removeReporter(SummaryReporter);
-  globalConfig.coverage
   const context = await createContext(makeProjectConfig(globalConfig), {
     maxWorkers: 1,
     watchman: false,
