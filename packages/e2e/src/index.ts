@@ -22,7 +22,7 @@ class PlaywrightRunnerE2E {
   }
 
   async runTests(testSuites: JestSuite[], watcher: TestWatcher, onStart: OnTestStart, onResult: OnTestSuccess, onFailure: OnTestFailure, options: TestRunnerOptions) {
-    const browserPromiseForName = new Map<string, Promise<playwright.Browser>>(); 
+    const browserPromiseForName = new Map<string, Promise<playwright.Browser>>();
     installGlobals();
     const testToSuite: WeakMap<Test, JestSuite> = new WeakMap();
     const suiteToTests: Map<any, Set<Test>> = new Map();
@@ -45,7 +45,7 @@ class PlaywrightRunnerE2E {
         const suite = createSuite(async () => {
           transformer.requireAndTranspileModule(testSuite.path);
         });
-        
+
         // to match jest-runner behavior, all of our file suites are focused.
         suite.focused = true;
 
@@ -95,12 +95,12 @@ class PlaywrightRunnerE2E {
               noStackTrace: false,
             }) : String(run.error));
           }
-  
+
           const suiteResults = resultsForSuite.get(suite);
           suiteResults.push(result);
           const suiteTests: Set<Test> = suiteToTests.get(suite)!;
           if (suiteTests.size * config.browsers.length === suiteResults.length)
-            onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));  
+            onResult(suite, makeSuiteResult(suiteResults, this._globalConfig.rootDir, suite.path));
         });
       }
     }
@@ -113,7 +113,7 @@ class PlaywrightRunnerE2E {
     ]);
     await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
 
-    function ensureBrowserForName(browserName: string) {
+      function ensureBrowserForName(browserName: string): Promise<playwright.Browser>  {
       assertBrowserName(browserName);
       if (!browserPromiseForName.has(browserName))
         browserPromiseForName.set(browserName, playwright[browserName].launch());
@@ -138,24 +138,38 @@ async function runTasksConcurrently(tasks: ((worker: TestWorker) => Promise<void
   }
 }
 
-function assertBrowserName(browserName: string): asserts browserName is 'webkit'|'chromium'|'firefox' {
+type Browser = "chromium" | "webkit" | "firefox"
+
+function assertBrowserName(browserName: string): asserts browserName is Browser {
   if (browserName !== 'firefox' && browserName !== 'chromium' && browserName !== 'webkit')
     throw new Error(`Unknown browser: ${browserName}`);
 }
 
-function configForTestSuite(suite: JestSuite) {
-  let config = {};
-  try {
-    config = require(path.join(suite.context.config.rootDir, 'playwright.config'));
-  } catch {
-  }
-  return {
-    browsers: ['chromium'],
-    ...config
-  }
+interface UserConfig {
+  browsers: Browser[]
+  launchOptions: playwright.LaunchOptions,
+  contextOptions: playwright.BrowserContextOptions
 }
 
-declare var jest : never;
+const DEFAULT_CONFIG: UserConfig = {
+  browsers: ['chromium'],
+  launchOptions: {},
+  contextOptions: {}
+};
+
+function configForTestSuite(suite: JestSuite): UserConfig {
+  try {
+    const localConfig = require(path.join(suite.context.config.rootDir, 'playwright.config'));
+    return {
+      ...DEFAULT_CONFIG,
+      localConfig
+    } as UserConfig
+  } catch (err) {
+  }
+  return DEFAULT_CONFIG
+}
+
+declare var jest: never;
 function purgeRequireCache(files: string[]) {
   // Jest returns an annoying warning if we try to purge the cache
   // while being tested.
