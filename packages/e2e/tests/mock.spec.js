@@ -1,6 +1,6 @@
 const path = require('path');
 const {fakeJestRun} = require('./fakeJestRun');
-it('should report the corret number of tests', async function() {
+it('should report the correct number of tests', async function() {
   const result = await fakeJestRun(['oneTest.js', 'twoTests.js']);
   expect(result.numTotalTests).toBe(3);
   expect(result.numPassedTests).toBe(3);
@@ -9,7 +9,7 @@ it('should report the corret number of tests', async function() {
   expect(result.success).toBe(true);
 });
 
-it('should report the corret file name for the test', async function() {
+it('should report the correct file name for the test', async function() {
   const result = await fakeJestRun(['oneTest.js']);
   expect(result.testResults[0].testFilePath).toEqual(path.join(__dirname, 'assets', 'oneTest.js'));
 });
