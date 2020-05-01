@@ -7,7 +7,7 @@
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
     "jest-validate": "^25.5.0",
-    "playwright": "^0.14.0"
+    "playwright": "^0.16.0"
   },
   "version": "0.0.7",
   "description": "Runs end-to-end browser tests",
