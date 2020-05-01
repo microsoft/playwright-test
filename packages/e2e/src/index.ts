@@ -15,10 +15,12 @@ const NoHookTimeouts = 0;
 class PlaywrightRunnerE2E {
   private _globalConfig: Config.GlobalConfig;
   private _globalContext?: TestRunnerContext;
+  private _userConfig: UserConfig
 
   constructor(globalConfig: Config.GlobalConfig, context?: TestRunnerContext) {
     this._globalConfig = globalConfig;
     this._globalContext = context;
+    this._userConfig = configForTestSuite(globalConfig.rootDir)
   }
 
   async runTests(testSuites: JestSuite[], watcher: TestWatcher, onStart: OnTestStart, onResult: OnTestSuccess, onFailure: OnTestFailure, options: TestRunnerOptions) {
@@ -28,9 +30,17 @@ class PlaywrightRunnerE2E {
     const suiteToTests: Map<any, Set<Test>> = new Map();
     const startedSuites = new Set();
     const resultsForSuite = new Map();
+
+    const ensureBrowserForName = (browserName: string): Promise<playwright.Browser> => {
+      assertBrowserName(browserName);
+      if (!browserPromiseForName.has(browserName))
+        browserPromiseForName.set(browserName, playwright[browserName].launch(this._userConfig.launchOptions));
+      return browserPromiseForName.get(browserName)!;
+    }
+
     const rootSuite = createSuite(async () => {
       beforeEach(async state => {
-        state.context = await (await ensureBrowserForName(state.browserName)).newContext();
+        state.context = await (await ensureBrowserForName(state.browserName)).newContext(this._userConfig.contextOptions);
         state.page = await state.context.newPage();
       });
       afterEach(async state => {
@@ -68,7 +78,7 @@ class PlaywrightRunnerE2E {
     const tasks = [];
     for (const test of await rootSuite.tests(NoHookTimeouts)) {
       const suite: JestSuite = testToSuite.get(test)!;
-      const config = configForTestSuite(suite);
+      const config = configForTestSuite(suite.context.config.rootDir);
       for (const browserName of config.browsers) {
         assertBrowserName(browserName);
         tasks.push(async (worker: TestWorker) => {
@@ -112,13 +122,6 @@ class PlaywrightRunnerE2E {
       browserWorkers.webkit.shutdown(NoHookTimeouts),
     ]);
     await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
-
-      function ensureBrowserForName(browserName: string): Promise<playwright.Browser>  {
-      assertBrowserName(browserName);
-      if (!browserPromiseForName.has(browserName))
-        browserPromiseForName.set(browserName, playwright[browserName].launch());
-      return browserPromiseForName.get(browserName)!;
-    }
   }
 }
 
@@ -157,12 +160,12 @@ const DEFAULT_CONFIG: UserConfig = {
   contextOptions: {}
 };
 
-function configForTestSuite(suite: JestSuite): UserConfig {
+function configForTestSuite(rootDir: string): UserConfig {
   try {
-    const localConfig = require(path.join(suite.context.config.rootDir, 'playwright.config'));
+    const localConfig = require(path.join(rootDir, 'playwright.config'));
     return {
       ...DEFAULT_CONFIG,
-      localConfig
+      ...localConfig
     } as UserConfig
   } catch (err) {
   }
