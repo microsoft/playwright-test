@@ -8,6 +8,7 @@ import * as globals from './globals';
 import playwright from 'playwright';
 import {createSuite, beforeEach, afterEach} from 'describers';
 import path from 'path';
+import {validate} from 'jest-validate';
 
 // TODO: figure out hook timeouts.
 const NoHookTimeouts = 0;
@@ -163,6 +164,9 @@ const DEFAULT_CONFIG: UserConfig = {
 function configForTestSuite(rootDir: string): UserConfig {
   try {
     const localConfig = require(path.join(rootDir, 'playwright.config'));
+    validate(localConfig, {
+      exampleConfig: DEFAULT_CONFIG
+    });
     return {
       ...DEFAULT_CONFIG,
       ...localConfig

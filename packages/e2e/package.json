@@ -6,6 +6,7 @@
     "describers": "0.0.7",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
+    "jest-validate": "^25.5.0",
     "playwright": "^0.14.0"
   },
   "version": "0.0.7",
