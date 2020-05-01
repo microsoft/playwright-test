@@ -8,6 +8,7 @@ import * as globals from './globals';
 import playwright from 'playwright';
 import {createSuite, beforeEach, afterEach} from 'describers';
 import path from 'path';
+import {validate} from 'jest-validate';
 
 // TODO: figure out hook timeouts.
 const NoHookTimeouts = 0;
@@ -142,16 +143,22 @@ function assertBrowserName(browserName: string): asserts browserName is 'webkit'
   if (browserName !== 'firefox' && browserName !== 'chromium' && browserName !== 'webkit')
     throw new Error(`Unknown browser: ${browserName}`);
 }
+const defaultConfig = {
+  browsers: ['chromium'],
+}
 
 function configForTestSuite(suite: JestSuite) {
   let config = {};
   try {
     config = require(path.join(suite.context.config.rootDir, 'playwright.config'));
+    validate(config, {
+      exampleConfig: defaultConfig
+    });
   } catch {
   }
   return {
-    browsers: ['chromium'],
-    ...config
+    ...defaultConfig,
+    ...config,
   }
 }
 
