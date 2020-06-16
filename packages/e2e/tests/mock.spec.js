@@ -52,7 +52,7 @@ it('should work with typescript files', async function() {
   expect(result.success).toEqual(true);
 });
 
-fit('should work with focused tests', async function() {
+it('should work with focused tests', async function() {
   const result = await fakeJestRun(['focusedTest.js', 'oneTest.js']);
   expect(result.success).toEqual(true);
   expect(result.numPassedTests).toBe(2);

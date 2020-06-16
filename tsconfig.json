@@ -4,6 +4,7 @@
   "references": [
       { "path": "./packages/describers/" },
       { "path": "./packages/superpowers/" },
+      { "path": "./packages/jest-wrapper/" },
       { "path": "./packages/e2e/" },
       { "path": "./packages/unit/" }
   ]
