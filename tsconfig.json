@@ -6,6 +6,7 @@
       { "path": "./packages/superpowers/" },
       { "path": "./packages/jest-wrapper/" },
       { "path": "./packages/e2e/" },
-      { "path": "./packages/unit/" }
+      { "path": "./packages/unit/" },
+      { "path": "./packages/playwright-runner/" }
   ]
 }

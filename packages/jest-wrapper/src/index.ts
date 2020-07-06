@@ -1,10 +1,11 @@
-import {createEmptyTestResult, TestResult as SuiteResult} from '@jest/test-result';
+import {createEmptyTestResult, TestResult as SuiteResult, Status} from '@jest/test-result';
 import type {Config, TestResult as JestTestResult} from '@jest/types';
 import type {TestRunnerContext, TestWatcher, OnTestStart, OnTestSuccess, Test as JestSuite, TestRunnerOptions, OnTestFailure} from 'jest-runner';
 import {ScriptTransformer} from '@jest/transform';
 import {formatExecError} from 'jest-message-util';
+import { cpus } from 'os';
 type TestResult = {
-  status: 'pass'|'fail'|'skip',
+  status: 'pass'|'fail'|'skip'|'todo',
   error?: any,
 }
 type TestRunOptions = {
@@ -25,16 +26,17 @@ export function createJestRunner<TestDefinition extends {titles: string[]}>(
         const suiteToTests = new Map<JestSuite, TestDefinition[]>();
         const startedSuites = new Set<JestSuite>();
         const resultsForSuite = new Map();
+        const filterRegex = globalConfig.testNamePattern ? new RegExp(globalConfig.testNamePattern, 'i') : null;
 
         for (const testSuite of testSuites) {
           try {
-            const tests = await testsAtPath({
+            const tests = (await testsAtPath({
               path: testSuite.path,
               rootDir: testSuite.context.config.rootDir,
             }, () => {
               const transformer = new ScriptTransformer(testSuite.context.config);
                 transformer.requireAndTranspileModule(testSuite.path);
-            });
+            })).filter(test => filterRegex ? filterRegex.test(test.titles.join(' ')) : true);
             resultsForSuite.set(testSuite, []);
             suiteToTests.set(testSuite, tests);
             for (const test of tests)
@@ -43,12 +45,14 @@ export function createJestRunner<TestDefinition extends {titles: string[]}>(
             await onFailure(testSuite, e);      
           }
         }
-
+        // When just tells us to run in serial, it is actually lying
+        // figure out our own worker value
+        const workers = options.serial ? cpus().length - 1 : globalConfig.maxWorkers;
         await runTests(
           [...suiteToTests.values()].flat(),
           {
             timeout: globalConfig.testTimeout,
-            workers: options.serial ? 1 : globalConfig.maxWorkers
+            workers
           },
           async test => {
             const suite = testToSuite.get(test)!;
@@ -65,12 +69,18 @@ export function createJestRunner<TestDefinition extends {titles: string[]}>(
               return;
             const assertionResults = tests.map(test => {
               const result = testResults.get(test)!;
+              const status: Status = ({
+                'pass': 'passed',
+                'fail': 'failed',
+                'skip': 'pending',
+                'todo': 'todo',
+              } as const)[result.status];
               const jestResult: JestTestResult.AssertionResult = {
-                ancestorTitles: test.titles,
+                ancestorTitles: test.titles.slice(0, test.titles.length - 1),
                 failureMessages: [],
                 fullName: test.titles.join(' '),
                 numPassingAsserts: 0,
-                status: result.status === 'pass' ? 'passed' : 'pending',
+                status,
                 title: test.titles[test.titles.length - 1],
               };
               if (result.status === 'fail') {
@@ -109,6 +119,7 @@ function makeSuiteResult(assertionResults: JestTestResult.AssertionResult[], tes
     result.testResults.push(assertionResult);
     failureMessages.push(...assertionResult.failureMessages);
   }
+  result.skipped = !result.numPassingTests && !result.numFailingTests;
   result.failureMessage = assertionResults.flatMap(result => result.failureMessages).join('\n');
   return result;
 }

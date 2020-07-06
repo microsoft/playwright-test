@@ -7,6 +7,7 @@
   },
   "repository": "github:Microsoft/playwright-runner",
   "description": "A Jest preset for running tests with Playwright.",
+  "main": "out/index.js",
   "dependencies": {
     "jest-runner-playwright-e2e": "0.0.7",
     "jest-runner-playwright-unit": "0.0.7"
