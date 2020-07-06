@@ -83,35 +83,8 @@ function ensureBrowserForName(browserName: string) {
   return browserPromiseForName.get(browserName)!;
 }
 
-export = createJestRunner(async (options, jestRequireAndTransform) => {
-  installGlobals();
-  const suite = createSuite(async () => {
-    beforeEach(async state => {
-      state.context = await (await ensureBrowserForName(state.browserName)).newContext();
-      state.page = await state.context.newPage();
-    });
-    afterEach(async state => {
-      await state.context.close();
-      delete state.page;
-      delete state.context;
-    });
-    jestRequireAndTransform();
-  });
-  // to match jest-runner behavior, all of our file suites are focused.
-  suite.focused = true;
-  const tests = await suite.tests(NoHookTimeouts);
-  const config = configForTestFile(options.rootDir, options.path);
-  return tests.map(describersTest => {
-    return config.browsers.map(browserName => {
-      const titles = config.browsers.length === 1 ? describersTest.ancestorTitles() : [browserName, ...describersTest.ancestorTitles()];
-      return {
-        describersTest,
-        browserName,
-        testPath: options.path,
-        titles,
-      }
-    });
-  }).flat();
+const Runner = createJestRunner(async (options, jestRequireAndTransform) => {
+  return await listTestsInternal(options, jestRequireAndTransform);
 }, async(tests, options, onStart, onResult) => {
     const tasks = [];
     for (const test of tests) {
@@ -132,3 +105,47 @@ export = createJestRunner(async (options, jestRequireAndTransform) => {
     await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
     browserPromiseForName.clear();
 });
+
+async function listTestsInternal(options: {path: string, rootDir: string}, requireCallback: () => void) {
+  installGlobals();
+  const suite = createSuite(async () => {
+    beforeEach(async state => {
+      if (state.page) {
+        state.custom = true;
+        return;
+      }
+      state.context = await (await ensureBrowserForName(state.browserName)).newContext();
+      state.page = await state.context.newPage();
+    });
+    afterEach(async state => {
+      if (state.custom)
+        return;
+      await state.context.close();
+      delete state.page;
+      delete state.context;
+    });
+    requireCallback();
+  });
+  // to match jest-runner behavior, all of our file suites are focused.
+  suite.focused = true;
+  const tests = await suite.tests(NoHookTimeouts);
+  const config = configForTestFile(options.rootDir, options.path);
+  return tests.map(describersTest => {
+    return config.browsers.map(browserName => {
+      const titles = config.browsers.length === 1 ? describersTest.ancestorTitles() : [browserName, ...describersTest.ancestorTitles()];
+      return {
+        describersTest,
+        browserName,
+        testPath: options.path,
+        titles,
+      }
+    });
+  }).flat();
+}
+async function listTests(options: {path: string, rootDir: string}) {
+  const tests = await listTestsInternal(options, () => require(options.path));
+  purgeRequireCache([options.path]);
+  return tests;
+}
+
+export = Object.assign(Runner, {listTests});

@@ -21,5 +21,5 @@ it('is the first test', state => {
 
 it('is the second test', state => {
   expect(state.shared).toEqual(1);
-  expect(state.counter).toEqual(3);
+  expect(state.counter).toEqual(1);
 });
