@@ -2,6 +2,9 @@ const path = require('path');
 const {fakeJestRun} = require('./fakeJestRun');
 it('should report the corret number of tests', async function() {
   const result = await fakeJestRun(['oneTest.js', 'twoTests.js']);
+  result.testResults.map(r => {
+    r.failureMessage && console.log(r.failureMessage);
+  });
   expect(result.numTotalTests).toBe(3);
   expect(result.numPassedTests).toBe(3);
   expect(result.numFailedTests).toBe(0);
