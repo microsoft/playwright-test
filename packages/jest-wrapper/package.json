@@ -3,14 +3,14 @@
   "dependencies": {
     "@jest/test-result": "^25.2.6",
     "@jest/transform": "^25.3.0",
-    "describers": "0.0.7",
+    "describers": "0.0.8",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
     "jest-validate": "^25.5.0",
     "playwright": "^1.0.0"
   },
-  "version": "0.0.7",
-  "description": "Runs end-to-end browser tests",
+  "version": "0.0.8",
+  "description": "Transforms a test runner into a jest runner.",
   "main": "out/index.js",
   "license": "MIT",
   "author": {

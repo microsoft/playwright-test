@@ -1,6 +1,6 @@
 {
   "name": "playwright-superpowers",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Injects playwright apis into a page.",
   "main": "out/index.js",
   "devDependencies": {
