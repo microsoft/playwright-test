@@ -403,7 +403,12 @@ export function afterAll(callback: UserCallback<State>) {
   currentSuite._afterAlls.push(callback);
 }
 
-const rootSuite = new Suite('', null);
+let rootSuite = new Suite('', null);
+export function clearAllTests() {
+  rootSuite = new Suite('', null);
+  currentSuite = rootSuite;
+}
+
 let currentSuite = rootSuite;
 let useDefaultRunner = true;
 setImmediate(async () => {
