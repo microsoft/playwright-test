@@ -3,6 +3,7 @@
   "dependencies": {
     "@jest/test-result": "^25.2.6",
     "@jest/transform": "^25.3.0",
+    "@playwright/jest-wrapper": "0.0.9",
     "describers": "0.0.9",
     "expect": "^25.2.7",
     "jest-message-util": "^25.2.6",
