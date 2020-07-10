@@ -1,6 +1,6 @@
 {
   "name": "playwright-runner",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "author": {
     "name": "Microsoft Corporation"
@@ -9,6 +9,6 @@
   "description": "A Jest preset for running tests with Playwright.",
   "main": "out/index.js",
   "dependencies": {
-    "jest-runner-playwright-e2e": "0.0.8"
+    "jest-runner-playwright-e2e": "0.0.9"
   }
 }

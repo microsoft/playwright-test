@@ -1,6 +1,6 @@
 {
   "name": "describers",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A small library providing it/describe syntax for tests.",
   "main": "out/index.js",
   "license": "MIT",
