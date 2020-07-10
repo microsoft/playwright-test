@@ -60,7 +60,7 @@ function getMatchType(recieved: any) {
 function findTestInCallStack(): Test | null {
   const dummy = {stack: ''};
   Error.captureStackTrace(dummy);
-  const result = /at Test #([0-9]*):/g.exec(dummy.stack);
+  const result = / Test #([0-9]*):/g.exec(dummy.stack);
   return result && testById[parseInt(result[1], 10)];
 }
 
