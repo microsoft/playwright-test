@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {TestWorker} from 'describers';
 import * as globals from './globals';
 import playwright from 'playwright';
@@ -20,7 +24,7 @@ async function runTasksConcurrently(tasks: ((worker: TestWorker) => Promise<void
   async function spin(workerId: number) {
     const worker = new TestWorker({workerId});
     let task;
-    while (task = workStack.pop())
+    while ((task = workStack.pop()))
       await task(worker);
   }
 }
@@ -31,7 +35,7 @@ function assertBrowserName(browserName: string): asserts browserName is 'webkit'
 }
 const defaultConfig = {
   browsers: ['chromium'],
-}
+};
 
 function configForTestFile(rootDir: string, testFile: string) {
   let config = {};
@@ -45,10 +49,10 @@ function configForTestFile(rootDir: string, testFile: string) {
   return {
     ...defaultConfig,
     ...config,
-  }
+  };
 }
 
-declare var jest : never;
+declare let jest : never;
 function purgeRequireCache(files: string[]) {
   // Jest returns an annoying warning if we try to purge the cache
   // while being tested.
@@ -74,7 +78,7 @@ function installGlobals() {
     (global as any)[name] = value;
 }
 
-const browserPromiseForName = new Map<string, Promise<playwright.Browser>>(); 
+const browserPromiseForName = new Map<string, Promise<playwright.Browser>>();
 
 function ensureBrowserForName(browserName: string) {
   assertBrowserName(browserName);
@@ -85,25 +89,25 @@ function ensureBrowserForName(browserName: string) {
 
 const Runner = createJestRunner(async (options, jestRequireAndTransform) => {
   return await listTestsInternal(options, jestRequireAndTransform);
-}, async(tests, options, onStart, onResult) => {
-    const tasks = [];
-    for (const test of tests) {
-      const {browserName, describersTest, titles} =  test;
-      
-        tasks.push(async (worker: TestWorker) => {
-          onStart(test);
-          worker.state.browserName = browserName;
-          const run = await worker.run(describersTest, options.timeout, NoHookTimeouts);
-          onResult(test, {
-            status: run.status,
-            error: run.error,
-          });
-        });
-    }
-    await runTasksConcurrently(tasks, options.workers);
-    purgeRequireCache(tests.map(test => test.testPath));
-    await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
-    browserPromiseForName.clear();
+}, async (tests, options, onStart, onResult) => {
+  const tasks = [];
+  for (const test of tests) {
+    const {browserName, describersTest, titles} =  test;
+
+    tasks.push(async (worker: TestWorker) => {
+      onStart(test);
+      worker.state.browserName = browserName;
+      const run = await worker.run(describersTest, options.timeout, NoHookTimeouts);
+      onResult(test, {
+        status: run.status,
+        error: run.error,
+      });
+    });
+  }
+  await runTasksConcurrently(tasks, options.workers);
+  purgeRequireCache(tests.map(test => test.testPath));
+  await Promise.all(Array.from(browserPromiseForName.values()).map(async browserPromise => (await browserPromise).close()));
+  browserPromiseForName.clear();
 });
 
 async function listTestsInternal(options: {path: string, rootDir: string}, requireCallback: () => void) {
@@ -138,7 +142,7 @@ async function listTestsInternal(options: {path: string, rootDir: string}, requi
         browserName,
         testPath: options.path,
         titles,
-      }
+      };
     });
   }).flat();
 }

@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {chromium, Page, Browser, Keyboard} from 'playwright';
 import {installSuperpowers} from '../src/index';
 let browser: Browser;
@@ -6,7 +10,7 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await browser.close();
-})
+});
 
 let page: Page;
 beforeEach(async () => {
@@ -84,7 +88,7 @@ describe('mouse', () => {
       clientX: 33,
       clientY: 56,
     });
-  });  
+  });
 });
 
 describe('route', function() {

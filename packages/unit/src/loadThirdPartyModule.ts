@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import browserify from 'browserify';
 import { promisify } from 'util';
 import validJSIdentifier from './validJSIdentifier';
@@ -18,7 +22,7 @@ async function getBundledModule(resolvedModulePath: string) {
   const buffer = await promisify(bundle.bundle.bind(bundle))();
   const {keys, autoDefault} = exportsForModule(resolvedModulePath);
   const exports = keys.filter(key => validJSIdentifier.test(key)).map(key => {
-    return `export const ${key} = value.${key};`
+    return `export const ${key} = value.${key};`;
   });
   if (autoDefault)
     exports.push('export default value;');
@@ -38,7 +42,7 @@ async function ensureCacheDir() {
     _cachePromise = new Promise(async resolve => {
       const cacheDir = path.join(tmpdir(), 'playwright-runner-cache');
       await mkdir(cacheDir).catch(e => void 0);
-      resolve(cacheDir);  
+      resolve(cacheDir);
     });
   }
   return _cachePromise;

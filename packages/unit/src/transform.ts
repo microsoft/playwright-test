@@ -1,5 +1,9 @@
-import { transformFileAsync } from "@babel/core";
-import { requireResolve } from "./requireResolve";
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { transformFileAsync } from '@babel/core';
+import { requireResolve } from './requireResolve';
 
 export async function transformLocalFile(filePath: string) : Promise<string>{
   const resolvedPath = await requireResolve(filePath);
@@ -24,7 +28,7 @@ export async function transformLocalFile(filePath: string) : Promise<string>{
   function attemptToToGetModule(moduleName: string) {
     try {
       return require(require.resolve(moduleName, {paths: [filePath, __filename]}));
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }

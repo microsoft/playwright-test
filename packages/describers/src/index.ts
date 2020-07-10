@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {Runner} from './runner';
 import {Test, Suite, setCurrentSuite, getCurrentSuite} from './test';
 
@@ -11,29 +15,29 @@ type Describe<ReturnValue=void> = {
 
 export const describe: Describe & {only: Describe} = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   _createSuite(callbackOrName as any, callback as any);
-}
+};
 
 export const fdescribe : Describe = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const suite = _createSuite(callbackOrName as any, callback as any);
   suite.focused = true;
-}
+};
 describe.only = fdescribe;
 
 export const xdescribe : Describe = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const suite = _createSuite(callbackOrName as any, callback as any);
   suite.skipped = true;
-}
+};
 const _createSuite: Describe<Suite> = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const name = callback ? callbackOrName as string : '';
   if (!callback)
     callback = callbackOrName as UserCallback;
   return new Suite(name, getCurrentSuite(), callback);
-}
+};
 
 export const createSuite: Describe<Suite> = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   useDefaultRunner = false;
   return _createSuite(callbackOrName as any, callback as any);
-}
+};
 
 export function it(name: string, callback: UserCallback<State>) {
   new Test(name, callback);

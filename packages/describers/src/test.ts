@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 export const testById: Test[] = [];
 type UserCallback<T = void> = (state: T) => (void | Promise<void>);
 type State = {[key: string]: any};
@@ -233,7 +237,7 @@ export class Environment<EachState, AllState, InitialState = void> {
         let error;
         try {
           await callback({...allState, ...eachState});
-        } catch(e) {
+        } catch (e) {
           error = e;
           success = false;
         }
@@ -261,21 +265,21 @@ export class Environment<EachState, AllState, InitialState = void> {
     let allState: AllState;
     let eachState: EachState;
     const newEnvironment = new Environment<NewEachState, NewAllState, InitialState>({
-      beforeAll: async (state) => {
+      beforeAll: async state => {
         allState = await this.hooks.beforeAll(state);
         const newAllState = await beforeAll(allState);
         return newAllState;
       },
-      beforeEach: async(newAllState) => {
+      beforeEach: async newAllState => {
         eachState = await this.hooks.beforeEach(allState);
         const newEachState = await beforeEach({...eachState, ...newAllState});
         return newEachState;
       },
-      afterEach: async(newCombinedState) => {
+      afterEach: async newCombinedState => {
         await afterEach(newCombinedState);
         await this.hooks.afterEach({...allState, ...eachState});
       },
-      afterAll: async(newAllState) => {
+      afterAll: async newAllState => {
         await afterAll(newAllState);
         await this.hooks.afterAll(allState);
       }

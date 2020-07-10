@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {createSuite} from './index';
 import { TestWorker, TestRun } from './test';
 
@@ -23,7 +27,7 @@ export class Runner {
       if (result.status !== 'fail')
         continue;
       console.log(`${result.test.fullName()}`);
-      console.log(result.error && result.error.stack ? result.error.stack : result.error)
+      console.log(result.error && result.error.stack ? result.error.stack : result.error);
     }
   }
 }

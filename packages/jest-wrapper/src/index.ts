@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {createEmptyTestResult, TestResult as SuiteResult, Status} from '@jest/test-result';
 import type {Config, TestResult as JestTestResult} from '@jest/types';
 import type {TestRunnerContext, TestWatcher, OnTestStart, OnTestSuccess, Test as JestSuite, TestRunnerOptions, OnTestFailure} from 'jest-runner';
@@ -35,72 +39,72 @@ export function createJestRunner<TestDefinition extends {titles: string[]}>(
               rootDir: testSuite.context.config.rootDir,
             }, () => {
               const transformer = new ScriptTransformer(testSuite.context.config);
-                transformer.requireAndTranspileModule(testSuite.path);
+              transformer.requireAndTranspileModule(testSuite.path);
             })).filter(test => filterRegex ? filterRegex.test(test.titles.join(' ')) : true);
             resultsForSuite.set(testSuite, []);
             suiteToTests.set(testSuite, tests);
             for (const test of tests)
-              testToSuite.set(test, testSuite);  
-          } catch(e) {
-            await onFailure(testSuite, e);      
+              testToSuite.set(test, testSuite);
+          } catch (e) {
+            await onFailure(testSuite, e);
           }
         }
         // When just tells us to run in serial, it is actually lying
         // figure out our own worker value
         const workers = options.serial ? cpus().length - 1 : globalConfig.maxWorkers;
         await runTests(
-          [...suiteToTests.values()].flat(),
-          {
-            timeout: globalConfig.testTimeout,
-            workers
-          },
-          async test => {
-            const suite = testToSuite.get(test)!;
-            if (startedSuites.has(suite))
-              return;
-            startedSuites.add(suite);
-            onStart(suite);
-          },
-          async (test, result) => {
-            const suite = testToSuite.get(test)!;
-            testResults.set(test, result);
-            const tests = suiteToTests.get(suite)!;
-            if (tests.some(test => !testResults.has(test)))
-              return;
-            const assertionResults = tests.map(test => {
-              const result = testResults.get(test)!;
-              const status: Status = ({
-                'pass': 'passed',
-                'fail': 'failed',
-                'skip': 'pending',
-                'todo': 'todo',
-              } as const)[result.status];
-              const jestResult: JestTestResult.AssertionResult = {
-                ancestorTitles: test.titles.slice(0, test.titles.length - 1),
-                failureMessages: [],
-                fullName: test.titles.join(' '),
-                numPassingAsserts: 0,
-                status,
-                title: test.titles[test.titles.length - 1],
-              };
-              if (result.status === 'fail') {
-                jestResult.status = 'failed';
-                jestResult.failureMessages.push(result.error instanceof Error ? formatExecError(result.error, {
-                  rootDir: globalConfig.rootDir,
-                  testMatch: [],
-                }, {
-                  noStackTrace: false,
-                }) : String(result.error));
-              }
-              return jestResult;
-            });
-            const suiteResult = makeSuiteResult(assertionResults, suite.path);
-            onResult(suite, suiteResult);
-          }
+            [...suiteToTests.values()].flat(),
+            {
+              timeout: globalConfig.testTimeout,
+              workers
+            },
+            async test => {
+              const suite = testToSuite.get(test)!;
+              if (startedSuites.has(suite))
+                return;
+              startedSuites.add(suite);
+              onStart(suite);
+            },
+            async (test, result) => {
+              const suite = testToSuite.get(test)!;
+              testResults.set(test, result);
+              const tests = suiteToTests.get(suite)!;
+              if (tests.some(test => !testResults.has(test)))
+                return;
+              const assertionResults = tests.map(test => {
+                const result = testResults.get(test)!;
+                const status: Status = ({
+                  'pass': 'passed',
+                  'fail': 'failed',
+                  'skip': 'pending',
+                  'todo': 'todo',
+                } as const)[result.status];
+                const jestResult: JestTestResult.AssertionResult = {
+                  ancestorTitles: test.titles.slice(0, test.titles.length - 1),
+                  failureMessages: [],
+                  fullName: test.titles.join(' '),
+                  numPassingAsserts: 0,
+                  status,
+                  title: test.titles[test.titles.length - 1],
+                };
+                if (result.status === 'fail') {
+                  jestResult.status = 'failed';
+                  jestResult.failureMessages.push(result.error instanceof Error ? formatExecError(result.error, {
+                    rootDir: globalConfig.rootDir,
+                    testMatch: [],
+                  }, {
+                    noStackTrace: false,
+                  }) : String(result.error));
+                }
+                return jestResult;
+              });
+              const suiteResult = makeSuiteResult(assertionResults, suite.path);
+              onResult(suite, suiteResult);
+            }
         );
-      }
+      };
     }
-  }
+  };
 }
 
 function makeSuiteResult(assertionResults: JestTestResult.AssertionResult[], testPath: string): SuiteResult {
