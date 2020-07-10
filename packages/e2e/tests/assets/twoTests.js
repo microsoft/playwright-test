@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 beforeAll(state => {
   state.shared = (state.shared || 0) + 1;
 });

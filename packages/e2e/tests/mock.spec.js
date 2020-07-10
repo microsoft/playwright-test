@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 const path = require('path');
 const {fakeJestRun} = require('./fakeJestRun');
 it('should report the corret number of tests', async function() {

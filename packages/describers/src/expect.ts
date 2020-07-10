@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import jestExpect from 'expect';
 import path from 'path';
 export const expect = jestExpect;
@@ -27,7 +31,7 @@ function toMatchSnapshot(this: {isNot: boolean}, recieved: any, name?: string) {
     fs.writeFileSync(goldenPath, save(recieved));
     return {
       pass: true,
-    }
+    };
   }
   if (!exists)
     throw new Error(`Could not find snapshot at ${goldenPath}.`);
@@ -42,7 +46,7 @@ function getMatchType(recieved: any) {
       extension: 'txt',
       load: (buffer: Buffer) => buffer.toString('utf8'),
       save: (value: string) => Buffer.from(value, 'utf8'),
-    }
+    };
   }
 
   return {
@@ -50,14 +54,14 @@ function getMatchType(recieved: any) {
     extension: 'json',
     load: (buffer: Buffer) => JSON.parse(buffer.toString('utf8')),
     save: (value: any) => Buffer.from(JSON.stringify(value), 'utf8'),
-  }
+  };
 }
 
 function findTestInCallStack(): Test | null {
   const dummy = {stack: ''};
   Error.captureStackTrace(dummy);
   const result = /at Test #([0-9]*):/g.exec(dummy.stack);
-  return result && testById[parseInt(result[1])]
+  return result && testById[parseInt(result[1], 10)];
 }
 
 export function setSnapshotOptions(options: {

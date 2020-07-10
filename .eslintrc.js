@@ -1,10 +1,9 @@
 module.exports = {
-    "env": {
-        "node": true,
-        "es6": true
-    },
-    "parserOptions": {
-        "ecmaVersion": 10
+    parser: '@typescript-eslint/parser',
+    plugins: ['@typescript-eslint', 'notice'],
+    parserOptions: {
+      ecmaVersion: 9,
+      sourceType: 'module',
     },
     /**
      * ESLint rules
@@ -102,6 +101,11 @@ module.exports = {
         "indent": [2, 2, { "SwitchCase": 1, "CallExpression": {"arguments": 2}, "MemberExpression": 2 }],
         "key-spacing": [2, {
             "beforeColon": false
+        }],
+        // copyright
+        "notice/notice": [2, {
+            "mustMatch": "Copyright",
+            "templateFile": "./copyright.js",
         }],
     }
 };

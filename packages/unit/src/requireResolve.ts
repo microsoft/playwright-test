@@ -27,13 +27,13 @@ export async function requireResolve(request: string): Promise<string> {
   const exts = ['.js', '.json', '.node', '.jsx', '.ts', '.tsx'];
   let trailingSlash = request.length > 0 &&
     request.charCodeAt(request.length - 1) === CHAR_FORWARD_SLASH;
-  if (!trailingSlash) {
+  if (!trailingSlash)
     trailingSlash = trailingSlashRegex.test(request);
-  }
+
 
   const rc = await fs.promises.stat(request).catch(e => null);
   if (!trailingSlash) {
-    if (rc && rc.isFile())  // File. 
+    if (rc && rc.isFile())  // File.
       return await fs.promises.realpath(request);
 
     // Try it with each of the extensions
@@ -44,11 +44,11 @@ export async function requireResolve(request: string): Promise<string> {
   if (rc && rc.isDirectory()) {
     const packageFile = await tryPackage(request, exts);
     if (packageFile)
-      return packageFile;  
+      return packageFile;
   }
 
   throw new Error('Could not resolve file: ' + request);
-};
+}
 // Given a path, check if the file exists with any of the set extensions
 async function tryExtensions(p: string, exts: string[]) {
   for (let i = 0; i < exts.length; i++) {
@@ -79,7 +79,7 @@ async function tryPackage(requestPath: string, exts: string[]) {
     actual = await tryExtensions(path.resolve(requestPath, 'index'), exts);
     if (!actual) {
       throw new Error(
-        `Cannot find module '${filename}'. ` +
+          `Cannot find module '${filename}'. ` +
         'Please verify that the package.json has a valid "main" entry'
       );
     }

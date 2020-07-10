@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import type {Page, Request} from 'playwright';
 import url from 'url';
 import fs from 'fs';
@@ -50,7 +54,7 @@ export async function setupPage(page: Page) {
       await route.fulfill({
         body: await fs.promises.readFile(extractFilePathFromUrl(ROOT_PAGE)),
         contentType: 'text/html',
-      })
+      });
       return;
     }
     const filePath = extractFilePathFromUrl(request.url());

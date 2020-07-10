@@ -1,6 +1,10 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 import type {Request, Page, Route} from 'playwright';
-type RequsetProperties = "url"|"headers"|"failure"|"isNavigationRequest"|"postData";
+type RequsetProperties = 'url'|'headers'|'failure'|'isNavigationRequest'|'postData';
 type RequestObject = {
   [key in RequsetProperties]: ReturnType<Request[key]>
 }
@@ -8,15 +12,15 @@ type RequestApi = {
   [key in RequsetProperties]: Request[key];
 }
 type RouteApi = {
-  fulfill: Route["fulfill"];
-  abort: Route["abort"];
-  continue: Route["fulfill"];
+  fulfill: Route['fulfill'];
+  abort: Route['abort'];
+  continue: Route['fulfill'];
   request(): RequestApi;
 }
 
 export async function installSuperpowers(page: Page) {
   let lastRouteId = 0;
-  let routes = new Map<number, Route>();
+  const routes = new Map<number, Route>();
   const api: {[key: string]: any} = {
     keyboard: {
       type: page.keyboard.type.bind(page.keyboard),
@@ -49,12 +53,12 @@ export async function installSuperpowers(page: Page) {
           await page.evaluate(async ({handlerIndex, requestObj, routeId}) => {
             const superpowers = (window as any)['__superpowers__'];
             const request: RequestApi = {
-              url() { return requestObj.url },
-              headers() { return requestObj.headers },
-              failure() { return requestObj.failure },
-              postData() { return requestObj.postData },
-              isNavigationRequest() { return requestObj.isNavigationRequest },
-            }
+              url() { return requestObj.url; },
+              headers() { return requestObj.headers; },
+              failure() { return requestObj.failure; },
+              postData() { return requestObj.postData; },
+              isNavigationRequest() { return requestObj.isNavigationRequest; },
+            };
             const route: RouteApi = {
               fulfill: obj => superpowers('network', '_fulfill', routeId, obj),
               abort: obj => superpowers('network', '_abort', routeId, obj),
@@ -69,21 +73,21 @@ export async function installSuperpowers(page: Page) {
           }).catch(e => null);
         });
       },
-      async _fulfill(routeId: number, params: Parameters<Route["fulfill"]>[0]) {
+      async _fulfill(routeId: number, params: Parameters<Route['fulfill']>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
         await route.fulfill(params || undefined);
         routes.delete(routeId);
       },
-      async _abort(routeId: number, params: Parameters<Route["abort"]>[0]) {
+      async _abort(routeId: number, params: Parameters<Route['abort']>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
         await route.abort(params || undefined);
         routes.delete(routeId);
       },
-      async _continue(routeId: number, params: Parameters<Route["continue"]>[0]) {
+      async _continue(routeId: number, params: Parameters<Route['continue']>[0]) {
         const route = routes.get(routeId);
         if (!route)
           return;
@@ -91,11 +95,11 @@ export async function installSuperpowers(page: Page) {
         routes.delete(routeId);
       }
     }
-  }
+  };
   await page.exposeFunction('__superpowers__', (category: string, method: string, ...args: any) => {
     return api[category][method](...args);
   });
-  let script = [];
+  const script = [];
   script.push(`{`);
   script.push(`__superpowers__.functions = new Map()`);
   script.push(`__superpowers__.lastIndex = 0`);
@@ -117,7 +121,7 @@ export async function installSuperpowers(page: Page) {
       };
     }
     return value;
-  }.toString()}`)
+  }.toString()}`);
   for (const [category, value] of Object.entries(api)) {
     script.push(`window.${category} = {};`);
     for (const method of Object.keys(value)) {

@@ -1,3 +1,7 @@
+/* ---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {createEmptyTestResult} from '@jest/test-result';
 import * as playwright from 'playwright';
 import type {Test, TestWatcher, OnTestStart, OnTestFailure, OnTestSuccess, TestRunnerOptions, TestRunnerContext} from 'jest-runner';
@@ -19,7 +23,7 @@ class PlaywrightRunnerUnit {
       await onStart(testSuite);
       const page = await browser.newPage();
       await setupPage(page);
-        const fileUrl = url.pathToFileURL(testSuite.path);
+      const fileUrl = url.pathToFileURL(testSuite.path);
       await page.addScriptTag({
         type: 'module',
         url: `https://local_url${fileUrl.pathname}`,
