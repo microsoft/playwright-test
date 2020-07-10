@@ -1,4 +1,23 @@
+// delete jest global variables that prevent us from testing expect
+const jestSymbol = Symbol.for('$$jest-matchers-object');
+global[jestSymbol].matchers = Object.create(null);
+global[jestSymbol].state = {
+  assertionCalls: 0,
+  expectedAssertionsNumber: null,
+  isExpectingAssertions: false,
+  suppressedErrors: [],
+};
 const api = require('../out/index');
+
+const path = require('path');
+api.setSnapshotOptions({
+  snapshotDir: path.join(__dirname, '__describers_snapshots__'),
+  updateSnapshot: 'new'
+});
+
+beforeEach(() => {
+  api.clearAllTests();
+});
 
 describe('it', () => {
   it('should run a test', async () => {
@@ -281,5 +300,20 @@ describe('hooks', () => {
     expect(results.map(r => r.test.fullName())).toEqual(['inner', 'outer']);
     expect(results.map(r => r.status)).toEqual(['pass', 'pass']);
     expect(saved.foo).toBe('done');
+  });
+});
+
+describe('expect',  () => {
+  it('should bundle expect', async () => {
+    const test = api.createTest('is a test', () => api.expect(1 + 1).toBe(2));
+    const {status} = await test.runInIsolation();
+    expect(status).toBe('pass');
+  });
+  it('should do the snapshot thing', async () => {
+    const test = api.createTest('is a test', () => {
+      api.expect('hello').toMatchSnapshot();
+    });
+    const {status, error} = await test.runInIsolation();
+    expect(status).toBe('pass');
   });
 });

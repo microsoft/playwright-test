@@ -1,4 +1,6 @@
-import {createSuite, TestWorker, TestRun} from './index';
+import {createSuite} from './index';
+import { TestWorker, TestRun } from './test';
+
 export class Runner {
   constructor(private suite: ReturnType<typeof createSuite>) {}
   async run() {
