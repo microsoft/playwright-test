@@ -8,6 +8,7 @@ import type {TestRunnerContext, TestWatcher, OnTestStart, OnTestSuccess, Test as
 import {ScriptTransformer} from '@jest/transform';
 import {formatExecError} from 'jest-message-util';
 import { cpus } from 'os';
+import {EventEmitter} from 'events';
 type TestResult = {
   status: 'pass'|'fail'|'skip'|'todo',
   error?: any,
@@ -52,6 +53,7 @@ export function createJestRunner<TestDefinition extends {titles: string[]}>(
         // When just tells us to run in serial, it is actually lying
         // figure out our own worker value
         const workers = options.serial ? cpus().length - 1 : globalConfig.maxWorkers;
+        EventEmitter.defaultMaxListeners = 10 * workers;
         await runTests(
             [...suiteToTests.values()].flat(),
             {

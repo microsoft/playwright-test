@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import {Runner} from './runner';
-import {Test, Suite, setCurrentSuite, getCurrentSuite} from './test';
+import {Test, Suite, setCurrentSuite, getCurrentSuite, API} from './test';
 
 type UserCallback<T = void> = (state: T) => (void | Promise<void>);
 type State = {[key: string]: any};
@@ -13,7 +13,7 @@ type Describe<ReturnValue=void> = {
   (callback: UserCallback) : ReturnValue;
 }
 
-export const describe: Describe & {only: Describe} = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
+export const describe: Describe & {only: Describe, skip(condition: boolean): Describe, todo(condition: boolean): Describe} = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   _createSuite(callbackOrName as any, callback as any);
 };
 
@@ -22,11 +22,13 @@ export const fdescribe : Describe = (callbackOrName: string|UserCallback, callba
   suite.focused = true;
 };
 describe.only = fdescribe;
-
 export const xdescribe : Describe = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const suite = _createSuite(callbackOrName as any, callback as any);
   suite.skipped = true;
 };
+describe.skip = condition => condition ? xdescribe : describe;
+describe.todo = condition => condition ? xdescribe : describe;
+
 const _createSuite: Describe<Suite> = (callbackOrName: string|UserCallback, callback?: UserCallback) => {
   const name = callback ? callbackOrName as string : '';
   if (!callback)
@@ -99,6 +101,6 @@ setImmediate(async () => {
   }
 });
 
-export type {Test};
+export type {Test, API};
 export {expect, setSnapshotOptions} from './expect';
 export {TestWorker, Environment} from './test';

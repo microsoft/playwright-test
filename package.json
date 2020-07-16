@@ -32,5 +32,6 @@
         "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
         "prepare": "yarn run build",
         "update-version": "node scripts/updateVersion.js"
-    }
+    },
+    "version": "0.0.0"
 }
