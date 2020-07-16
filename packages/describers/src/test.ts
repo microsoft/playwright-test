@@ -51,6 +51,7 @@ export class Suite {
   _afterAlls: UserCallback<State>[] = [];
   focused = false;
   skipped = false;
+  slow = false;
 
   constructor(name: string, parent: Suite | null = null, callback: UserCallback | null = null) {
     this.name = name;
@@ -218,8 +219,8 @@ export class TestWorker {
 type Callback<Input, Output> = (input: Input) => Promise<Output>;
 
 export class Environment<EachState, AllState, InitialState = void> {
-  public it: (name: string, callback: (state: EachState & AllState) => (void|Promise<void>)) => void;
-  public test: (name: string, callback: (state: EachState & AllState) => (void|Promise<void>)) => void;
+  public it: API<EachState, AllState, InitialState>;
+  public test: API<EachState, AllState, InitialState>;
   constructor(
     private hooks: {
       beforeAll: Callback<InitialState, AllState>;
@@ -229,62 +230,67 @@ export class Environment<EachState, AllState, InitialState = void> {
       afterAll: Callback<AllState, void>;
     }
   ) {
-    this.it = (name, callback) => {
-      it(name, async (state: unknown) => {
-        const allState = await this.hooks.beforeAll(state as InitialState);
-        const eachState = await this.hooks.beforeEach(allState);
-        let success = true;
-        let error;
-        try {
-          await callback({...allState, ...eachState});
-        } catch (e) {
-          error = e;
-          success = false;
-        }
-        await this.hooks.afterEach({...allState, ...eachState});
-        await this.hooks.afterAll(allState);
-        if (!success)
-          throw error;
-      });
-    };
+    this.it = makeAPI(this.hooks);
     this.test = this.it;
+    this.extend = this.extend.bind(this);
   }
 
-  extend<NewEachState=EachState, NewAllState=AllState>(hooks: {
+  extend<NewEachState, NewAllState>(hooks: {
     beforeAll?: Callback<AllState, NewAllState>;
-    beforeEach?: Callback<EachState, NewEachState>;
+    beforeEach?: Callback<AllState & NewAllState & EachState, NewEachState>;
 
-    afterEach?: Callback<NewAllState & NewEachState, void>;
-    afterAll?: Callback<NewAllState, void>;
+    afterEach?: Callback<AllState & NewAllState & EachState & NewEachState, void>;
+    afterAll?: Callback<AllState & NewAllState, void>;
   }) {
     const beforeAll = hooks.beforeAll! || (async state => state);
     const beforeEach = hooks.beforeEach! || (async state => state);
     const afterEach = hooks.afterEach! || (async () => void 0);
     const afterAll = hooks.afterAll! || (async () => void 0);
 
-    let allState: AllState;
-    let eachState: EachState;
-    const newEnvironment = new Environment<NewEachState, NewAllState, InitialState>({
+    const newEnvironment = new Environment<EachState & NewEachState, AllState & NewAllState, InitialState>({
       beforeAll: async state => {
-        allState = await this.hooks.beforeAll(state);
+        const allState = await this.hooks.beforeAll(state);
         const newAllState = await beforeAll(allState);
-        return newAllState;
+        return {...allState, ...newAllState};
       },
       beforeEach: async newAllState => {
-        eachState = await this.hooks.beforeEach(allState);
+        const eachState = await this.hooks.beforeEach(newAllState);
         const newEachState = await beforeEach({...eachState, ...newAllState});
-        return newEachState;
+        return {...eachState, ...newEachState};
       },
       afterEach: async newCombinedState => {
         await afterEach(newCombinedState);
-        await this.hooks.afterEach({...allState, ...eachState});
+        await this.hooks.afterEach(newCombinedState);
       },
       afterAll: async newAllState => {
         await afterAll(newAllState);
-        await this.hooks.afterAll(allState);
+        await this.hooks.afterAll(newAllState);
       }
     });
     return newEnvironment;
+  }
+
+  mixin<NewEachState, NewAllState>(environment: Environment<NewEachState, NewAllState, InitialState>) {
+    return new Environment<NewEachState & EachState, AllState & NewAllState, InitialState>({
+      beforeAll: async state => {
+        const first = await this.hooks.beforeAll(state);
+        const second = await environment.hooks.beforeAll(state);
+        return {...first, ...second};
+      },
+      beforeEach: async state => {
+        const first = await this.hooks.beforeEach(state);
+        const second = await environment.hooks.beforeEach(state);
+        return {...first, ...second};
+      },
+      afterEach: async state => {
+        await this.hooks.afterEach(state);
+        await environment.hooks.afterEach(state);
+      },
+      afterAll: async state => {
+        await this.hooks.afterAll(state);
+        await environment.hooks.afterAll(state);
+      },
+    });
   }
 }
 
@@ -343,4 +349,62 @@ export class Test {
     await worker.shutdown();
     return result;
   }
+}
+
+export type API<EachState, AllState, InitialState = void> = {
+  (name: string, callback: (state: EachState & AllState) => (void|Promise<void>)): void;
+  skip(condition: boolean): API<EachState, AllState, InitialState>;
+  todo(condition: boolean): API<EachState, AllState, InitialState>;
+  only: API<EachState, AllState, InitialState>;
+  slow: API<EachState, AllState, InitialState>;
+};
+
+function makeAPI<EachState, AllState, InitialState = void>(hooks: {
+  beforeAll: Callback<InitialState, AllState>;
+  beforeEach: Callback<AllState, EachState>;
+
+  afterEach: Callback<AllState & EachState, void>;
+  afterAll: Callback<AllState, void>;
+}): API<EachState, AllState, InitialState> {
+  type Callback = (state: EachState & AllState) => (void|Promise<void>);
+  function makeTest(name: string, callback: Callback) {
+    return new Test(name, async (state: unknown) => {
+      const allState = await hooks.beforeAll(state as InitialState);
+      const eachState = await hooks.beforeEach(allState);
+      let success = true;
+      let error;
+      try {
+        await callback({...allState, ...eachState});
+      } catch (e) {
+        error = e;
+        success = false;
+      }
+      await hooks.afterEach({...allState, ...eachState});
+      await hooks.afterAll(allState);
+      if (!success)
+        throw error;
+    });
+  }
+
+  function makeTestFunction(skip: boolean, focus: boolean, slow: boolean) {
+    const test = ((name: string, callback: Callback) => {
+      const test = makeTest(name, callback);
+      test.skipped = skip;
+      test.focused = focus;
+    }) as API<EachState, AllState, InitialState>;
+
+    test.skip = condition => {
+      return makeTestFunction(skip || condition, focus, slow);
+    };
+    test.todo = condition => {
+      return makeTestFunction(skip || condition, focus, slow);
+    };
+    test.slow = slow ? test : makeTestFunction(skip, focus, true);
+
+    test.only = focus ? test : makeTestFunction(skip, true, slow);
+
+    return test;
+  }
+
+  return makeTestFunction(false, false, false);
 }

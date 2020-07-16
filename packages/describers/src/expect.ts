@@ -24,7 +24,7 @@ function toMatchSnapshot(this: {isNot: boolean}, recieved: any, name?: string) {
       throw new Error(`Could not auto detect a snapshot name. Must specify a name.`);
     name = test.fullName().replace(/\s+/g, '-').toLowerCase() + '.' + extension;
   }
-  const goldenPath = path.join(snapshotDir, name);
+  const goldenPath = path.isAbsolute(name) ? name : path.join(snapshotDir, name);
   const exists = fs.existsSync(goldenPath);
   if (updateSnapshot === 'all' || (updateSnapshot === 'new' && !exists)) {
     fs.mkdirSync(path.dirname(goldenPath), {recursive: true});
