@@ -8,6 +8,8 @@
       "sourceMap": true,
       "declarationMap": true,
       "lib": ["esnext", "dom"],
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "declaration": true,
     }
 }
