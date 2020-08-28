@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "name": "demo",
-  "version": "0.0.0",
-  "dependencies": {
-    "playwright-runner": "0.1.0",
-    "jest": "^25.2.7"
-  }
-}

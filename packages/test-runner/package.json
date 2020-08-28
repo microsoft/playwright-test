@@ -1,0 +1,21 @@
+{
+  "name": "@playwright/test-runner",
+  "version": "0.1.0",
+  "bin": {
+    "test-runner": "./cli.js"
+  },
+  "main": "./out/index.js",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "expect": "^26.4.2",
+    "jpeg-js": "^0.4.2",
+    "pixelmatch": "^5.2.1",
+    "pngjs": "^5.0.0",
+    "text-diff": "^1.0.1"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner"
+}

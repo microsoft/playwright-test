@@ -3,13 +3,6 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 module.exports = {
-  presets: [
-    ['@babel/preset-env', {
-      targets: {
-        node: 'current'
-      }
-    }],
-    ['@babel/preset-typescript']
-  ],
+  testMatch: ['<rootDir>/test/**/**.spec.[jt]s'],
+  testPathIgnorePatterns: ['/node_modules/', '/assets/']
 };
-

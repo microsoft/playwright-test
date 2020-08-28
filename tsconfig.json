@@ -2,9 +2,7 @@
   "files": [],
   "include": [],
   "references": [
-      { "path": "./packages/describers/" },
-      { "path": "./packages/jest-wrapper/" },
-      { "path": "./packages/e2e/" },
+      { "path": "./packages/test-runner/" },
       { "path": "./packages/playwright-runner/" }
   ]
 }
