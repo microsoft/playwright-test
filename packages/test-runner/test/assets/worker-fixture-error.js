@@ -17,8 +17,8 @@
 const { registerWorkerFixture } = require('../../');
 
 registerWorkerFixture('failure', async ({}, runTest) => {
-	throw new Error('Worker failed');
+  throw new Error('Worker failed');
 });
 
-it('fails', async({failure}) => {	
+it('fails', async ({failure}) => {
 });

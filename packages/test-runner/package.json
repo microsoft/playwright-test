@@ -12,5 +12,10 @@
     "pixelmatch": "^5.2.1",
     "pngjs": "^5.0.0",
     "text-diff": "^1.0.1"
-  }
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "repository": "github:Microsoft/playwright-runner"
 }

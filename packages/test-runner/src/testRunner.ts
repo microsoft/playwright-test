@@ -26,7 +26,7 @@ export const fixturePool = new FixturePool();
 
 export type TestRunnerEntry = {
   file: string;
-  ordinals: number[];
+  ids: string[];
   configurationString: string;
   configuration: Configuration;
   hash: string;
@@ -43,9 +43,8 @@ function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: strin
 export class TestRunner extends EventEmitter {
   private _failedTestId: string | undefined;
   private _fatalError: any | undefined;
-  private _file: any;
-  private _ordinals: Set<number>;
-  private _remaining: Set<number>;
+  private _ids: Set<string>;
+  private _remaining: Set<string>;
   private _trialRun: any;
   private _configuredFile: any;
   private _parsedGeneratorConfiguration: any = {};
@@ -55,12 +54,15 @@ export class TestRunner extends EventEmitter {
   private _stdOutBuffer: (string | Buffer)[] = [];
   private _stdErrBuffer: (string | Buffer)[] = [];
   private _testResult: TestResult | null = null;
+  private _suite: Suite;
 
   constructor(entry: TestRunnerEntry, config: RunnerConfig, workerId: number) {
     super();
-    this._file = entry.file;
-    this._ordinals = new Set(entry.ordinals);
-    this._remaining = new Set(entry.ordinals);
+    this._suite = new Suite('');
+    this._suite.file = entry.file;
+    this._suite._configurationString = entry.configurationString;
+    this._ids = new Set(entry.ids);
+    this._remaining = new Set(entry.ids);
     this._trialRun = config.trialRun;
     this._timeout = config.timeout;
     this._config = config;
@@ -68,7 +70,7 @@ export class TestRunner extends EventEmitter {
     for (const {name, value} of entry.configuration)
       this._parsedGeneratorConfiguration[name] = value;
     this._parsedGeneratorConfiguration['parallelIndex'] = workerId;
-    setCurrentTestFile(this._file);
+    setCurrentTestFile(this._suite.file);
   }
 
   stop() {
@@ -108,14 +110,13 @@ export class TestRunner extends EventEmitter {
   async run() {
     setParameters(this._parsedGeneratorConfiguration);
 
-    const suite = new Suite('');
-    const revertBabelRequire = spec(suite, this._file, this._timeout);
-    require(this._file);
+    const revertBabelRequire = spec(this._suite, this._suite.file, this._timeout);
+    require(this._suite.file);
     revertBabelRequire();
-    suite._renumber();
+    this._suite._renumber();
 
-    rerunRegistrations(this._file, 'test');
-    await this._runSuite(suite);
+    rerunRegistrations(this._suite.file, 'test');
+    await this._runSuite(this._suite);
     this._reportDone();
   }
 
@@ -144,17 +145,21 @@ export class TestRunner extends EventEmitter {
   private async _runTest(test: Test) {
     if (this._failedTestId)
       return false;
-    if (this._ordinals.size && !this._ordinals.has(test._ordinal))
+    if (this._ids.size && !this._ids.has(test._id))
       return;
-    this._remaining.delete(test._ordinal);
+    this._remaining.delete(test._id);
 
-    const id = `${test._ordinal}@${this._configuredFile}`;
+    const id = test._id;
     this._testId = id;
-    this.emit('testBegin', { id });
+    this.emit('testBegin', {
+      id,
+      skipped: test._skipped,
+      flaky: test._flaky,
+    });
 
     const result: TestResult = {
       duration: 0,
-      status: 'none',
+      status: 'passed',
       stdout: [],
       stderr: [],
       data: {}
@@ -178,15 +183,15 @@ export class TestRunner extends EventEmitter {
       } else {
         result.status = 'passed';
       }
-      result.duration = Date.now() - startTime;
-      this.emit('testEnd', { id, result });
     } catch (error) {
-      result.error = serializeError(error);
+      // Error in the test fixture teardown.
       result.status = 'failed';
-      result.duration = Date.now() - startTime;
-      this._failedTestId = this._testId;
-      this.emit('testEnd', { id, result });
+      result.error = serializeError(error);
     }
+    result.duration = Date.now() - startTime;
+    this.emit('testEnd', { id, result });
+    if (result.status !== 'passed')
+      this._failedTestId = this._testId;
     this._testResult = null;
     this._testId = null;
   }

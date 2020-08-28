@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-const { registerWorkerFixture } = require('../../');
+const fs = require('fs');
+const path = require('path');
 
-registerWorkerFixture('timeout', async ({}, runTest) => {
-});
-
-it('fails', async ({timeout}) => {
+it.flaky('flake', async ({}) => {
+  try {
+    fs.readFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'));
+  } catch (e) {
+    // First time this fails.
+    fs.writeFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'), 'TRUE');
+    expect(true).toBe(false);
+  }
 });

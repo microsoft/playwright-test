@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const { parameters } = require('../../');
 
-const { registerWorkerFixture } = require('../../');
+if (typeof parameters.parallelIndex === 'number')
+  throw new Error('Suite error');
 
-registerWorkerFixture('timeout', async ({}, runTest) => {
-});
-
-it('fails', async ({timeout}) => {
+it('passes',() => {
+  expect(1 + 1).toBe(2);
 });
