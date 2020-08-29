@@ -8,13 +8,14 @@
 ```js
 // src/foo.spec.ts
 import 'playwright-runner';
-it('is a basic test with the page', async ({page}) => {
+
+it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
   const home = await page.waitForSelector('home-navigation');
   expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
 });
 ```
-5. Run all of your tests with `npx test-runner .`
+3. Run all of your tests with `npx test-runner .`
 
 # Contributing
 
