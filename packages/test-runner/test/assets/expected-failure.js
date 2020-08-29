@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+require('../../');
 
-const fs = require('fs');
-const path = require('path');
+it('fails', test => test.fail(), () => {
+  expect(1 + 1).toBe(3);
+});
 
-it('flake', test => {
-  test.flaky();
-}, async ({}) => {
-  try {
-    fs.readFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'));
-  } catch (e) {
-    // First time this fails.
-    fs.writeFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'), 'TRUE');
-    expect(true).toBe(false);
-  }
+it('non-empty remaining',() => {
+  expect(1 + 1).toBe(2);
 });

@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+require('../../');
 
-const fs = require('fs');
-const path = require('path');
-
-it('flake', test => {
-  test.flaky();
-}, async ({}) => {
-  try {
-    fs.readFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'));
-  } catch (e) {
-    // First time this fails.
-    fs.writeFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'), 'TRUE');
-    expect(true).toBe(false);
-  }
+it('unhandled rejection', async () => {
+  setTimeout(() => {
+    throw new Error('Unhandled rejection in the test');
+  });
+  await new Promise(f => setTimeout(f, 20));
 });
