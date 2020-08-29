@@ -46,7 +46,6 @@ export class TestRunner extends EventEmitter {
   private _ids: Set<string>;
   private _remaining: Set<string>;
   private _trialRun: any;
-  private _configuredFile: any;
   private _parsedGeneratorConfiguration: any = {};
   private _config: RunnerConfig;
   private _timeout: number;
@@ -55,6 +54,7 @@ export class TestRunner extends EventEmitter {
   private _stdErrBuffer: (string | Buffer)[] = [];
   private _testResult: TestResult | null = null;
   private _suite: Suite;
+  private _loaded = false;
 
   constructor(entry: TestRunnerEntry, config: RunnerConfig, workerId: number) {
     super();
@@ -66,7 +66,6 @@ export class TestRunner extends EventEmitter {
     this._trialRun = config.trialRun;
     this._timeout = config.timeout;
     this._config = config;
-    this._configuredFile = entry.file + `::[${entry.configurationString}]`;
     for (const {name, value} of entry.configuration)
       this._parsedGeneratorConfiguration[name] = value;
     this._parsedGeneratorConfiguration['parallelIndex'] = workerId;
@@ -77,14 +76,19 @@ export class TestRunner extends EventEmitter {
     this._trialRun = true;
   }
 
-  fatalError(error: Error | any) {
-    this._fatalError = serializeError(error);
+  unhandledError(error: Error | any) {
     if (this._testResult) {
-      this._testResult.error = this._fatalError;
+      this._testResult.status = 'failed';
+      this._testResult.error = serializeError(error);
+      this._failedTestId = this._testId;
       this.emit('testEnd', {
         id: this._testId,
         result: this._testResult
       });
+      this._testResult = null;
+    } else if (!this._loaded) {
+      // No current test - fatal error.
+      this._fatalError = serializeError(error);
     }
     this._reportDone();
   }
@@ -114,6 +118,7 @@ export class TestRunner extends EventEmitter {
     require(this._suite.file);
     revertBabelRequire();
     this._suite._renumber();
+    this._loaded = true;
 
     rerunRegistrations(this._suite.file, 'test');
     await this._runSuite(this._suite);
@@ -132,7 +137,6 @@ export class TestRunner extends EventEmitter {
         await this._runSuite(entry);
       else
         await this._runTest(entry);
-
     }
     try {
       await this._runHooks(suite, 'afterAll', 'after');
@@ -151,22 +155,29 @@ export class TestRunner extends EventEmitter {
 
     const id = test._id;
     this._testId = id;
+    // We only know resolved skipped/flaky value in the worker,
+    // send it to the runner.
+    test._skipped = test._isSkipped();
+    test._flaky = test._isFlaky();
+    test._slow = test._isSlow();
     this.emit('testBegin', {
       id,
       skipped: test._skipped,
       flaky: test._flaky,
+      slow: test._slow
     });
 
     const result: TestResult = {
       duration: 0,
       status: 'passed',
+      expectedStatus: test._expectedStatus,
       stdout: [],
       stderr: [],
       data: {}
     };
     this._testResult = result;
 
-    if (test._skipped || test.suite._isSkipped()) {
+    if (test._skipped) {
       result.status = 'skipped';
       this.emit('testEnd', { id, result });
       return;
@@ -176,12 +187,12 @@ export class TestRunner extends EventEmitter {
     try {
       const testInfo = { config: this._config, test, result };
       if (!this._trialRun) {
-        await this._runHooks(test.suite, 'beforeEach', 'before', testInfo);
-        const timeout = test.slow ? this._timeout * 3 : this._timeout;
+        await this._runHooks(test.parent, 'beforeEach', 'before', testInfo);
+        const timeout = test._isSlow() ? this._timeout * 3 : this._timeout;
         await fixturePool.runTestWithFixtures(test.fn, timeout, testInfo);
-        await this._runHooks(test.suite, 'afterEach', 'after', testInfo);
+        await this._runHooks(test.parent, 'afterEach', 'after', testInfo);
       } else {
-        result.status = 'passed';
+        result.status = result.expectedStatus;
       }
     } catch (error) {
       // Error in the test fixture teardown.
@@ -189,7 +200,10 @@ export class TestRunner extends EventEmitter {
       result.error = serializeError(error);
     }
     result.duration = Date.now() - startTime;
-    this.emit('testEnd', { id, result });
+    if (this._testResult) {
+      // We could have reported end due to an unhandled exception.
+      this.emit('testEnd', { id, result });
+    }
     if (result.status !== 'passed')
       this._failedTestId = this._testId;
     this._testResult = null;
