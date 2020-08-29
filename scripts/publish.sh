@@ -71,7 +71,7 @@ if [[ $1 == "--release" ]]; then
   for package in $packages
   do
     cd $package;
-    npm publish .
+    npm publish . --access public
   done
   echo "Done."
 elif [[ $1 == "--tip-of-tree" ]]; then
