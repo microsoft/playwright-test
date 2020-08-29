@@ -2,5 +2,5 @@
 # See https://docs.npmjs.com/misc/developers
 **/*
 
-!out
-!cli.js
+!/out/**/*.js
+!/out/**/*.d.ts
