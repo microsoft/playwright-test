@@ -23,7 +23,7 @@ for (const {fileName, json} of packages) {
   if (json.private)
     continue;
   let errors = false;
-  checkField('license', 'MIT');
+  checkField('license', 'Apache-2.0');
   checkField('author', {name: 'Microsoft Corporation'});
   checkField('repository', 'github:Microsoft/playwright-runner');
   if (errors) {
