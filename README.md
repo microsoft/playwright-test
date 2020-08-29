@@ -1,39 +1,20 @@
 # 🎭 Playwright Runner
-> :warning: **WARNING:** For testing in production please refer to the [Test runners](https://github.com/microsoft/playwright/blob/master/docs/test-runners.md) document. This repository contains experimental work where we explore custom Jest runners and JSDom-alike component testing that uses real browsers.
+> :warning: **WARNING:** For testing in production please refer to the [Test runners](https://github.com/microsoft/playwright/blob/master/docs/test-runners.md) document. This repository contains an experimental test runner.
 
 ## Usage
 
-1. `npm i --save-dev jest playwright-runner ` or `yarn add --dev jest playwright-runner`
-2. Specify `playwright-runner` in your Jest configuration:
+1. `npm i playwright-runner`
+2. Place unit tests in files ending with `.spec.*`.
 ```js
-// jest.config.js
-module.exports = {
-  "preset": "playwright-runner"
-}
-```
-3. Place unit tests in files ending with `.spec.*` or `.test.*`.
-```js
-// src/App.spec.jsx
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { App } from './App';
-
-it('should work', function() {
-  const container = document.createElement('div');
-  ReactDOM.render(<App />, container);
-  expect(container.textContent).toBe('Hello World');
-});
-```
-4. Place end-to-end tests inside an `e2e` folder.
-```js
-// e2e/basic.test.js
+// src/foo.spec.ts
+import 'playwright-runner';
 it('is a basic test with the page', async ({page}) => {
-  await page.goto('https://github.com/microsoft/playwright-runner/blob/master/README.md');
-  const title = await page.waitForSelector('article h1');
-  expect(await title.textContent()).toBe('🎭 Playwright Runner');
+  await page.goto('https://playwright.dev/');
+  const home = await page.waitForSelector('home-navigation');
+  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
 });
 ```
-5. Run all of your tests with `npx jest` or `yarn jest`
+5. Run all of your tests with `npx test-runner .`
 
 # Contributing
 
