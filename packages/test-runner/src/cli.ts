@@ -48,7 +48,7 @@ program
     .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds), default: 10000', '10000')
     .option('-u, --update-snapshots', 'Use this flag to re-record every snapshot that fails during this test run')
     .action(async command => {
-      const testDir = path.resolve(process.cwd(), command.args[0]);
+      const testDir = path.resolve(process.cwd(), command.args[0] || '.');
       const config: RunnerConfig = {
         debug: command.debug,
         forbidOnly: command.forbidOnly,

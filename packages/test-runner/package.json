@@ -7,6 +7,7 @@
   "main": "./out/index.js",
   "dependencies": {
     "colors": "^1.4.0",
+    "commander": "^6.1.0",
     "expect": "^26.4.2",
     "jpeg-js": "^0.4.2",
     "pixelmatch": "^5.2.1",

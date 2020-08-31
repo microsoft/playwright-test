@@ -3,16 +3,15 @@
 
 ## Usage
 
-1. `npm i playwright-runner`
+1. `npm i -D playwright-runner`
 2. Place unit tests in files ending with `.spec.*`.
 ```js
 // src/foo.spec.ts
 import 'playwright-runner';
 
-it('is a basic test with the page', async ({ page }) => {
+it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
-  const home = await page.waitForSelector('home-navigation');
-  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
+  expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
 });
 ```
 3. Run all of your tests with `npx test-runner .`
