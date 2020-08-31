@@ -15,7 +15,7 @@
  */
 
 import {registerWorkerFixture, registerFixture} from '@playwright/test-runner';
-import {LaunchOptions, BrowserType, Browser, BrowserContext, Page, chromium, firefox, webkit} from 'playwright';
+import {LaunchOptions, BrowserType, Browser, BrowserContext, Page, chromium, firefox, webkit, BrowserContextOptions} from 'playwright';
 export * from '@playwright/test-runner';
 
 declare global {
@@ -23,6 +23,7 @@ declare global {
     browserType: BrowserType<Browser>;
     browser: Browser;
     defaultBrowserOptions: LaunchOptions;
+    defaultContextOptions: BrowserContextOptions;
   }
   interface TestState {
     context: BrowserContext;
@@ -54,8 +55,12 @@ registerWorkerFixture('defaultBrowserOptions', async ({}, test) => {
   });
 });
 
-registerFixture('context', async ({browser}, test) => {
-  const context = await browser.newContext();
+registerWorkerFixture('defaultContextOptions', async ({}, test) => {
+  await test({});
+});
+
+registerFixture('context', async ({browser, defaultContextOptions}, test) => {
+  const context = await browser.newContext(defaultContextOptions);
   await test(context);
   await context.close();
 });
