@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import colors from 'colors/safe';
+import '@playwright/test-runner';
 import { spawnSync } from 'child_process';
+import colors from 'colors/safe';
 import * as fs from 'fs';
 import * as path from 'path';
 import rimraf from 'rimraf';
@@ -98,7 +99,8 @@ it('should work with typescript', async () => {
 it('should retry failures', async () => {
   const result = await runTest('retry-failures.js', { retries: 1 });
   expect(result.exitCode).toBe(1);
-  expect(result.flaky).toBe(1);
+  expect(result.expectedFlaky).toBe(0);
+  expect(result.unexpectedFlaky).toBe(1);
 });
 
 it('should retry timeout', async () => {
@@ -128,7 +130,8 @@ it('should report suite errors', async () => {
 it('should allow flaky', async () => {
   const result = await runTest('allow-flaky.js', { retries: 1 });
   expect(result.exitCode).toBe(0);
-  expect(result.flaky).toBe(1);
+  expect(result.expectedFlaky).toBe(1);
+  expect(result.unexpectedFlaky).toBe(0);
 });
 
 it('should fail on unexpected pass', async () => {
@@ -210,7 +213,8 @@ async function runTest(filePath: string, params: any = {}) {
   const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
   const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
   const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
-  const flaky = (/(\d+) flaky/.exec(output.toString()) || [])[1];
+  const expectedFlaky = (/(\d+) expected flaky/.exec(output.toString()) || [])[1];
+  const unexpectedFlaky = (/(\d+) unexpected flaky/.exec(output.toString()) || [])[1];
   const skipped = (/(\d+) skipped/.exec(output.toString()) || [])[1];
   const report = JSON.parse(fs.readFileSync(reportFile).toString());
   let outputStr = output.toString();
@@ -221,7 +225,8 @@ async function runTest(filePath: string, params: any = {}) {
     passed: parseInt(passed, 10),
     failed: parseInt(failed || '0', 10),
     timedOut: parseInt(timedOut || '0', 10),
-    flaky: parseInt(flaky || '0', 10),
+    expectedFlaky: parseInt(expectedFlaky || '0', 10),
+    unexpectedFlaky: parseInt(unexpectedFlaky || '0', 10),
     skipped: parseInt(skipped || '0', 10),
     report
   };

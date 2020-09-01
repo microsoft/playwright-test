@@ -114,9 +114,11 @@ export class BaseReporter implements Reporter  {
       this._printFailures(filteredUnexpected);
     }
 
-    const allFlaky = this.expectedFlaky.length + this.unexpectedFlaky.length;
-    if (allFlaky) {
-      console.log(colors.red(`  ${allFlaky} flaky`));
+    if (this.expectedFlaky.length)
+      console.log(colors.yellow(`  ${this.expectedFlaky.length} expected flaky`));
+
+    if (this.unexpectedFlaky.length) {
+      console.log(colors.red(`  ${this.unexpectedFlaky.length} unexpected flaky`));
       if (this.unexpectedFlaky.length) {
         console.log('');
         this._printFailures(this.unexpectedFlaky);
