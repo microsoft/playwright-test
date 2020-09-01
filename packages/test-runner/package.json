@@ -5,11 +5,15 @@
     "test-runner": "./cli.js"
   },
   "main": "./out/index.js",
+  "scripts": {
+    "test": "test-runner test/"
+  },
   "dependencies": {
     "@babel/code-frame": "^7.10.4",
     "@babel/core": "^7.11.4",
     "@babel/preset-env": "^7.11.0",
     "@babel/preset-typescript": "^7.10.4",
+    "@playwright/test-runner": "^0.2.2",
     "colors": "^1.4.0",
     "commander": "^6.1.0",
     "expect": "^26.4.2",

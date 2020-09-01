@@ -20,7 +20,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import {it, expect} from '@jest/globals';
 
 const removeFolderAsync = promisify(rimraf);
 

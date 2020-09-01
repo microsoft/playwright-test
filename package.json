@@ -1,29 +1,28 @@
 {
-    "private": true,
-    "devDependencies": {
-        "@types/node": "^14.6.2",
-        "@types/rimraf": "^3.0.0",
-        "@typescript-eslint/eslint-plugin": "^3.10.1",
-        "@typescript-eslint/parser": "^3.10.1",
-        "eslint": "^7.7.0",
-        "eslint-plugin-notice": "^0.9.10",
-        "expect": "^26.4.2",
-        "glob": "^7.1.6",
-        "jest": "^26.4.2",
-        "rimraf": "^3.0.2",
-        "typescript": "^4.0.2"
-    },
-    "workspaces": [
-        "packages/*"
-    ],
-    "scripts": {
-        "test": "jest",
-        "lint": "node scripts/lintPackages.js && eslint . --ext js,ts",
-        "build": "tsc --build tsconfig.json",
-        "watch": "tsc --build tsconfig.json --watch",
-        "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
-        "prepare": "yarn run build",
-        "update-version": "node scripts/updateVersion.js"
-    },
-    "version": "0.0.0"
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "yarn workspace @playwright/test-runner test",
+    "lint": "node scripts/lintPackages.js && eslint . --ext js,ts",
+    "build": "tsc --build tsconfig.json",
+    "watch": "tsc --build tsconfig.json --watch",
+    "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
+    "prepare": "yarn run build",
+    "update-version": "node scripts/updateVersion.js"
+  },
+  "version": "0.0.0",
+  "devDependencies": {
+    "@types/node": "^14.6.2",
+    "@types/rimraf": "^3.0.0",
+    "@typescript-eslint/eslint-plugin": "^3.10.1",
+    "@typescript-eslint/parser": "^3.10.1",
+    "eslint": "^7.7.0",
+    "eslint-plugin-notice": "^0.9.10",
+    "expect": "^26.4.2",
+    "glob": "^7.1.6",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.0.2"
+  }
 }
