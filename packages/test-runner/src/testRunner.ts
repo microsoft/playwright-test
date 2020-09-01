@@ -17,12 +17,26 @@
 import { FixturePool, rerunRegistrations, setParameters, TestInfo } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
-import { Test, Suite, Configuration, serializeError, TestResult } from './test';
+import { Test, Suite, Configuration, serializeError, TestResult, TestStatus } from './test';
 import { spec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
 
 export const fixturePool = new FixturePool();
+
+export type TestBeginPayload = {
+  id: string;
+  skipped: boolean;
+  flaky: boolean
+  slow: boolean;
+  timeout: number;
+  expectedStatus: TestStatus;
+}
+
+export type TestEndPayload = {
+  id: string;
+  result: TestResult;
+}
 
 export type TestRunnerEntry = {
   file: string;
@@ -84,7 +98,7 @@ export class TestRunner extends EventEmitter {
       this.emit('testEnd', {
         id: this._testId,
         result: this._testResult
-      });
+      } as TestEndPayload);
       this._testResult = null;
     } else if (!this._loaded) {
       // No current test - fatal error.
@@ -160,12 +174,14 @@ export class TestRunner extends EventEmitter {
     test._skipped = test._isSkipped();
     test._flaky = test.isFlaky();
     test._slow = test._isSlow();
+    test._timeout = test._isSlow() ? this._timeout * 3 : this._timeout;
     this.emit('testBegin', {
       id,
       skipped: test._skipped,
       flaky: test._flaky,
-      slow: test._slow
-    });
+      slow: test._slow,
+      timeout: test._timeout
+    } as TestBeginPayload);
 
     const result: TestResult = {
       duration: 0,
@@ -188,8 +204,7 @@ export class TestRunner extends EventEmitter {
       const testInfo = { config: this._config, test, result };
       if (!this._trialRun) {
         await this._runHooks(test.parent, 'beforeEach', 'before', testInfo);
-        const timeout = test._isSlow() ? this._timeout * 3 : this._timeout;
-        await fixturePool.runTestWithFixturesAndTimeout(test.fn, timeout, testInfo);
+        await fixturePool.runTestWithFixturesAndTimeout(test.fn, test._timeout, testInfo);
         await this._runHooks(test.parent, 'afterEach', 'after', testInfo);
       } else {
         result.status = result.expectedStatus;

@@ -20,7 +20,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { lookupRegistrations, FixturePool } from './fixtures';
 import { Suite, Test, TestResult } from './test';
-import { TestRunnerEntry } from './testRunner';
+import { TestRunnerEntry, TestBeginPayload, TestEndPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
 
@@ -172,15 +172,16 @@ export class Runner {
 
   _createWorker() {
     const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
-    worker.on('testBegin', params => {
+    worker.on('testBegin', (params: TestBeginPayload) => {
       const { test } = this._testById.get(params.id);
       test._skipped = params.skipped;
       test._flaky = params.flaky;
       test._slow = params.slow;
+      test._timeout = params.timeout;
       test._expectedStatus = params.expectedStatus;
       this._reporter.onTestBegin(test);
     });
-    worker.on('testEnd', params => {
+    worker.on('testEnd', (params: TestEndPayload) => {
       const workerResult: TestResult = params.result;
       // We were accumulating these below.
       delete workerResult.stdout;

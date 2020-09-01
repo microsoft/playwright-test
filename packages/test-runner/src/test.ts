@@ -16,7 +16,7 @@
 
 export type Configuration = { name: string, value: string }[];
 
-type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
+export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
 export class Runnable {
   title: string;

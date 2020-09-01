@@ -185,6 +185,12 @@ it('should respect global timeout', async () => {
   expect(output).toContain('Timed out waiting 0.5s for the entire test run');
 });
 
+it('should respect slow test', async () => {
+  const { exitCode, output } = await runTest('slow.js', { timeout: 1 });
+  expect(output).toContain('Timeout of 3ms exceeded');
+  expect(exitCode).toBe(1);
+});
+
 async function runTest(filePath: string, params: any = {}) {
   const outputDir = path.join(__dirname, 'test-results');
   const reportFile = path.join(outputDir, 'results.json');
