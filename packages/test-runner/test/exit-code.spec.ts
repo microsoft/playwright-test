@@ -81,6 +81,12 @@ it('should handle worker fixture error', async () => {
   expect(result.output).toContain('Worker failed');
 });
 
+it('should handle nested fixtures', async () => {
+  const {exitCode, passed} = await runTest('nested-fixtures.js');
+  expect(exitCode).toBe(0);
+  expect(passed).toBe(2);
+});
+
 it('should collect stdio', async () => {
   const { exitCode, report } = await runTest('stdio.js');
   expect(exitCode).toBe(0);

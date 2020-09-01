@@ -14,10 +14,26 @@
  * limitations under the License.
  */
 
-require('../..');
+const { registerFixture } = require('../../');
 
-it('slow', test => {
-  test.slow();
-}, async () => {
-  await new Promise(f => setTimeout(f, 10000));
+registerFixture('foobar', async ({ }, runTest) => {
+  await runTest(1);
+});
+
+registerFixture('foobar', async ({ foobar }, runTest) => {
+  expect(foobar).toBe(1);
+  await runTest(foobar + 1);
+});
+
+registerFixture('foobar', async ({ foobar }, runTest) => {
+  expect(foobar).toBe(2);
+  await runTest(foobar + 1);
+});
+
+it('assert foobar fixture value first time', async ({ foobar }) => {
+  expect(foobar).toBe(3);
+});
+
+it('assert foobar fixture value second time', async ({ foobar }) => {
+  expect(foobar).toBe(3);
 });

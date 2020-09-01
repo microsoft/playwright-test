@@ -322,7 +322,9 @@ function computeWorkerHash(file: string) {
   // This collection of fixtures is the fingerprint of the worker setup, a "worker hash".
   // Tests with the matching "worker hash" will reuse the same worker.
   const hash = crypto.createHash('sha1');
-  for (const registration of lookupRegistrations(file, 'worker').values())
-    hash.update(registration.location);
+  for (const registration of lookupRegistrations(file, 'worker').values()) {
+    for (const r of registration)
+      hash.update(r.scope + r.name + r.fn.toString());
+  }
   return hash.digest('hex');
 }
