@@ -19,11 +19,53 @@ import { installTransform } from './transform';
 
 Error.stackTraceLimit = 15;
 
+let currentItImpl;
+let currentDescribeImpl;
+let currentSuites: Suite[];
+
+interface DescribeFunction {
+  describe(name: string, inner: () => void): void;
+  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
+}
+
+interface ItFunction<STATE> {
+  it(name: string, inner: (state: STATE) => Promise<void> | void): void;
+  it(name: string, modifier: (test: Test) => any, inner: (state: STATE) => Promise<void> | void): void;
+}
+
+export const it: ItFunction<TestState & WorkerState>['it'] & {
+  only: ItFunction<TestState & WorkerState>['it'];
+  skip: ItFunction<TestState & WorkerState>['it'];
+} = (...args) => {
+  currentItImpl('default', ...args);
+};
+it.skip = (...args) => currentItImpl('skip', ...args);
+it.only = (...args) => currentItImpl('only', ...args);
+export const fit: ItFunction<TestState & WorkerState>['it'] = it.only;
+export const xit: ItFunction<TestState & WorkerState>['it'] = it.skip;
+
+export const describe: DescribeFunction['describe'] & {
+  only: DescribeFunction['describe'];
+  skip: DescribeFunction['describe'];
+} = (...args) => {
+  currentDescribeImpl('default', ...args);
+};
+describe.skip = (...args) => currentDescribeImpl('skip', ...args);
+describe.only = (...args) => currentDescribeImpl('only', ...args);
+export const fdescribe: DescribeFunction['describe'] = describe.only;
+export const xdescribe: DescribeFunction['describe'] = describe.skip;
+
+export const beforeEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('beforeEach', fn);
+export const afterEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('afterEach', fn);
+export const beforeAll: (inner: (state: WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('beforeAll', fn);
+export const afterAll: (inner: (state: WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('afterAll', fn);
+
 export function spec(suite: Suite, file: string, timeout: number): () => void {
   const suites = [suite];
+  currentSuites = suites;
   suite.file = file;
 
-  const it = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test) => void | Function, fn?: Function) => {
+  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test) => void | Function, fn?: Function) => {
     const suite = suites[0];
     if (typeof fn !== 'function') {
       fn = metaFn;
@@ -43,7 +85,7 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
     return test;
   };
 
-  const describe = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite) => void | Function, fn?: Function) => {
+  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite) => void | Function, fn?: Function) => {
     if (typeof fn !== 'function') {
       fn = metaFn;
       metaFn = null;
@@ -61,31 +103,13 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
     suites.unshift(child);
     fn();
     suites.shift();
-  }
-
-  const context = (global as any);
-  context.beforeEach = fn => suite._addHook('beforeEach', fn);
-  context.afterEach = fn => suite._addHook('afterEach', fn);
-  context.beforeAll = fn => suite._addHook('beforeAll', fn);
-  context.afterAll = fn => suite._addHook('afterAll', fn);
-
-  context.describe = describe.bind(null, 'default');
-  context.describe.only = describe.bind(null, 'only');
-  context.describe.skip = describe.bind(null, 'skip');
-  context.fdescribe = describe.bind(null, 'only');
-  context.xdescribe = describe.bind(null, 'skip');
-
-  context.it = it.bind(null, 'default');
-  context.it.only = it.bind(null, 'only');
-  context.it.skip = it.bind(null, 'skip');
-  context.fit = it.bind(null, 'only');
-  context.xit = it.bind(null, 'skip');
+  };
 
   return installTransform();
 }
 
 function extractLocation(error: Error): string {
-  const location = error.stack.split('\n')[2];
+  const location = error.stack.split('\n')[3];
   const match = location.match(/Object.<anonymous> \((.*)\)/);
   if (match)
     return match[1];

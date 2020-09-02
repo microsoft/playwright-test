@@ -23,23 +23,10 @@ import { promisify } from 'util';
 import './expect';
 import { registerFixture as registerFixtureT, registerWorkerFixture as registerWorkerFixtureT, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
-import { Suite, Test } from './test';
 export { parameters } from './fixtures';
-export { Reporter } from './reporter';
-export { RunnerConfig } from './runnerConfig';
-export { Suite, Test } from './test';
+export { afterAll, afterEach, beforeAll, beforeEach, describe, fdescribe, fit, it, xdescribe, xit } from './spec';
 
 const mkdirAsync = promisify(fs.mkdir);
-
-interface DescribeFunction {
-  describe(name: string, inner: () => void): void;
-  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
-}
-
-interface ItFunction<STATE> {
-  it(name: string, inner: (state: STATE) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test) => any, inner: (state: STATE) => Promise<void> | void): void;
-}
 
 declare global {
   interface WorkerState {
@@ -51,25 +38,6 @@ declare global {
     tmpDir: string;
     outputFile: (suffix: string) => Promise<string>
   }
-
-  const describe: DescribeFunction['describe'] & {
-    only: DescribeFunction['describe'];
-    skip: DescribeFunction['describe'];
-  };
-  const fdescribe: DescribeFunction['describe'];
-  const xdescribe: DescribeFunction['describe'];
-
-  const it: ItFunction<TestState & WorkerState>['it'] & {
-    only: ItFunction<TestState & WorkerState>['it'];
-    skip: ItFunction<TestState & WorkerState>['it'];
-  };
-  const fit: ItFunction<TestState & WorkerState>['it'];
-  const xit: ItFunction<TestState & WorkerState>['it'];
-
-  const beforeEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void;
-  const afterEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void;
-  const beforeAll: (inner: (state: WorkerState) => Promise<void>) => void;
-  const afterAll: (inner: (state: WorkerState) => Promise<void>) => void;
 }
 
 const mkdtempAsync = promisify(fs.mkdtemp);

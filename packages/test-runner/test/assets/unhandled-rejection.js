@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-require('../../');
+const { it } = require('../../');
 
 it('unhandled rejection', async () => {
   setTimeout(() => {

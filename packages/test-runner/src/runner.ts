@@ -27,7 +27,6 @@ import { Suite } from './test';
 import { Matrix, TestCollector } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
-export { parameters } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test } from './test';

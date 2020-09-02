@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+const { it } = require('../../');
+
 if (new Error().stack.includes('testRunner'))
   throw new Error('Suite error');
 

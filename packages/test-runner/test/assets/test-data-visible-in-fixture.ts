@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-const { registerFixture } = require('../../');
-const fs = require('fs');
-const path = require('path');
+import { it, registerFixture } from '../../';
+
+declare global {
+  interface TestState {
+    postProcess: string;
+  }
+}
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
-  const { result } = info;
-  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'test-error-visible-in-fixture.txt'), JSON.stringify(result.error, undefined, 2));
+  info.result.data['myname'] = 'myvalue';
 });
 
 it('ensure fixture handles test error', async ({ postProcess }) => {
+  console.log('console.log');
+  console.error('console.error');
   expect(true).toBe(false);
 });

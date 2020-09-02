@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-require('../../../');
+import { it } from '../../../';
 
 it('succeeds', () => {
   expect(1 + 1).toBe(2);
