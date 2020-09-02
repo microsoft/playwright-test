@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test-runner",
-  "version": "0.2.5-post",
+  "version": "0.2.6-post",
   "bin": {
     "test-runner": "./cli.js"
   },
@@ -28,7 +28,7 @@
     "text-diff": "^1.0.1"
   },
   "devDependencies": {
-    "@playwright/test-runner": "^0.2.5"
+    "@playwright/test-runner": "^0.2.6"
   },
   "license": "Apache-2.0",
   "author": {

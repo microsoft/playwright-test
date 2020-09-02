@@ -24,66 +24,66 @@ import { promisify } from 'util';
 const removeFolderAsync = promisify(rimraf);
 
 export type RunResult = {
-	exitCode: number,
-	output: string,
-	passed: number,
-	failed: number,
-	timedOut: number,
-	expectedFlaky: number,
-	unexpectedFlaky: number,
-	skipped: number,
-	report: any
+  exitCode: number,
+  output: string,
+  passed: number,
+  failed: number,
+  timedOut: number,
+  expectedFlaky: number,
+  unexpectedFlaky: number,
+  skipped: number,
+  report: any
 };
 
 async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
-	const { output, status } = spawnSync('node', [
-		path.join(__dirname, '..', 'cli.js'),
-		path.join(__dirname, 'assets', filePath),
-		'--output=' + outputDir,
-		'--reporter=dot,json',
-		...Object.keys(params).map(key => `--${key}=${params[key]}`)
-	], {
-		env: {
-			...process.env,
-			PW_OUTPUT_DIR: outputDir,
-			PWRUNNER_JSON_REPORT: reportFile,
-		}
-	});
-	const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
-	const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
-	const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
-	const expectedFlaky = (/(\d+) expected flaky/.exec(output.toString()) || [])[1];
-	const unexpectedFlaky = (/(\d+) unexpected flaky/.exec(output.toString()) || [])[1];
-	const skipped = (/(\d+) skipped/.exec(output.toString()) || [])[1];
-	const report = JSON.parse(fs.readFileSync(reportFile).toString());
-	let outputStr = output.toString();
-	outputStr = outputStr.substring(1, outputStr.length - 1);
-	return {
-		exitCode: status,
-		output: outputStr,
-		passed: parseInt(passed, 10),
-		failed: parseInt(failed || '0', 10),
-		timedOut: parseInt(timedOut || '0', 10),
-		expectedFlaky: parseInt(expectedFlaky || '0', 10),
-		unexpectedFlaky: parseInt(unexpectedFlaky || '0', 10),
-		skipped: parseInt(skipped || '0', 10),
-		report
-	};
+  const { output, status } = spawnSync('node', [
+    path.join(__dirname, '..', 'cli.js'),
+    path.join(__dirname, 'assets', filePath),
+    '--output=' + outputDir,
+    '--reporter=dot,json',
+    ...Object.keys(params).map(key => `--${key}=${params[key]}`)
+  ], {
+    env: {
+      ...process.env,
+      PW_OUTPUT_DIR: outputDir,
+      PWRUNNER_JSON_REPORT: reportFile,
+    }
+  });
+  const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
+  const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
+  const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
+  const expectedFlaky = (/(\d+) expected flaky/.exec(output.toString()) || [])[1];
+  const unexpectedFlaky = (/(\d+) unexpected flaky/.exec(output.toString()) || [])[1];
+  const skipped = (/(\d+) skipped/.exec(output.toString()) || [])[1];
+  const report = JSON.parse(fs.readFileSync(reportFile).toString());
+  let outputStr = output.toString();
+  outputStr = outputStr.substring(1, outputStr.length - 1);
+  return {
+    exitCode: status,
+    output: outputStr,
+    passed: parseInt(passed, 10),
+    failed: parseInt(failed || '0', 10),
+    timedOut: parseInt(timedOut || '0', 10),
+    expectedFlaky: parseInt(expectedFlaky || '0', 10),
+    unexpectedFlaky: parseInt(unexpectedFlaky || '0', 10),
+    skipped: parseInt(skipped || '0', 10),
+    report
+  };
 }
 
 declare global {
   interface TestState {
-		outputDir: string;
+    outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
   }
 }
 
-registerFixture('outputDir', async ({}, testRun) => {
-	await testRun(path.join(__dirname, 'test-results', String(parameters.parallelIndex)));
+registerFixture('outputDir', async ({ parallelIndex }, testRun) => {
+  await testRun(path.join(__dirname, 'test-results', String(parallelIndex)));
 });
 
 registerFixture('runTest', async ({ outputDir }, testRun) => {
-	const reportFile = path.join(outputDir, `results.json`);
-	await removeFolderAsync(outputDir).catch(e => { });
-	await testRun(runTest.bind(null, reportFile, outputDir));
+  const reportFile = path.join(outputDir, `results.json`);
+  await removeFolderAsync(outputDir).catch(e => { });
+  await testRun(runTest.bind(null, reportFile, outputDir));
 });
