@@ -17,6 +17,7 @@
 import program from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
+import { isMatch } from 'micromatch';
 import { run, RunnerConfig } from '.';
 import PytestReporter from './reporters/pytest';
 import DotReporter from './reporters/dot';
@@ -36,18 +37,20 @@ const availableReporters = Object.keys(reporters).map(r => `"${r}"`).join();
 
 program
     .version('Version ' + /** @type {any} */ (require)('../package.json').version)
+    .option('--debug', 'Run tests in-process for debugging', false)
     .option('--forbid-only', 'Fail if exclusive test(s) encountered', false)
     .option('-g, --grep <grep>', 'Only run tests matching this string or regexp', '.*')
     .option('--global-timeout <timeout>', 'Specify maximum time this test suite can run (in milliseconds), default: 0 for unlimited', '0')
     .option('-j, --jobs <jobs>', 'Number of concurrent jobs for --parallel; use 1 to run in serial, default: (number of CPU cores / 2)', String(Math.ceil(require('os').cpus().length / 2)))
-    .option('--reporter <reporter>', `Specify reporter to use, comma-separated, can be ${availableReporters}`, 'dot')
-    .option('--repeat-each <repeat-each>', 'Specify how many times to run the tests', '1')
-    .option('--retries <retries>', 'Specify retry count', '0')
-    .option('--trial-run', 'Only collect the matching tests and report them as passing')
-    .option('--quiet', 'Suppress stdio', false)
-    .option('--debug', 'Run tests in-process for debugging', false)
     .option('--output <outputDir>', 'Folder for output artifacts, default: test-results', path.join(process.cwd(), 'test-results'))
+    .option('--quiet', 'Suppress stdio', false)
+    .option('--repeat-each <repeat-each>', 'Specify how many times to run the tests', '1')
+    .option('--reporter <reporter>', `Specify reporter to use, comma-separated, can be ${availableReporters}`, 'dot')
+    .option('--retries <retries>', 'Specify retry count', '0')
+    .option('--test-ignore <pattern>', 'Pattern used to ignore test files', '**/node_modules/**')
+    .option('--test-match <pattern>', 'Pattern used to find test files', '**/?(*.)+(spec|test).[jt]s')
     .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds), default: 10000', '10000')
+    .option('--trial-run', 'Only collect the matching tests and report them as passing')
     .option('-u, --update-snapshots', 'Use this flag to re-record every snapshot that fails during this test run')
     .action(async command => {
       const testDir = path.resolve(process.cwd(), command.args[0] || '.');
@@ -81,7 +84,7 @@ program
         }
       });
 
-      const files = collectFiles(testDir, '', command.args.slice(1));
+      const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
       const result = await run(config, files, new Multiplexer(reporterObjects));
       if (result === 'forbid-only') {
         console.error('=====================================');
@@ -102,19 +105,21 @@ program
 
 program.parse(process.argv);
 
-function collectFiles(testDir: string, dir: string, filters: string[]): string[] {
+function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
   const fullDir = path.join(testDir, dir);
   if (fs.statSync(fullDir).isFile())
     return [fullDir];
   const files = [];
   for (const name of fs.readdirSync(fullDir)) {
+    const relativeName = path.join(dir, name);
+    if (testIgnore && isMatch(relativeName, testIgnore))
+      continue;
     if (fs.lstatSync(path.join(fullDir, name)).isDirectory()) {
-      files.push(...collectFiles(testDir, path.join(dir, name), filters));
+      files.push(...collectFiles(testDir, path.join(dir, name), filters, testMatch, testIgnore));
       continue;
     }
-    if (!name.endsWith('spec.ts') && !name.endsWith('spec.js'))
+    if (testIgnore && !isMatch(relativeName, testMatch))
       continue;
-    const relativeName = path.join(dir, name);
     const fullName = path.join(testDir, relativeName);
     if (!filters.length) {
       files.push(fullName);

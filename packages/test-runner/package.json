@@ -17,6 +17,7 @@
     "commander": "^6.1.0",
     "expect": "^26.4.2",
     "jpeg-js": "^0.4.2",
+    "micromatch": "^4.0.2",
     "ms": "^2.1.2",
     "pirates": "^4.0.1",
     "pixelmatch": "^5.2.1",
@@ -28,7 +29,8 @@
     "text-diff": "^1.0.1"
   },
   "devDependencies": {
-    "@playwright/test-runner": "^0.2.6"
+    "@playwright/test-runner": "^0.2.6",
+    "@types/micromatch": "^4.0.1"
   },
   "license": "Apache-2.0",
   "author": {
