@@ -24,6 +24,10 @@ fit('focused test', () => {
   expect(1 + 1).toBe(2);
 });
 
+it.only('focused only test', () => {
+  expect(1 + 1).toBe(2);
+});
+
 fdescribe('focused describe', () => {
   it('describe test', () => {
     expect(1 + 1).toBe(2);
@@ -33,5 +37,11 @@ fdescribe('focused describe', () => {
 describe('non-focused describe', () => {
   it('describe test', () => {
     expect(1 + 1).toBe(3);
+  });
+});
+
+describe.only('focused describe', () => {
+  it('describe test', () => {
+    expect(1 + 1).toBe(2);
   });
 });

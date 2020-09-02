@@ -57,11 +57,17 @@ declare global {
     outputFile: (suffix: string) => Promise<string>
   }
 
-  const describe: DescribeFunction['describe'];
+  const describe: DescribeFunction['describe'] & {
+    only: DescribeFunction['describe'];
+    skip: DescribeFunction['describe'];
+  };
   const fdescribe: DescribeFunction['describe'];
   const xdescribe: DescribeFunction['describe'];
 
-  const it: ItFunction<TestState & WorkerState>['it'];
+  const it: ItFunction<TestState & WorkerState>['it'] & {
+    only: ItFunction<TestState & WorkerState>['it'];
+    skip: ItFunction<TestState & WorkerState>['it'];
+  };
   const fit: ItFunction<TestState & WorkerState>['it'];
   const xit: ItFunction<TestState & WorkerState>['it'];
 

@@ -70,10 +70,14 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
   context.afterAll = fn => suite._addHook('afterAll', fn);
 
   context.describe = describe.bind(null, 'default');
+  context.describe.only = describe.bind(null, 'only');
+  context.describe.skip = describe.bind(null, 'skip');
   context.fdescribe = describe.bind(null, 'only');
   context.xdescribe = describe.bind(null, 'skip');
 
   context.it = it.bind(null, 'default');
+  context.it.only = it.bind(null, 'only');
+  context.it.skip = it.bind(null, 'skip');
   context.fit = it.bind(null, 'only');
   context.xit = it.bind(null, 'skip');
 

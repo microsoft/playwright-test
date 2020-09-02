@@ -62,13 +62,13 @@ it('should respect slow test', async ({ runTest }) => {
 });
 
 it('should respect excluded tests', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('excluded.ts', { timeout: 1 });
+  const { exitCode, passed } = await runTest('excluded.ts');
   expect(passed).toBe(2);
   expect(exitCode).toBe(0);
 });
 
 it('should respect focused tests', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('focused.ts', { timeout: 1 });
-  expect(passed).toBe(2);
+  const { exitCode, passed } = await runTest('focused.ts');
+  expect(passed).toBe(4);
   expect(exitCode).toBe(0);
 });

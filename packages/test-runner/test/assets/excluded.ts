@@ -24,6 +24,10 @@ xit('excluded test', () => {
   expect(1 + 1).toBe(3);
 });
 
+it.skip('excluded test', () => {
+  expect(1 + 1).toBe(3);
+});
+
 describe('included describe', () => {
   it('included describe test', () => {
     expect(1 + 1).toBe(2);

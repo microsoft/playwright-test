@@ -19,7 +19,6 @@ import './fixtures';
 
 it('should run in parallel', async({ runTest }) => {
 	const result = await runTest('parallel-index');
-	console.log(result.output)
   expect(result.passed).toBe(2);
   expect(result.exitCode).toBe(0);
 });
