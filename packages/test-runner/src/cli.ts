@@ -18,7 +18,7 @@ import program from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import { isMatch } from 'micromatch';
-import { run, RunnerConfig } from '.';
+import { run, RunnerConfig } from './runner';
 import PytestReporter from './reporters/pytest';
 import DotReporter from './reporters/dot';
 import ListReporter from './reporters/list';
