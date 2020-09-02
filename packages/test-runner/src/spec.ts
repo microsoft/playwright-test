@@ -19,41 +19,11 @@ import { installTransform } from './transform';
 
 Error.stackTraceLimit = 15;
 
-function specBuilder(modifiers, specCallback) {
-  function builder(specs, last) {
-    const callable = (...args) => {
-      if (!last || (typeof args[0] === 'string' && typeof args[1] === 'function')) {
-        // Looks like a body (either it or describe). Assume that last modifier is true.
-        const newSpecs = { ...specs };
-        if (last)
-          newSpecs[last] = [true];
-        return specCallback(newSpecs, ...args);
-      }
-      const newSpecs = { ...specs };
-      newSpecs[last] = args;
-      return builder(newSpecs, null);
-    };
-    return new Proxy(callable, {
-      get: (obj, prop) => {
-        if (typeof prop === 'string' && modifiers.includes(prop)) {
-          const newSpecs = { ...specs };
-          // Modifier was not called, assume true.
-          if (last)
-            newSpecs[last] = [true];
-          return builder(newSpecs, prop);
-        }
-        return obj[prop];
-      },
-    });
-  }
-  return builder({}, null);
-}
-
 export function spec(suite: Suite, file: string, timeout: number): () => void {
   const suites = [suite];
   suite.file = file;
 
-  const it = specBuilder(['_skip', '_only'], (specs: any, title: string, metaFn: (test: Test) => void | Function, fn?: Function) => {
+  const it = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test) => void | Function, fn?: Function) => {
     const suite = suites[0];
     if (typeof fn !== 'function') {
       fn = metaFn;
@@ -64,16 +34,15 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
       metaFn(test);
     test.file = file;
     test._timeout = timeout;
-    const only = specs._only && specs._only[0];
-    if (only)
+    if (spec === 'only')
       test._only = true;
-    if (!only && specs._skip && specs._skip[0])
+    if (spec === 'skip')
       test._skipped = true;
     suite._addTest(test);
     return test;
-  });
+  };
 
-  const describe = specBuilder(['_skip', '_only'], (specs: any, title: string, metaFn: (suite: Suite) => void | Function, fn?: Function) => {
+  const describe = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite) => void | Function, fn?: Function) => {
     if (typeof fn !== 'function') {
       fn = metaFn;
       metaFn = null;
@@ -83,26 +52,28 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
       metaFn(child);
     suites[0]._addSuite(child);
     child.file = file;
-    const only = specs._only && specs._only[0];
-    if (only)
+    if (spec === 'only')
       child._only = true;
-    if (!only && specs._skip && specs._skip[0])
+    if (spec === 'skip')
       child._skipped = true;
     suites.unshift(child);
     fn();
     suites.shift();
-  });
+  }
 
-  (global as any).beforeEach = fn => suite._addHook('beforeEach', fn);
-  (global as any).afterEach = fn => suite._addHook('afterEach', fn);
-  (global as any).beforeAll = fn => suite._addHook('beforeAll', fn);
-  (global as any).afterAll = fn => suite._addHook('afterAll', fn);
-  (global as any).describe = describe;
-  (global as any).fdescribe = describe._only(true);
-  (global as any).xdescribe = describe._skip(true);
-  (global as any).it = it;
-  (global as any).fit = it._only(true);
-  (global as any).xit = it._skip(true);
+  const context = (global as any);
+  context.beforeEach = fn => suite._addHook('beforeEach', fn);
+  context.afterEach = fn => suite._addHook('afterEach', fn);
+  context.beforeAll = fn => suite._addHook('beforeAll', fn);
+  context.afterAll = fn => suite._addHook('afterAll', fn);
+
+  context.describe = describe.bind(null, 'default');
+  context.fdescribe = describe.bind(null, 'only');
+  context.xdescribe = describe.bind(null, 'skip');
+
+  context.it = it.bind(null, 'default');
+  context.fit = it.bind(null, 'only');
+  context.xit = it.bind(null, 'skip');
 
   return installTransform();
 }

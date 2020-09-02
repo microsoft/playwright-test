@@ -55,9 +55,14 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
   const expectedFlaky = (/(\d+) expected flaky/.exec(output.toString()) || [])[1];
   const unexpectedFlaky = (/(\d+) unexpected flaky/.exec(output.toString()) || [])[1];
   const skipped = (/(\d+) skipped/.exec(output.toString()) || [])[1];
-  const report = JSON.parse(fs.readFileSync(reportFile).toString());
   let outputStr = output.toString();
   outputStr = outputStr.substring(1, outputStr.length - 1);
+  let report;
+  try {
+    report = JSON.parse(fs.readFileSync(reportFile).toString());
+  } catch (e) {
+    throw new Error(outputStr);
+  }
   return {
     exitCode: status,
     output: outputStr,
