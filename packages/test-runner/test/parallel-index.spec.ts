@@ -17,25 +17,9 @@
 import '@playwright/test-runner';
 import './fixtures';
 
-it('should run all three tests', async({ runTest }) => {
-  const result = await runTest('match-pattern');
-  expect(result.passed).toBe(3);
-  expect(result.exitCode).toBe(0);
-});
-
-it('should ignore a test', async({ runTest }) => {
-  const result = await runTest('match-pattern', { 'test-ignore': 'b.test.ts' });
-  expect(result.passed).toBe(2);
-  expect(result.exitCode).toBe(0);
-});
-
-it('should filter tests', async({ runTest }) => {
-	const result = await runTest('match-pattern', { 'test-match': 'c.test.*' });
-  expect(result.passed).toBe(1);
-});
-
-it('should use a different test match', async({ runTest }) => {
-  const result = await runTest('match-pattern', { 'test-match': '[a|b].test.ts' });
+it('should run in parallel', async({ runTest }) => {
+	const result = await runTest('parallel-index');
+	console.log(result.output)
   expect(result.passed).toBe(2);
   expect(result.exitCode).toBe(0);
 });

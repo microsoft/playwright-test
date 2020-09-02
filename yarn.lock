@@ -886,10 +886,10 @@
     terminal-link "^2.1.1"
     text-diff "^1.0.1"
 
-"@playwright/test-runner@^0.2.6":
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.6.tgz#98853fe449d76922ee8e2897fc420295ebbc90e5"
-  integrity sha512-9dqcNWBZyP0X43hUc24r8Uo8rjZvL2Viz6rWoW1atcdYJ+C7bSuZoKLN09QhXD+z/9m04Z8zWn/KYLrHQfr7rQ==
+"@playwright/test-runner@^0.2.7":
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.7.tgz#fd40fab2f3cc826340474152263393d5db08b2ed"
+  integrity sha512-tQkPcs0sV+WBkl7k0+8pDL8LoSBQ+sgBdzc93G8sFmjwvjYclEAQPBVf5HMs8D4+JR3DMBx3wKcmMh5olRUDaw==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/core" "^7.11.4"
@@ -899,6 +899,7 @@
     commander "^6.1.0"
     expect "^26.4.2"
     jpeg-js "^0.4.2"
+    micromatch "^4.0.2"
     ms "^2.1.2"
     pirates "^4.0.1"
     pixelmatch "^5.2.1"

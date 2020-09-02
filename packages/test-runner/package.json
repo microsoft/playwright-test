@@ -1,12 +1,12 @@
 {
   "name": "@playwright/test-runner",
-  "version": "0.2.6-post",
+  "version": "0.2.7-post",
   "bin": {
     "test-runner": "./cli.js"
   },
   "main": "./out/index.js",
   "scripts": {
-    "test": "test-runner test/"
+    "test": "test-runner test/ --test-ignore=assets/**"
   },
   "dependencies": {
     "@babel/code-frame": "^7.10.4",
@@ -29,7 +29,7 @@
     "text-diff": "^1.0.1"
   },
   "devDependencies": {
-    "@playwright/test-runner": "^0.2.6",
+    "@playwright/test-runner": "^0.2.7",
     "@types/micromatch": "^4.0.1"
   },
   "license": "Apache-2.0",
