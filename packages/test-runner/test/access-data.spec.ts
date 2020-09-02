@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import '@playwright/test-runner';
+import { it } from '@playwright/test-runner';
 import * as fs from 'fs';
 import * as path from 'path';
 import './fixtures';
