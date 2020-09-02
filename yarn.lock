@@ -886,16 +886,15 @@
     terminal-link "^2.1.1"
     text-diff "^1.0.1"
 
-"@playwright/test-runner@^0.2.2", "@playwright/test-runner@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.3.tgz#b96643119953986d0b6661d98fa0bd0f9388e59e"
-  integrity sha512-SSrUiLcK7ROi+3EFqObfjP7LaP7Y22XiO7w5pbBuwoDHt317t596DEjLX+O5c4/B2Hj6MleR7Bbj0eryfhRSrA==
+"@playwright/test-runner@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.5.tgz#c024a81634fe42d7f6ca6351dabff7bf8d1acdff"
+  integrity sha512-gFQ+4Eiq4pY9menHX95r+QTOR2WMdsNebIbwoQhL2nJGjle9PwV1SiXl8P8+jJDOKmQ8+xW06+um1d5mSZTtRg==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/core" "^7.11.4"
     "@babel/preset-env" "^7.11.0"
     "@babel/preset-typescript" "^7.10.4"
-    "@playwright/test-runner" "^0.2.2"
     colors "^1.4.0"
     commander "^6.1.0"
     expect "^26.4.2"
