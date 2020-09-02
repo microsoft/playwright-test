@@ -21,10 +21,10 @@ it('flake', test => {
   test.flaky();
 }, async ({}) => {
   try {
-    fs.readFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'));
+    fs.readFileSync(path.join(process.env.PW_OUTPUT_DIR, 'allow-flaky.txt'));
   } catch (e) {
     // First time this fails.
-    fs.writeFileSync(path.join(__dirname, '..', 'test-results', 'allow-flaky.txt'), 'TRUE');
+    fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'allow-flaky.txt'), 'TRUE');
     expect(true).toBe(false);
   }
 });

@@ -19,10 +19,10 @@ const path = require('path');
 
 it('flake', async ({}) => {
   try {
-    fs.readFileSync(path.join(__dirname, '..', 'test-results', 'retry-failures.txt'));
+    fs.readFileSync(path.join(process.env.PW_OUTPUT_DIR, 'retry-failures.txt'));
   } catch (e) {
     // First time this fails.
-    fs.writeFileSync(path.join(__dirname, '..', 'test-results', 'retry-failures.txt'), 'TRUE');
+    fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'retry-failures.txt'), 'TRUE');
     expect(true).toBe(false);
   }
 });

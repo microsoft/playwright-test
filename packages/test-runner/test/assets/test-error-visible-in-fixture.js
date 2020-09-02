@@ -20,8 +20,8 @@ const path = require('path');
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
-  const { config, result } = info;
-  fs.writeFileSync(path.join(config.outputDir, 'test-error-visible-in-fixture.txt'), JSON.stringify(result.error, undefined, 2));
+  const { result } = info;
+  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'test-error-visible-in-fixture.txt'), JSON.stringify(result.error, undefined, 2));
 });
 
 it('ensure fixture handles test error', async ({ postProcess }) => {

@@ -21,6 +21,7 @@ import fs from 'fs';
 import rimraf from 'rimraf';
 import { registerFixture } from './fixtures';
 import { Test, Suite } from './test';
+import { RunnerConfig } from './runnerConfig';
 
 interface DescribeFunction {
   describe(name: string, inner: () => void): void;
@@ -52,6 +53,7 @@ const removeFolderAsync = promisify(rimraf);
 
 declare global {
   interface FixtureParameters {
+    config: RunnerConfig;
     parallelIndex: number;
   }
   interface TestState {

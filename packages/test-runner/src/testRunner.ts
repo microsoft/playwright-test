@@ -82,6 +82,7 @@ export class TestRunner extends EventEmitter {
     this._config = config;
     for (const {name, value} of entry.configuration)
       this._parsedGeneratorConfiguration[name] = value;
+    this._parsedGeneratorConfiguration['config'] = config;
     this._parsedGeneratorConfiguration['parallelIndex'] = workerId;
     setCurrentTestFile(this._suite.file);
   }
