@@ -1,0 +1,18 @@
+{
+  "name": "playwright-basic-ts",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "playwright-runner": "^0.2.1"
+  },
+  "scripts": {
+    "test": "test-runner"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
