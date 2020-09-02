@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test-runner",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "bin": {
     "test-runner": "./cli.js"
   },
@@ -13,7 +13,6 @@
     "@babel/core": "^7.11.4",
     "@babel/preset-env": "^7.11.0",
     "@babel/preset-typescript": "^7.10.4",
-    "@playwright/test-runner": "^0.2.2",
     "colors": "^1.4.0",
     "commander": "^6.1.0",
     "expect": "^26.4.2",
@@ -27,6 +26,9 @@
     "stack-utils": "^2.0.2",
     "terminal-link": "^2.1.1",
     "text-diff": "^1.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test-runner": "^0.2.3"
   },
   "license": "Apache-2.0",
   "author": {

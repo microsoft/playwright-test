@@ -863,6 +863,53 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
+"@playwright/test-runner@0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.2.tgz#8d73395c143be5a54593755cd52fed4726d74beb"
+  integrity sha512-yP9ix3cIPa3BzNP+0aS6Ua+x0ge/xHhKx7b3iIQDmhF5wF/VyhoEkiGDFomKE2UJoBbPBNsTlB2MJTqJYcSKtw==
+  dependencies:
+    "@babel/code-frame" "^7.10.4"
+    "@babel/core" "^7.11.4"
+    "@babel/preset-env" "^7.11.0"
+    "@babel/preset-typescript" "^7.10.4"
+    colors "^1.4.0"
+    commander "^6.1.0"
+    expect "^26.4.2"
+    jpeg-js "^0.4.2"
+    ms "^2.1.2"
+    pirates "^4.0.1"
+    pixelmatch "^5.2.1"
+    pngjs "^5.0.0"
+    rimraf "^3.0.2"
+    source-map-support "^0.5.19"
+    stack-utils "^2.0.2"
+    terminal-link "^2.1.1"
+    text-diff "^1.0.1"
+
+"@playwright/test-runner@^0.2.2", "@playwright/test-runner@^0.2.3":
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.3.tgz#b96643119953986d0b6661d98fa0bd0f9388e59e"
+  integrity sha512-SSrUiLcK7ROi+3EFqObfjP7LaP7Y22XiO7w5pbBuwoDHt317t596DEjLX+O5c4/B2Hj6MleR7Bbj0eryfhRSrA==
+  dependencies:
+    "@babel/code-frame" "^7.10.4"
+    "@babel/core" "^7.11.4"
+    "@babel/preset-env" "^7.11.0"
+    "@babel/preset-typescript" "^7.10.4"
+    "@playwright/test-runner" "^0.2.2"
+    colors "^1.4.0"
+    commander "^6.1.0"
+    expect "^26.4.2"
+    jpeg-js "^0.4.2"
+    ms "^2.1.2"
+    pirates "^4.0.1"
+    pixelmatch "^5.2.1"
+    pngjs "^5.0.0"
+    rimraf "^3.0.2"
+    source-map-support "^0.5.19"
+    stack-utils "^2.0.2"
+    terminal-link "^2.1.1"
+    text-diff "^1.0.1"
+
 "@types/color-name@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
