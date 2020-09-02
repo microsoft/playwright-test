@@ -83,7 +83,7 @@ registerFixture('outputDir', async ({}, testRun) => {
 });
 
 registerFixture('runTest', async ({ outputDir }, testRun) => {
-	const reportFile = path.join(outputDir, `results-${parameters.parallelIndex}.json`);
+	const reportFile = path.join(outputDir, `results.json`);
 	await removeFolderAsync(outputDir).catch(e => { });
 	await testRun(runTest.bind(null, reportFile, outputDir));
 });

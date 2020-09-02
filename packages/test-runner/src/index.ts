@@ -16,36 +16,60 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import './builtin.fixtures';
 import './expect';
 import { registerFixture as registerFixtureT, registerWorkerFixture as registerWorkerFixtureT, TestInfo } from './fixtures';
+export { parameters } from './fixtures';
 import { Reporter } from './reporter';
 import { Runner } from './runner';
 import { RunnerConfig } from './runnerConfig';
-import { Suite } from './test';
+import { Suite, Test } from './test';
 import { Matrix, TestCollector } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
-export { parameters, registerParameter } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test } from './test';
 
-const removeFolderAsync = promisify(rimraf);
+interface DescribeFunction {
+  describe(name: string, inner: () => void): void;
+  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
+}
+
+interface ItFunction<STATE> {
+  it(name: string, inner: (state: STATE) => Promise<void> | void): void;
+  it(name: string, modifier: (test: Test) => any, inner: (state: STATE) => Promise<void> | void): void;
+}
 
 declare global {
   interface WorkerState {
+    config: RunnerConfig;
+    parallelIndex: number;
   }
 
   interface TestState {
+    tmpDir: string;
   }
 
-  interface FixtureParameters {
-  }
+  const describe: DescribeFunction['describe'];
+  const fdescribe: DescribeFunction['describe'];
+  const xdescribe: DescribeFunction['describe'];
+
+  const it: ItFunction<TestState & WorkerState>['it'];
+  const fit: ItFunction<TestState & WorkerState>['it'];
+  const xit: ItFunction<TestState & WorkerState>['it'];
+
+  const beforeEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void;
+  const afterEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void;
+  const beforeAll: (inner: (state: WorkerState) => Promise<void>) => void;
+  const afterAll: (inner: (state: WorkerState) => Promise<void>) => void;
 }
+
+const mkdtempAsync = promisify(fs.mkdtemp);
+const removeFolderAsync = promisify(rimraf);
 
 const beforeFunctions: Function[] = [];
 const afterFunctions: Function[] = [];
@@ -55,11 +79,11 @@ global['before'] = (fn: Function) => beforeFunctions.push(fn);
 global['after'] = (fn: Function) => afterFunctions.push(fn);
 global['matrix'] = (m: Matrix) => matrix = m;
 
-export function registerFixture<T extends keyof TestState>(name: T, fn: (params: FixtureParameters & WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+export function registerFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
   registerFixtureT(name, fn);
 }
 
-export function registerWorkerFixture<T extends keyof(WorkerState & FixtureParameters)>(name: T, fn: (params: FixtureParameters & WorkerState, runTest: (arg: (WorkerState & FixtureParameters)[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+export function registerWorkerFixture<T extends keyof(WorkerState)>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
   registerWorkerFixtureT(name, fn);
 }
 
@@ -118,3 +142,20 @@ async function runTests(config: RunnerConfig, suite: Suite, reporter: Reporter) 
   }
   return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
 }
+
+registerWorkerFixture('config', async ({}, test) => {
+  // Worker injects the value for this one.
+  await test(undefined as any);
+});
+
+registerWorkerFixture('parallelIndex', async ({}, test) => {
+  // Worker injects the value for this one.
+  await test(undefined as any);
+});
+
+registerFixture('tmpDir', async ({}, test) => {
+  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
+  await test(tmpDir);
+  await removeFolderAsync(tmpDir).catch(e => {});
+});
+

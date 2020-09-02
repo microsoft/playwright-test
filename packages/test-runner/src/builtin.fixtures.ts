@@ -19,52 +19,7 @@ import path from 'path';
 import { promisify } from 'util';
 import fs from 'fs';
 import rimraf from 'rimraf';
-import { registerFixture } from './fixtures';
+import { registerFixture, registerWorkerFixture } from './fixtures';
 import { Test, Suite } from './test';
 import { RunnerConfig } from './runnerConfig';
 
-interface DescribeFunction {
-  describe(name: string, inner: () => void): void;
-  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
-}
-
-interface ItFunction<STATE> {
-  it(name: string, inner: (state: STATE) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test) => any, inner: (state: STATE) => Promise<void> | void): void;
-}
-
-declare global {
-  const describe: DescribeFunction['describe'];
-  const fdescribe: DescribeFunction['describe'];
-  const xdescribe: DescribeFunction['describe'];
-
-  const it: ItFunction<TestState & WorkerState & FixtureParameters>['it'];
-  const fit: ItFunction<TestState & WorkerState & FixtureParameters>['it'];
-  const xit: ItFunction<TestState & WorkerState & FixtureParameters>['it'];
-
-  const beforeEach: (inner: (state: TestState & WorkerState & FixtureParameters) => Promise<void>) => void;
-  const afterEach: (inner: (state: TestState & WorkerState & FixtureParameters) => Promise<void>) => void;
-  const beforeAll: (inner: (state: WorkerState & FixtureParameters) => Promise<void>) => void;
-  const afterAll: (inner: (state: WorkerState & FixtureParameters) => Promise<void>) => void;
-}
-
-const mkdtempAsync = promisify(fs.mkdtemp);
-const removeFolderAsync = promisify(rimraf);
-
-declare global {
-  interface FixtureParameters {
-    config: RunnerConfig;
-    parallelIndex: number;
-  }
-  interface TestState {
-    tmpDir: string;
-  }
-}
-
-export {parameters, registerFixture, registerWorkerFixture, registerParameter} from './fixtures';
-
-registerFixture('tmpDir', async ({}, test) => {
-  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
-  await test(tmpDir);
-  await removeFolderAsync(tmpDir).catch(e => {});
-});

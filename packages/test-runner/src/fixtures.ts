@@ -233,11 +233,6 @@ export function registerWorkerFixture(name: string, fn: (params: any, runTest: (
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 
-export function registerParameter(name: string, fn: () => any) {
-  registerWorkerFixture(name, async ({}: any, test: Function) => await test(parameters[name]));
-  parameterRegistrations.set(name, fn);
-}
-
 function collectRequires(file: string, result: Set<string>) {
   if (result.has(file))
     return;
