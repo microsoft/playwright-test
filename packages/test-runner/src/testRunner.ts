@@ -181,7 +181,7 @@ export class TestRunner extends EventEmitter {
       skipped: test._skipped,
       flaky: test._flaky,
       slow: test._slow,
-      timeout: test._timeout
+      timeout: test._timeout,
     } as TestBeginPayload);
 
     const result: TestResult = {

@@ -18,10 +18,8 @@ import { codeFrameColumns } from '@babel/code-frame';
 import colors from 'colors/safe';
 import fs from 'fs';
 import milliseconds from 'ms';
-import os from 'os';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import terminalLink from 'terminal-link';
 import { Reporter } from '../reporter';
 import { RunnerConfig } from '../runnerConfig';
 import { Suite, Test, TestResult } from '../test';
@@ -146,9 +144,11 @@ export class BaseReporter implements Reporter  {
 
   formatFailure(test: Test, index?: number): string {
     const tokens: string[] = [];
-    const relativePath = path.relative(process.cwd(), test.file);
+    let relativePath = path.relative(this.config.testDir, test.file) || path.basename(test.file);
+    if (test.location.includes(test.file))
+      relativePath += test.location.substring(test.file.length);
     const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
-    const header = `  ${index ? index + ')' : ''} ${terminalLink(relativePath, `file://${os.hostname()}${test.file}`)} › ${test.title}${passedUnexpectedlySuffix}`;
+    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${test.title}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
     for (const result of test.results) {
       if (result.status === 'passed')

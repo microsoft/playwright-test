@@ -21,6 +21,7 @@ export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 export class Runnable {
   title: string;
   file: string;
+  location: string;
   parent?: Suite;
 
   _only = false;
@@ -119,6 +120,7 @@ export class Runnable {
 
   _copyFrom(other: Runnable) {
     this.file = other.file;
+    this.location = other.location;
     this._only = other._only;
     this._flaky = other._flaky;
     this._skipped = other._skipped;

@@ -33,6 +33,7 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
     if (metaFn)
       metaFn(test);
     test.file = file;
+    test.location = extractLocation(new Error());
     test._timeout = timeout;
     if (spec === 'only')
       test._only = true;
@@ -52,6 +53,7 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
       metaFn(child);
     suites[0]._addSuite(child);
     child.file = file;
+    child.location = extractLocation(new Error());
     if (spec === 'only')
       child._only = true;
     if (spec === 'skip')
@@ -76,4 +78,12 @@ export function spec(suite: Suite, file: string, timeout: number): () => void {
   context.xit = it.bind(null, 'skip');
 
   return installTransform();
+}
+
+function extractLocation(error: Error): string {
+  const location = error.stack.split('\n')[2];
+  const match = location.match(/Object.<anonymous> \((.*)\)/);
+  if (match)
+    return match[1];
+  return '';
 }

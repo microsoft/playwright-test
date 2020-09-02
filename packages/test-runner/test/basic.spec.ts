@@ -18,10 +18,11 @@ import '@playwright/test-runner';
 import './fixtures';
 
 it('should fail', async ({ runTest }) => {
-  const result = await runTest('one-failure.js');
+  const result = await runTest('one-failure.ts');
   expect(result.exitCode).toBe(1);
   expect(result.passed).toBe(0);
   expect(result.failed).toBe(1);
+  expect(result.output).toContain('one-failure.ts:18:1');
 });
 
 it('should timeout', async ({ runTest }) => {
