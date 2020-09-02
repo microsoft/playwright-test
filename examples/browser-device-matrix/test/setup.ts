@@ -18,7 +18,7 @@ declare const matrix: (m: any) => void;
 
 matrix({
   'browserName': process.env.BROWSER ? [process.env.BROWSER] : ['chromium', 'webkit'],
-  'deviceName': process.env.DEVICE ? [process.env.DEVICE] : ['iPhone 11 Pro Max', 'Pixel 2 XL', {
+  'device': process.env.DEVICE ? [process.env.DEVICE] : ['iPhone 11 Pro Max', 'Pixel 2 XL', {
     'userAgent': 'Mozilla/5.0 (Linux; U; Android 4.3; en-us; SM-N900T Build/JSS15J) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30',
     'viewport': {
       'width': 360,

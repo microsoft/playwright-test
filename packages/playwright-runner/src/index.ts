@@ -15,7 +15,7 @@
  */
 
 import {registerWorkerFixture, registerFixture} from '@playwright/test-runner';
-import {LaunchOptions, BrowserType, Browser, BrowserContext, Page, chromium, firefox, webkit, BrowserContextOptions} from 'playwright';
+import {LaunchOptions, BrowserType, Browser, BrowserContext, Page, chromium, firefox, webkit, BrowserContextOptions, devices} from 'playwright';
 export * from '@playwright/test-runner';
 
 declare global {
@@ -24,13 +24,12 @@ declare global {
     browser: Browser;
     defaultBrowserOptions: LaunchOptions;
     defaultContextOptions: BrowserContextOptions;
+    browserName: 'chromium' | 'firefox' | 'webkit';
+    device: null | string | BrowserContextOptions
   }
   interface TestState {
     context: BrowserContext;
     page: Page;
-  }
-  interface FixtureParameters {
-    browserName: 'chromium'|'firefox'|'webkit';
   }
 }
 
@@ -49,14 +48,28 @@ registerWorkerFixture('browser', async ({browserType, defaultBrowserOptions}, te
   await browser.close();
 });
 
-registerWorkerFixture('defaultBrowserOptions', async ({}, test) => {
+registerWorkerFixture('device', async ({}, test) => {
+  await test(null);
+});
+
+registerWorkerFixture('defaultContextOptions', async ({device}, test) => {
+  let contextOptions: BrowserContextOptions = {};
+
+  if (device && typeof device === 'string')
+    contextOptions = devices[device];
+  else if (device && typeof device === 'object')
+    contextOptions = device;
+
   await test({
-    handleSIGINT: false,
+    ...contextOptions
   });
 });
 
-registerWorkerFixture('defaultContextOptions', async ({}, test) => {
-  await test({});
+registerWorkerFixture('defaultBrowserOptions', async ({}, test) => {
+  await test({
+    handleSIGINT: false,
+    ...(process.env.HEADFUL ? {headless: false} : {})
+  });
 });
 
 registerFixture('context', async ({browser, defaultContextOptions}, test) => {

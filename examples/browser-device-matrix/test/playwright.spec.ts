@@ -14,25 +14,7 @@
  * limitations under the License.
  */
 
-import {registerWorkerFixture} from 'playwright-runner';
-import playwright from 'playwright';
-
-declare global {
-  interface FixtureParameters {
-    deviceName: string;
-  }
-}
-
-registerWorkerFixture('deviceName', async ({}, test) => {
-  await test(null);
-});
-
-registerWorkerFixture('defaultContextOptions', async ({deviceName}, test) => {
-  const device = typeof deviceName === 'string' ? playwright.devices[deviceName] : deviceName;
-  await test({
-    ...device
-  });
-});
+import 'playwright-runner';
 
 it('is a basic test with the page', async ({page}) => {
   await page.goto('http://whatsmyuseragent.org/');

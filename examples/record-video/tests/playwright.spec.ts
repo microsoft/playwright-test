@@ -16,15 +16,10 @@
 
 import {registerFixture} from 'playwright-runner';
 import {saveVideo} from 'playwright-video';
-import path from 'path';
 
-registerFixture('page', async ({context}, runTest, info) => {
+registerFixture('page', async ({context, outputFile}, runTest) => {
   const page = await context.newPage();
-  const {test, config} = info;
-  const relativePath = path.relative(config.testDir, test.file).replace(/\.spec\.[jt]s/, '');
-  const sanitizedTitle = test.title.replace(/[^\w\d]+/g, '_');
-  const assetPath = path.join(config.outputDir, relativePath, sanitizedTitle) + '-recording.mp4';
-
+  const assetPath = await outputFile('recording.mp4');
   const recording = await saveVideo(page, assetPath);
   await runTest(page);
   await recording.stop();

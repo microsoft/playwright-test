@@ -34,6 +34,8 @@ export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test } from './test';
 
+const mkdirAsync = promisify(fs.mkdir);
+
 interface DescribeFunction {
   describe(name: string, inner: () => void): void;
   describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
@@ -52,6 +54,7 @@ declare global {
 
   interface TestState {
     tmpDir: string;
+    outputFile: (suffix: string) => Promise<string>
   }
 
   const describe: DescribeFunction['describe'];
@@ -159,3 +162,18 @@ registerFixture('tmpDir', async ({}, test) => {
   await removeFolderAsync(tmpDir).catch(e => {});
 });
 
+registerFixture('outputFile', async ({}, runTest, info) => {
+  const outputFile = async (suffix: string): Promise<string> => {
+    const {config, test} = info;
+    const relativePath = path.relative(config.testDir, test.file)
+        .replace(/\.spec\.[jt]s/, '')
+        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
+    const sanitizedTitle = test.title.replace(/[^\w\d]+/g, '_');
+    const assetPath = path.join(config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    await mkdirAsync(path.dirname(assetPath), {
+      recursive: true
+    });
+    return assetPath;
+  };
+  await runTest(outputFile);
+});
