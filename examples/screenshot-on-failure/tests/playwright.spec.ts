@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
 import 'playwright-runner';
 import {registerFixture} from 'playwright-runner';
 
-registerFixture('page', async ({context}, runTest, info) => {
+registerFixture('page', async ({context, outputFile}, runTest, info) => {
   const page = await context.newPage();
   await runTest(page);
-  const {test, config, result} = info;
+  const {result} = info;
   if (result.status === 'failed' || result.status === 'timedOut') {
-    const relativePath = path.relative(config.testDir, test.file).replace(/\.spec\.[jt]s/, '');
-    const sanitizedTitle = test.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(config.outputDir, relativePath, sanitizedTitle) + '-failed.png';
-    fs.mkdirSync(path.dirname(assetPath), {
-      recursive: true
-    });
+    const assetPath = await outputFile('failed.png');
     await page.screenshot({ path: assetPath});
   }
   await page.close();

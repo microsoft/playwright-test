@@ -7,6 +7,7 @@ on:
 jobs:
   test-examples:
     strategy:
+      fail-fast: false
       matrix:
         dir: [basic-js, basic-ts, browser-device-matrix, record-video, screenshot-on-failure]
     defaults:
@@ -20,5 +21,13 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 12.x
-    - run: npm install
+    - run: yarn
+      working-directory: .
+    - run: yarn link
+      working-directory: packages/playwright-runner
+    - run: yarn link
+      working-directory: packages/test-runner
+    - run: yarn link playwright-runner
+    - run: yarn link @playwright/test-runner
+    - run: yarn install
     - run: npm test

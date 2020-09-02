@@ -112,7 +112,7 @@ function collectFiles(testDir: string, dir: string, filters: string[]): string[]
       files.push(...collectFiles(testDir, path.join(dir, name), filters));
       continue;
     }
-    if (!name.endsWith('spec.ts'))
+    if (!name.endsWith('spec.ts') && !name.endsWith('spec.js'))
       continue;
     const relativeName = path.join(dir, name);
     const fullName = path.join(testDir, relativeName);
