@@ -36,7 +36,6 @@ export type TestInfo = {
 const registrations = new Map<string, FixtureRegistration>();
 const registrationsByFile = new Map<string, FixtureRegistration[]>();
 export let parameters: any = {};
-export const parameterRegistrations = new Map();
 
 export function setParameters(params: any) {
   parameters = Object.assign(parameters, params);

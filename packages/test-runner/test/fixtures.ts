@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { parameters, registerFixture } from '@playwright/test-runner';
+import { registerFixture } from '@playwright/test-runner';
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
