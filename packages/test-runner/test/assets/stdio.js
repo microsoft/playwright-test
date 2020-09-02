@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-require('../..');
+const { it } = require('../..');
 
 it('stdio', () => {
   process.stdout.write('stdout text');

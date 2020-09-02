@@ -17,8 +17,8 @@
 import '@playwright/test-runner';
 import './fixtures';
 
-it('should run in parallel', async({ runTest }) => {
-	const result = await runTest('parallel-index');
+it('should run in parallel', async ({ runTest }) => {
+  const result = await runTest('parallel-index');
   expect(result.passed).toBe(2);
   expect(result.exitCode).toBe(0);
 });

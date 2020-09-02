@@ -21,14 +21,14 @@ import './fixtures';
 
 it('should access error in fixture', async ({ runTest, outputDir }) => {
   const textFile = path.join(outputDir, 'test-error-visible-in-fixture.txt');
-  const result = await runTest('test-error-visible-in-fixture.js', {});
+  const result = await runTest('test-error-visible-in-fixture.ts', {});
   expect(result.exitCode).toBe(1);
   const data = JSON.parse(fs.readFileSync(textFile).toString());
   expect(data.message).toContain('Object.is equality');
 });
 
 it('should access data in fixture', async ({ runTest }) => {
-  const { exitCode, report } = await runTest('test-data-visible-in-fixture.js');
+  const { exitCode, report } = await runTest('test-data-visible-in-fixture.ts');
   expect(exitCode).toBe(1);
   const testResult = report.suites[0].tests[0].results[0];
   expect(testResult.data).toEqual({ 'myname': 'myvalue' });

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-require('../../..');
+import { it } from '../../..';
 
 it('succeeds', async ({ parallelIndex }) => {
   expect(parallelIndex).toBe(1);

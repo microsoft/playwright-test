@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-require('../../');
+import { it, xit, describe, xdescribe } from '../..';
 
 it('included test', () => {
   expect(1 + 1).toBe(2);
