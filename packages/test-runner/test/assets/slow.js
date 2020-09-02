@@ -17,7 +17,7 @@
 require('../..');
 
 it('slow', test => {
-	test.slow();
+  test.slow();
 }, async () => {
- await new Promise(f => setTimeout(f, 10000));
+  await new Promise(f => setTimeout(f, 10000));
 });
