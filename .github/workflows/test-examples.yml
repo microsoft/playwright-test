@@ -1,0 +1,24 @@
+name: Examples
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  test-examples:
+    strategy:
+      matrix:
+        dir: [basic-js, basic-ts, browser-device-matrix, record-video, screenshot-on-failure]
+    defaults:
+      run:
+        working-directory: examples/${{ matrix.dir }}
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: microsoft/playwright-github-action@v1
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+    - run: npm install
+    - run: npm test
