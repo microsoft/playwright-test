@@ -886,10 +886,10 @@
     terminal-link "^2.1.1"
     text-diff "^1.0.1"
 
-"@playwright/test-runner@^0.2.9":
-  version "0.2.9"
-  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.9.tgz#76114f63df1d5340d28f42a4d331b81de4459c0b"
-  integrity sha512-eFoL7P3Q7+wXMHtirvTeGAs0IG2937mnOnJSvB5Zi7BMier5oPLWcLllQKSEBIE37ZqKXkf4+huUs+Aq6eeAhA==
+"@playwright/test-runner@^0.2.10":
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.10.tgz#ed3cb29f3d744238aa781451944d0014d14c7919"
+  integrity sha512-kOM8m+4/Crjjc01tC9avvMC/2GIMR46jpZrkNIpsBmbn3PkmLXNCyl0rT+2vqmHVaWDTAK6xxjN7JE3Xra3YSQ==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/core" "^7.11.4"

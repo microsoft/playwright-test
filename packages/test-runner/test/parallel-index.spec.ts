@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { it } from '@playwright/test-runner';
+import { it, expect } from '@playwright/test-runner';
 import './fixtures';
 
 it('should run in parallel', async ({ runTest }) => {
