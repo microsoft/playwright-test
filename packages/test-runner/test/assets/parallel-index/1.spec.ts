@@ -15,9 +15,15 @@
  */
 
 import { it, expect } from '../../..';
+import * as fs from 'fs';
+import * as path from 'path';
 
 it('succeeds', async ({ parallelIndex }) => {
-  // Make sure we create second worker too.
-  await new Promise(f => setTimeout(f, 1000));
   expect(parallelIndex).toBe(0);
+  // First test waits for the second to start to work around the race.
+  while (true) {
+    if (fs.existsSync(path.join(process.env.PW_OUTPUT_DIR, 'parallel-index.txt')))
+      break;
+    await new Promise(f => setTimeout(f, 100));
+  }
 });

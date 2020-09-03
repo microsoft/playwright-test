@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { it, expect } from '../../..';
-import * as fs from 'fs';
-import * as path from 'path';
+import { it, expect } from '@playwright/test-runner';
+import './fixtures';
 
-it('succeeds', async ({ parallelIndex }) => {
-  // First test waits for the second to start to work around the race.
-  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'parallel-index.txt'), 'TRUE');
-  expect(parallelIndex).toBe(1);
+it('should shard workers by fixtures', async ({ runTest }) => {
+  const result = await runTest('worker-fixture-combination.js');
+  expect(result.passed).toBe(3);
+  expect(result.exitCode).toBe(0);
+  expect(result.output).toContain('test that does not use fixtures');
+  expect(result.output).toContain('test that uses fixture');
+  expect(result.output).toContain('another test that uses fixture');
 });

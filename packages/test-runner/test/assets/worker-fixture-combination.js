@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-import { it, expect } from '../../..';
-import * as fs from 'fs';
-import * as path from 'path';
+const { it, registerWorkerFixture } = require('../../');
 
-it('succeeds', async ({ parallelIndex }) => {
-  // First test waits for the second to start to work around the race.
-  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'parallel-index.txt'), 'TRUE');
-  expect(parallelIndex).toBe(1);
+registerWorkerFixture('fixture', async ({}, runTest) => {
+  await runTest('');
+});
+
+it('test that uses fixture', async ({fixture}) => {
+  console.log('test that uses fixture');
+});
+
+it('test that does not use fixtures', async ({}) => {
+  console.log('test that does not use fixtures');
+});
+
+it('test that uses fixture 2', async ({fixture}) => {
+  console.log('another test that uses fixture');
 });
