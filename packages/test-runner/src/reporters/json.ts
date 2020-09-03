@@ -24,6 +24,12 @@ class JSONReporter extends BaseReporter {
     this.onEnd();
   }
 
+  onTestStdOut(test: Test, chunk: string | Buffer) {
+  }
+
+  onTestStdErr(test: Test, chunk: string | Buffer) {
+  }
+
   onEnd() {
     super.onEnd();
     const result = {

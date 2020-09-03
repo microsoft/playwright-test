@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import crypto from 'crypto';
 import path from 'path';
-import { fixturesForCallback } from './fixtures';
+import { registrations, fixturesForCallback, rerunRegistrations } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
 import { spec } from './spec';
 import { RunnerConfig } from './runnerConfig';
@@ -58,15 +59,25 @@ export class TestCollector {
     require(file);
     revertBabelRequire();
 
+    // Rerun registrations so that the registrations map pointed to the
+    // topmost overridden registrations.
+    rerunRegistrations(file, 'worker');
     const workerGeneratorConfigurations = new Map();
+
+    // Name each test.
+    suite._renumber();
 
     suite.findTest((test: Test) => {
       // Get all the fixtures that the test needs.
       const fixtures = fixturesForCallback(test.fn);
 
+      // For worker fixtures, trace them to their registrations to make sure
+      // they are compatible.
+      const registrationsHash = computeWorkerRegistrationHash(fixtures);
+
+      const generatorConfigurations = [];
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
-      const generatorConfigurations = [];
       for (const name of fixtures) {
         const values = this._matrix[name];
         if (!values)
@@ -86,10 +97,11 @@ export class TestCollector {
       for (const configuration of generatorConfigurations) {
         // Serialize configuration as readable string, we will use it as a hash.
         const configurationString = serializeConfiguration(configuration);
+        const workerHash = registrationsHash + '@' + configurationString;
         // Allocate worker for this configuration, add test into it.
-        if (!workerGeneratorConfigurations.has(configurationString))
-          workerGeneratorConfigurations.set(configurationString, { configuration, configurationString, tests: new Set() });
-        workerGeneratorConfigurations.get(configurationString).tests.add(test);
+        if (!workerGeneratorConfigurations.has(workerHash))
+          workerGeneratorConfigurations.set(workerHash, { configuration, configurationString, tests: new Set() });
+        workerGeneratorConfigurations.get(workerHash).tests.add(test);
       }
     });
 
@@ -97,13 +109,14 @@ export class TestCollector {
     for (let i = 0; i < this._config.repeatEach; ++i) {
       // Clone the suite as many times as there are worker hashes.
       // Only include the tests that requested these generations.
-      for (const [hash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
+      for (const [workerHash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
         const clone = this._cloneSuite(suite, tests);
         this.suite._addSuite(clone);
-        clone.title = path.basename(file) + (hash.length ? `::[${hash}]` : '') + ' ' + (i ? ` #repeat-${i}#` : '');
+        clone.title = path.basename(file) + (configurationString.length ? `::[${configurationString}]` : '') + (i ? ` #repeat-${i}#` : '');
         clone.configuration = configuration;
         clone._configurationString = configurationString + `#repeat-${i}#`;
-        clone._renumber();
+        clone._workerHash = workerHash;
+        clone._assignIds();
       }
     }
   }
@@ -136,4 +149,16 @@ export class TestCollector {
     }
     return false;
   }
+}
+
+function computeWorkerRegistrationHash(fixtures: string[]): string {
+  // Build worker hash - location of all worker fixtures as seen by this file.
+  const hash = crypto.createHash('sha1');
+  for (const fixture of fixtures) {
+    const registration = registrations.get(fixture);
+    if (registration.scope !== 'worker')
+      continue;
+    hash.update(registration.location);
+  }
+  return hash.digest('hex');
 }

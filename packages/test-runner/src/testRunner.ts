@@ -132,7 +132,10 @@ export class TestRunner extends EventEmitter {
     const revertBabelRequire = spec(this._suite, this._suite.file, this._timeout);
     require(this._suite.file);
     revertBabelRequire();
+    // Enumerate tests to assign ordinals.
     this._suite._renumber();
+    // Build ids from ordinals + configuration strings.
+    this._suite._assignIds();
     this._loaded = true;
 
     rerunRegistrations(this._suite.file, 'test');

@@ -132,6 +132,7 @@ export class Test extends Runnable {
   fn: Function;
   results: TestResult[] = [];
   _id: string;
+  _ordinal: number;
   _overriddenFn: Function;
   _startTime: number;
   _timeout = 0;
@@ -177,6 +178,7 @@ export class Test extends Runnable {
   _clone(): Test {
     const test = new Test(this.title, this.fn);
     test._copyFrom(this);
+    test._ordinal = this._ordinal;
     test._timeout = this._timeout;
     test._overriddenFn = this._overriddenFn;
     return test;
@@ -196,8 +198,12 @@ export type TestResult = {
 export class Suite extends Runnable {
   suites: Suite[] = [];
   tests: Test[] = [];
+  // Desired worker configuration.
   configuration: Configuration;
+  // Configuration above, serialized in [name1=value1,name2=value2] form.
   _configurationString: string;
+  // Worker hash that includes configuration and worker registration locations.
+  _workerHash: string;
 
   _hooks: { type: string, fn: Function } [] = [];
   _entries: (Suite | Test)[] = [];
@@ -258,7 +264,13 @@ export class Suite extends Runnable {
     let ordinal = 0;
     this.findTest((test: Test) => {
       // All tests are identified with their ordinals.
-      test._id = `${ordinal++}@${this.file}::[${this._configurationString}]`;
+      test._ordinal = ordinal++;
+    });
+  }
+
+  _assignIds() {
+    this.findTest((test: Test) => {
+      test._id = `${test._ordinal}@${this.file}::[${this._configurationString}]`;
     });
   }
 

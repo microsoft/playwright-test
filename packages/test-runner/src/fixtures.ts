@@ -26,6 +26,8 @@ type FixtureRegistration = {
   name: string;
   scope: Scope;
   fn: Function;
+  file: string;
+  location: string;
 };
 
 export type TestInfo = {
@@ -34,7 +36,7 @@ export type TestInfo = {
   result: TestResult;
 };
 
-const registrations = new Map<string, FixtureRegistration>();
+export const registrations = new Map<string, FixtureRegistration>();
 const registrationsByFile = new Map<string, FixtureRegistration[]>();
 export let parameters: any = {};
 
@@ -245,7 +247,7 @@ function collectRequires(file: string, result: Set<string>) {
     collectRequires(dep, result);
 }
 
-export function lookupRegistrations(file: string, scope: Scope) {
+function lookupRegistrations(file: string, scope: Scope) {
   const deps = new Set<string>();
   collectRequires(file, deps);
   const allDeps = [...deps].reverse();

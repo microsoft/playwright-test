@@ -15,10 +15,9 @@
  */
 
 import child_process from 'child_process';
-import crypto from 'crypto';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { lookupRegistrations, FixturePool } from './fixtures';
+import { FixturePool } from './fixtures';
 import { Suite, Test, TestResult } from './test';
 import { TestRunnerEntry, TestBeginPayload, TestEndPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
@@ -67,7 +66,7 @@ export class Dispatcher {
         file: suite.file,
         configuration: suite.configuration,
         configurationString: suite._configurationString,
-        hash: suite._configurationString + '@' + computeWorkerHash(suite.file)
+        hash: suite._workerHash
       });
     }
     result.sort((a, b) => a.hash < b.hash ? -1 : (a.hash === b.hash ? 0 : 1));
@@ -314,15 +313,4 @@ function chunkFromParams(params: { testId: string, buffer?: string, text?: strin
   if (typeof params.text === 'string')
     return params.text;
   return Buffer.from(params.buffer, 'base64');
-}
-
-function computeWorkerHash(file: string) {
-  // At this point, registrationsByFile contains all the files with worker fixture registrations.
-  // For every test, build the require closure and map each file to fixtures declared in it.
-  // This collection of fixtures is the fingerprint of the worker setup, a "worker hash".
-  // Tests with the matching "worker hash" will reuse the same worker.
-  const hash = crypto.createHash('sha1');
-  for (const registration of lookupRegistrations(file, 'worker').values())
-    hash.update(registration.location);
-  return hash.digest('hex');
 }
