@@ -29,7 +29,7 @@ import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
-export { Suite, Test } from './test';
+export { Suite, Test, TestResult, Configuration } from './test';
 
 const removeFolderAsync = promisify(rimraf);
 

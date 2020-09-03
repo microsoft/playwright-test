@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../../');
+const { it, registerWorkerFixture, expect } = require('../../');
 
 registerWorkerFixture('fixture', async ({}, runTest) => {
   await runTest('');

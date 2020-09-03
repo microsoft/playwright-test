@@ -111,6 +111,8 @@ export class Runnable {
   titlePath(): string[] {
     if (!this.parent)
       return [];
+    if (!this.title)
+      return this.parent.titlePath();
     return [...this.parent.titlePath(), this.title];
   }
 

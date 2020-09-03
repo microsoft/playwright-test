@@ -112,7 +112,7 @@ export class TestCollector {
       for (const [workerHash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
         const clone = this._cloneSuite(suite, tests);
         this.suite._addSuite(clone);
-        clone.title = path.basename(file) + (configurationString.length ? `::[${configurationString}]` : '') + (i ? ` #repeat-${i}#` : '');
+        clone.title = '';
         clone.configuration = configuration;
         clone._configurationString = configurationString + `#repeat-${i}#`;
         clone._workerHash = workerHash;

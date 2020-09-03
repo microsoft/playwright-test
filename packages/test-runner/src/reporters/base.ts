@@ -20,9 +20,7 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import { Reporter } from '../reporter';
-import { RunnerConfig } from '../runnerConfig';
-import { Suite, Test, TestResult } from '../test';
+import { Reporter, RunnerConfig, Suite, Test, TestResult, Configuration } from '../runner';
 
 const stackUtils = new StackUtils();
 
@@ -148,8 +146,15 @@ export class BaseReporter implements Reporter  {
     if (test.location.includes(test.file))
       relativePath += test.location.substring(test.file.length);
     const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
-    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${test.title}${passedUnexpectedlySuffix}`;
+    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${test.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
+
+    // Print configuration.
+    for (let suite = test.parent; suite; suite = suite.parent) {
+      if (suite.configuration)
+        tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeConfiguration(suite.configuration)));
+    }
+
     for (const result of test.results) {
       if (result.status === 'passed')
         continue;
@@ -200,4 +205,11 @@ function positionInFile(stack: string, file: string): { column: number; line: nu
       return {column: parsed.column, line: parsed.line};
   }
   return null;
+}
+
+function serializeConfiguration(configuration: Configuration): string {
+  const tokens = [];
+  for (const { name, value } of configuration)
+    tokens.push(`${name}=${value}`);
+  return tokens.join(', ');
 }
