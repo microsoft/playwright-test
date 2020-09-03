@@ -4,11 +4,13 @@
 
 A test runner for running tests with Playwright.
 
-1. `npm i playwright-runner`
+1. `npm i -D playwright-runner`
 2. Place unit tests in files ending with `.spec.*`.
 ```js
 // src/foo.spec.ts
 import 'playwright-runner';
+import { it, expected } from '@playwright/test-runner';
+
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
   const home = await page.waitForSelector('home-navigation');

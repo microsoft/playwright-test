@@ -85,7 +85,13 @@ program
       });
 
       const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
-      const result = await run(config, files, new Multiplexer(reporterObjects));
+      let result;
+      try {
+        result = await run(config, files, new Multiplexer(reporterObjects));
+      } catch (err) {
+        console.error(err);
+        process.exit(1);
+      }
       if (result === 'forbid-only') {
         console.error('=====================================');
         console.error(' --forbid-only found a focused test.');

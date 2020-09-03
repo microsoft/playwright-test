@@ -21,6 +21,8 @@ Place unit tests in files ending with `.spec.*`.
 ```js
 // src/foo.spec.ts
 import 'playwright-runner';
+import { it, expect } from '@playwright/test-runner';
+
 
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');

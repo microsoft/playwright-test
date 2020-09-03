@@ -1,4 +1,4 @@
-name: Examples
+name: Test Examples
 on:
   push:
     branches: [ master ]
@@ -24,10 +24,11 @@ jobs:
     - run: yarn
       working-directory: .
     - run: yarn link
-      working-directory: packages/playwright-runner
-    - run: yarn link
       working-directory: packages/test-runner
+    - run: |
+        yarn link
+        yarn link @playwright/test-runner
+      working-directory: packages/playwright-runner
     - run: yarn link playwright-runner
-    - run: yarn link @playwright/test-runner
     - run: yarn install
-    - run: npm test
+    - run: yarn test

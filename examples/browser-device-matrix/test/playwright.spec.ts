@@ -15,7 +15,9 @@
  */
 
 import 'playwright-runner';
+import {it, expect} from '@playwright/test-runner';
 
 it('is a basic test with the page', async ({page}) => {
-  await page.goto('http://whatsmyuseragent.org/');
+  await page.goto('https://playwright.dev/');
+  expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
 });
