@@ -15,7 +15,7 @@
  */
 
 import 'playwright-runner';
-import {registerFixture} from 'playwright-runner';
+import {it, registerFixture, expect} from '@playwright/test-runner';
 
 registerFixture('page', async ({context, outputFile}, runTest, info) => {
   const page = await context.newPage();
@@ -30,7 +30,7 @@ registerFixture('page', async ({context, outputFile}, runTest, info) => {
 
 it('is a basic test with the page', async ({page}) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
-    Failed!
+    The red background is real!
   </div>`);
-  throw new Error('wrong!');
+  expect(await page.innerText('body')).toBe('Nooo!');
 });

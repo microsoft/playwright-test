@@ -15,6 +15,7 @@
  */
 
 import {registerFixture} from 'playwright-runner';
+import {it} from '@playwright/test-runner';
 import {saveVideo} from 'playwright-video';
 
 registerFixture('page', async ({context, outputFile}, runTest) => {

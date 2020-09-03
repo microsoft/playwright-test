@@ -61,7 +61,9 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
   try {
     report = JSON.parse(fs.readFileSync(reportFile).toString());
   } catch (e) {
-    throw new Error(outputStr);
+    const error = new Error(outputStr);
+    (error as any).exitCode = status;
+    throw error;
   }
   return {
     exitCode: status,

@@ -26,6 +26,16 @@ it('should collect stdio', async ({ runTest }) => {
   expect(stderr).toEqual([{ text: 'stderr text' }, { buffer: Buffer.from('stderr buffer').toString('base64') }]);
 });
 
+it('should work with not defined errors', async ({runTest}) => {
+  let error;
+  try {
+    const result = await runTest('is-not-defined-error.ts');
+  } catch (err) {
+    error = err;
+  }
+  expect(error.exitCode).toBe(1);
+});
+
 it('should work with typescript', async ({ runTest }) => {
   const result = await runTest('typescript.ts');
   expect(result.exitCode).toBe(0);
