@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { it } = require('../../');
+const { it, expect } = require('../../');
 
 it('succeeds', () => {
   expect(1 + 1).toBe(2);

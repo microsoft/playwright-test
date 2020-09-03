@@ -20,9 +20,9 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import './expect';
 import { registerFixture as registerFixtureT, registerWorkerFixture as registerWorkerFixtureT, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
+export { expect } from './expect';
 export { parameters } from './fixtures';
 export { afterAll, afterEach, beforeAll, beforeEach, describe, fdescribe, fit, it, xdescribe, xit } from './spec';
 

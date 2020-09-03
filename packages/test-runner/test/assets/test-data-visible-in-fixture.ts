@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { it, registerFixture } from '../../';
+import { it, expect, registerFixture } from '../../';
 
 declare global {
   interface TestState {

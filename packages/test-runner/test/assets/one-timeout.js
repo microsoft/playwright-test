@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { it } = require('../../');
+const { it, expect } = require('../../');
 
 it('timeout', async () => {
   await new Promise(f => setTimeout(f, 10000));

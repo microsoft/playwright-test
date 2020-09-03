@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { it } from '../../..';
+import { it, expect } from '../../..';
 
 it('succeeds', async ({ parallelIndex }) => {
   // Make sure we create second worker too.

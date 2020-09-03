@@ -16,19 +16,15 @@
 
 import { compare } from './golden';
 import { RunnerConfig } from './runnerConfig';
-import expect = require('expect');
+import expectLibrary from 'expect';
 
-declare global {
-  const expect: typeof import('expect');
-}
+export const expect = expectLibrary;
 
 declare module 'expect/build/types' {
   interface Matchers<R> {
-      toMatchImage(path: string, options?: { threshold?: number  }): R;
+    toMatchImage(path: string, options?: { threshold?: number  }): R;
   }
 }
-
-global['expect'] = expect;
 
 let testFile: string;
 

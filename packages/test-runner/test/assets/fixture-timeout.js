@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { it, registerFixture } = require('../../');
+const { it, expect, registerFixture } = require('../../');
 
 registerFixture('timeout', async ({}, runTest) => {
   await runTest();
