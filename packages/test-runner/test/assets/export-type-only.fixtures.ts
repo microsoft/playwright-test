@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../..');
+import { fixtures as imported } from '../..';
 
-registerWorkerFixture('fixture', async ({}, runTest) => {
-  await runTest('');
+export type TypeOnlyState = {
+  test: { testTypeOnly: string },
+  worker: { workerTypeOnly: number },
+};
+
+const fixtures = imported.extend<TypeOnlyState>();
+
+fixtures.registerFixture('testTypeOnly', async ({config}, runTest, info) => {
+  await runTest('testTypeOnly');
 });
 
-it('test that uses fixture', async ({fixture}) => {
-  console.log('test that uses fixture');
-});
-
-it('test that does not use fixtures', async ({}) => {
-  console.log('test that does not use fixtures');
-});
-
-it('test that uses fixture 2', async ({fixture}) => {
-  console.log('another test that uses fixture');
+fixtures.registerWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
+  await runTest(42);
 });

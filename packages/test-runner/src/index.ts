@@ -20,54 +20,132 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import { registerFixture as registerFixtureT, registerWorkerFixture as registerWorkerFixtureT, TestInfo } from './fixtures';
+import { registerFixture as registerFixtureImpl, registerWorkerFixture as registerWorkerFixtureImpl, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
-export { expect } from './expect';
-export { parameters } from './fixtures';
-export { afterAll, afterEach, beforeAll, beforeEach, describe, fdescribe, fit, it, xdescribe, xit } from './spec';
+import { expect as expectFunction } from './expect';
+import { parameters as parametersObject } from './fixtures';
+import * as spec from './spec';
+import { Test, Suite } from './test';
 
 const mkdirAsync = promisify(fs.mkdir);
-
-declare global {
-  interface WorkerState {
-    config: RunnerConfig;
-    parallelIndex: number;
-  }
-
-  interface TestState {
-    tmpDir: string;
-    outputFile: (suffix: string) => Promise<string>
-  }
-}
-
 const mkdtempAsync = promisify(fs.mkdtemp);
 const removeFolderAsync = promisify(rimraf);
 
-export function registerFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
-  registerFixtureT(name, fn);
+interface BaseState {
+  worker?: object;
+  test?: object;
+}
+interface DescribeHelper {
+  describe(name: string, inner: () => void): void;
+  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
+}
+type DescribeFunction = DescribeHelper['describe'];
+interface ItHelper<STATE extends BaseState> {
+  it(name: string, inner: (state: STATE['worker'] & STATE['test']) => Promise<void> | void): void;
+  it(name: string, modifier: (test: Test) => any, inner: (state: STATE['worker'] & STATE['test']) => Promise<void> | void): void;
+}
+type ItFunction<STATE extends BaseState> = ItHelper<STATE>['it'];
+type It<STATE extends BaseState> = ItFunction<STATE> & {
+  only: ItFunction<STATE>;
+  skip: ItFunction<STATE>;
+};
+type Fit<STATE extends BaseState> = ItFunction<STATE>;
+type Xit<STATE extends BaseState> = ItFunction<STATE>;
+type Describe = DescribeFunction & {
+  only: DescribeFunction;
+  skip: DescribeFunction;
+};
+type FDescribe = DescribeFunction;
+type XDescribe = DescribeFunction;
+type BeforeEach<STATE extends BaseState> = (inner: (state: STATE['worker'] & STATE['test']) => Promise<void>) => void;
+type AfterEach<STATE extends BaseState> = (inner: (state: STATE['worker'] & STATE['test']) => Promise<void>) => void;
+type BeforeAll<STATE extends BaseState> = (inner: (state: STATE['worker']) => Promise<void>) => void;
+type AfterAll<STATE extends BaseState> = (inner: (state: STATE['worker']) => Promise<void>) => void;
+
+class Fixtures<STATE extends BaseState> {
+  it: It<STATE> = spec.it;
+  fit: Fit<STATE> = spec.it.only;
+  xit: Xit<STATE> = spec.it.skip;
+  describe: Describe = spec.describe;
+  fdescribe: FDescribe = spec.describe.only;
+  xdescribe: XDescribe = spec.describe.skip;
+  beforeEach: BeforeEach<STATE> = spec.beforeEach;
+  afterEach: AfterEach<STATE> = spec.afterEach;
+  beforeAll: BeforeAll<STATE> = spec.beforeAll;
+  afterAll: AfterAll<STATE> = spec.afterAll;
+  expect: typeof expectFunction = expectFunction;
+  parameters: typeof parametersObject = parameters;
+
+  extend<T extends BaseState>(): Fixtures<STATE & T> {
+    return this as any as Fixtures<STATE & T>;
+  }
+
+  registerWorkerFixture<T extends keyof STATE['worker']>(name: T, fn: (params: STATE['worker'], runTest: (arg: STATE['worker'][T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+    // TODO: make this throw when overriding.
+    registerWorkerFixtureImpl(name as string, fn);
+  }
+
+  registerFixture<T extends keyof STATE['test']>(name: T, fn: (params: STATE['worker'] & STATE['test'], runTest: (arg: STATE['test'][T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+    // TODO: make this throw when overriding.
+    registerFixtureImpl(name as string, fn);
+  }
+
+  overrideWorkerFixture<T extends keyof STATE['worker']>(name: T, fn: (params: STATE['worker'], runTest: (arg: STATE['worker'][T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+    // TODO: make this throw when not overriding.
+    registerWorkerFixtureImpl(name as string, fn);
+  }
+
+  overrideFixture<T extends keyof STATE['test']>(name: T, fn: (params: STATE['worker'] & STATE['test'], runTest: (arg: STATE['test'][T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+    // TODO: make this throw when not overriding.
+    registerFixtureImpl(name as string, fn);
+  }
 }
 
-export function registerWorkerFixture<T extends keyof(WorkerState)>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
-  registerWorkerFixtureT(name, fn);
-}
+export type DefaultState = {
+  worker: {
+    config: RunnerConfig;
+    parallelIndex: number;
+  };
+  test: {
+    tmpDir: string;
+    outputFile: (suffix: string) => Promise<string>;
+  };
+};
+export const fixtures = new Fixtures<DefaultState>();
+export const it = fixtures.it;
+export const fit = fixtures.fit;
+export const xit = fixtures.xit;
+export const describe = fixtures.describe;
+export const fdescribe = fixtures.fdescribe;
+export const xdescribe = fixtures.xdescribe;
+export const beforeEach = fixtures.beforeEach;
+export const afterEach = fixtures.afterEach;
+export const beforeAll = fixtures.beforeAll;
+export const afterAll = fixtures.afterAll;
+export const parameters = fixtures.parameters;
+export const expect = fixtures.expect;
+export const registerFixture = fixtures.registerFixture;
+export const registerWorkerFixture = fixtures.registerWorkerFixture;
+export const overrideFixture = fixtures.overrideFixture;
+export const overrideWorkerFixture = fixtures.overrideWorkerFixture;
 
-registerWorkerFixture('config', async ({}, test) => {
+fixtures.registerWorkerFixture('config', async ({}, test) => {
   // Worker injects the value for this one.
   await test(undefined as any);
 });
 
-registerWorkerFixture('parallelIndex', async ({}, test) => {
+fixtures.registerWorkerFixture('parallelIndex', async ({}, test) => {
   // Worker injects the value for this one.
   await test(undefined as any);
 });
 
-registerFixture('tmpDir', async ({}, test) => {
+fixtures.registerFixture('tmpDir', async ({}, test) => {
   const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
   await test(tmpDir);
   await removeFolderAsync(tmpDir).catch(e => {});
 });
 
-registerFixture('outputFile', async ({}, runTest, info) => {
+fixtures.registerFixture('outputFile', async ({}, runTest, info) => {
   const outputFile = async (suffix: string): Promise<string> => {
     const {config, test} = info;
     const relativePath = path.relative(config.testDir, test.file)

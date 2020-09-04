@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../..');
+import { fixtures, WrapState, it, expect } from './export-wrap.fixtures';
 
-registerWorkerFixture('fixture', async ({}, runTest) => {
-  await runTest('');
+// Should be able to use state definition.
+const foo: WrapState['worker']['workerWrap'] = 17;
+
+fixtures.overrideFixture('testWrap', async ({}, runTest, info) => {
+  await runTest('override');
 });
 
-it('test that uses fixture', async ({fixture}) => {
-  console.log('test that uses fixture');
+fixtures.it('ensure that testRunner.* work', async ({}) => {
+  fixtures.expect(foo).toBe(17);
 });
 
-it('test that does not use fixtures', async ({}) => {
-  console.log('test that does not use fixtures');
+it('ensure that exported members work', async ({}) => {
+  expect(foo).toBe(17);
 });
 
-it('test that uses fixture 2', async ({fixture}) => {
-  console.log('another test that uses fixture');
+it('ensure that override works', async ({ testWrap, workerWrap }) => {
+  expect(testWrap).toBe('override');
+  expect(workerWrap).toBe(42);
 });

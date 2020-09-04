@@ -23,42 +23,22 @@ let currentItImpl;
 let currentDescribeImpl;
 let currentSuites: Suite[];
 
-interface DescribeFunction {
-  describe(name: string, inner: () => void): void;
-  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
-}
-
-interface ItFunction<STATE> {
-  it(name: string, inner: (state: STATE) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test) => any, inner: (state: STATE) => Promise<void> | void): void;
-}
-
-export const it: ItFunction<TestState & WorkerState>['it'] & {
-  only: ItFunction<TestState & WorkerState>['it'];
-  skip: ItFunction<TestState & WorkerState>['it'];
-} = (...args) => {
+export const it = (...args) => {
   currentItImpl('default', ...args);
 };
 it.skip = (...args) => currentItImpl('skip', ...args);
 it.only = (...args) => currentItImpl('only', ...args);
-export const fit: ItFunction<TestState & WorkerState>['it'] = it.only;
-export const xit: ItFunction<TestState & WorkerState>['it'] = it.skip;
 
-export const describe: DescribeFunction['describe'] & {
-  only: DescribeFunction['describe'];
-  skip: DescribeFunction['describe'];
-} = (...args) => {
+export const describe = (...args) => {
   currentDescribeImpl('default', ...args);
 };
 describe.skip = (...args) => currentDescribeImpl('skip', ...args);
 describe.only = (...args) => currentDescribeImpl('only', ...args);
-export const fdescribe: DescribeFunction['describe'] = describe.only;
-export const xdescribe: DescribeFunction['describe'] = describe.skip;
 
-export const beforeEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('beforeEach', fn);
-export const afterEach: (inner: (state: TestState & WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('afterEach', fn);
-export const beforeAll: (inner: (state: WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('beforeAll', fn);
-export const afterAll: (inner: (state: WorkerState) => Promise<void>) => void = fn => currentSuites[0]._addHook('afterAll', fn);
+export const beforeEach = fn => currentSuites[0]._addHook('beforeEach', fn);
+export const afterEach = fn => currentSuites[0]._addHook('afterEach', fn);
+export const beforeAll = fn => currentSuites[0]._addHook('beforeAll', fn);
+export const afterAll = fn => currentSuites[0]._addHook('afterAll', fn);
 
 export function spec(suite: Suite, file: string, timeout: number): () => void {
   const suites = [suite];

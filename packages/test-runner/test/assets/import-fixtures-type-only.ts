@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../..');
+import { fixtures } from '../..';
+import { TypeOnlyState } from './export-type-only.fixtures';
+const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyState>();
 
-registerWorkerFixture('fixture', async ({}, runTest) => {
-  await runTest('');
+// Should be able to use state definition.
+const foo: TypeOnlyState['worker']['workerTypeOnly'] = 17;
+
+overrideFixture('testTypeOnly', async ({}, runTest, info) => {
+  await runTest('override');
 });
 
-it('test that uses fixture', async ({fixture}) => {
-  console.log('test that uses fixture');
-});
-
-it('test that does not use fixtures', async ({}) => {
-  console.log('test that does not use fixtures');
-});
-
-it('test that uses fixture 2', async ({fixture}) => {
-  console.log('another test that uses fixture');
+it('ensure that override works', async ({ testTypeOnly, workerTypeOnly }) => {
+  expect(foo).toBe(17);
+  expect(testTypeOnly).toBe('override');
+  expect(workerTypeOnly).toBe(42);
 });

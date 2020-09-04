@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-import { it, expect, registerFixture } from '../../';
-const fs = require('fs');
-const path = require('path');
+import { fixtures } from '../../';
+import * as fs from 'fs';
+import * as path from 'path';
 
-declare global {
-  interface TestState {
-    postProcess: string;
-  }
-}
+const { it, registerFixture, expect } = fixtures.extend<{ test: { postProcess: string } }>();
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
