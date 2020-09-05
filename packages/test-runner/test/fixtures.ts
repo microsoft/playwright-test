@@ -41,6 +41,7 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     path.join(__dirname, 'assets', filePath),
     '--output=' + outputDir,
     '--reporter=dot,json',
+    '--jobs=2',
     ...Object.keys(params).map(key => `--${key}=${params[key]}`)
   ], {
     env: {
