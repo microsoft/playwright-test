@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-import 'playwright-runner';
-import {it, registerFixture, expect} from '@playwright/test-runner';
+import {TypeOnlyTestState, TypeOnlyWorkerState} from 'playwright-runner';
+import { expect, fixtures as fixtureImported} from '@playwright/test-runner';
 
-registerFixture('page', async ({context, outputFile}, runTest, info) => {
+const fixtures = fixtureImported.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+
+fixtures.registerFixture('page', async ({context, outputFile}, runTest, info) => {
   const page = await context.newPage();
   await runTest(page);
   const {result} = info;
   if (result.status === 'failed' || result.status === 'timedOut') {
     const assetPath = await outputFile('failed.png');
-    await page.screenshot({ path: assetPath});
+    await page.screenshot({path: assetPath});
   }
   await page.close();
 });
+
+const it = fixtures.it;
 
 it('is a basic test with the page', async ({page}) => {
   await page.setContent(`<div style="height: 500px; background-color: red">

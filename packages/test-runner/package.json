@@ -5,6 +5,9 @@
     "test-runner": "./cli.js"
   },
   "main": "./out/index.js",
+  "engines": {
+    "node": ">=10.17.0"
+  },
   "scripts": {
     "test": "test-runner test/ --test-ignore=assets/**"
   },

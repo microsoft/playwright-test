@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-import {registerFixture} from 'playwright-runner';
-import {it} from '@playwright/test-runner';
 import {saveVideo} from 'playwright-video';
+import {TypeOnlyTestState, TypeOnlyWorkerState} from 'playwright-runner';
+import {fixtures as fixtureImported} from '@playwright/test-runner';
 
-registerFixture('page', async ({context, outputFile}, runTest) => {
+const fixtures = fixtureImported.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+
+fixtures.overrideFixture('page', async ({context, outputFile}, runTest) => {
   const page = await context.newPage();
   const assetPath = await outputFile('recording.mp4');
   const recording = await saveVideo(page, assetPath);
@@ -26,6 +28,8 @@ registerFixture('page', async ({context, outputFile}, runTest) => {
   await recording.stop();
   await page.close();
 });
+
+const it = fixtures.it;
 
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://github.com');
