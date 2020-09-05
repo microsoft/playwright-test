@@ -29,6 +29,9 @@ jobs:
         yarn link
         yarn link @playwright/test-runner
       working-directory: packages/playwright-runner
-    - run: yarn link playwright-runner
+    - run: |
+        yarn link playwright-runner
+        yarn link @playwright/test-runner
     - run: yarn install
     - run: yarn test
+      continue-on-error: ${{ matrix.dir == 'screenshot-on-failure' }}
