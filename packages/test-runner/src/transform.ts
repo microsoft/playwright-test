@@ -59,7 +59,7 @@ export function installTransform(): () => void {
 
     const result = babel.transformFileSync(filename, {
       presets: [
-        ['@babel/preset-env', { targets: {node: 'current'} }],
+        ['@babel/preset-env', { targets: {node: '10.17.0'} }],
         ['@babel/preset-typescript', { onlyRemoveTypeImports: true }],
       ],
       sourceMaps: true,
