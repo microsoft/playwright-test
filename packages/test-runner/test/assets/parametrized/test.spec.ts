@@ -1,11 +1,11 @@
 /**
- * Copyright Microsoft Corporation. All rights reserved.
+ * Copyright (c) Microsoft Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-import os from 'os';
-import path from 'path';
-import { promisify } from 'util';
-import fs from 'fs';
-import rimraf from 'rimraf';
-import { registerFixture, registerWorkerFixture } from './fixtures';
-import { Test, Suite } from './test';
-import { RunnerConfig } from './runnerConfig';
+import { fixtures } from '../../..';
+const { it, expect, registerFixture } = fixtures.extend<{ foo: string, bar: string }>();
 
+registerFixture('foo', async ({}, runTest) => {
+  await runTest('default');
+});
+
+registerFixture('bar', async ({}, runTest) => {
+  await runTest('default');
+});
+
+it('runs 6 times', async ({ foo, bar }) => {
+  expect(foo).toContain('foo');
+  expect(bar).toContain('bar');
+});
