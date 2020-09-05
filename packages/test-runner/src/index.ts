@@ -70,7 +70,7 @@ class Fixtures<WorkerState, TestState> {
   beforeAll: BeforeAll<WorkerState> = spec.beforeAll;
   afterAll: AfterAll<WorkerState> = spec.afterAll;
   expect: typeof expectFunction = expectFunction;
-  parameters: typeof parametersObject = parameters;
+  parameters: typeof parametersObject = parametersObject;
 
   extend<W, T>(): Fixtures<WorkerState & W, TestState & T>;
   extend<T>(): Fixtures<WorkerState, TestState & T>;

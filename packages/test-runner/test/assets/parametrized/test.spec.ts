@@ -15,7 +15,7 @@
  */
 
 import { fixtures } from '../../..';
-const { it, expect, registerFixture } = fixtures.extend<{ foo: string, bar: string }>();
+const { it, expect, registerFixture, parameters } = fixtures.extend<{ foo: string, bar: string }>();
 
 registerFixture('foo', async ({}, runTest) => {
   await runTest('default');
@@ -28,4 +28,6 @@ registerFixture('bar', async ({}, runTest) => {
 it('runs 6 times', async ({ foo, bar }) => {
   expect(foo).toContain('foo');
   expect(bar).toContain('bar');
+  expect(parameters.foo).toBe(foo);
+  expect(parameters.bar).toBe(bar);
 });
