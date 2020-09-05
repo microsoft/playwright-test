@@ -31,87 +31,87 @@ const mkdirAsync = promisify(fs.mkdir);
 const mkdtempAsync = promisify(fs.mkdtemp);
 const removeFolderAsync = promisify(rimraf);
 
-interface BaseState {
-  worker?: object;
-  test?: object;
-}
 interface DescribeHelper {
   describe(name: string, inner: () => void): void;
   describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
 }
 type DescribeFunction = DescribeHelper['describe'];
-interface ItHelper<STATE extends BaseState> {
-  it(name: string, inner: (state: STATE['worker'] & STATE['test']) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test) => any, inner: (state: STATE['worker'] & STATE['test']) => Promise<void> | void): void;
+interface ItHelper<WorkerState, TestState> {
+  it(name: string, inner: (state: WorkerState & TestState) => Promise<void> | void): void;
+  it(name: string, modifier: (test: Test) => any, inner: (state: WorkerState & TestState) => Promise<void> | void): void;
 }
-type ItFunction<STATE extends BaseState> = ItHelper<STATE>['it'];
-type It<STATE extends BaseState> = ItFunction<STATE> & {
-  only: ItFunction<STATE>;
-  skip: ItFunction<STATE>;
+type ItFunction<WorkerState, TestState> = ItHelper<WorkerState, TestState>['it'];
+type It<WorkerState, TestState> = ItFunction<WorkerState, TestState> & {
+  only: ItFunction<WorkerState, TestState>;
+  skip: ItFunction<WorkerState, TestState>;
 };
-type Fit<STATE extends BaseState> = ItFunction<STATE>;
-type Xit<STATE extends BaseState> = ItFunction<STATE>;
+type Fit<WorkerState, TestState> = ItFunction<WorkerState, TestState>;
+type Xit<WorkerState, TestState> = ItFunction<WorkerState, TestState>;
 type Describe = DescribeFunction & {
   only: DescribeFunction;
   skip: DescribeFunction;
 };
 type FDescribe = DescribeFunction;
 type XDescribe = DescribeFunction;
-type BeforeEach<STATE extends BaseState> = (inner: (state: STATE['worker'] & STATE['test']) => Promise<void>) => void;
-type AfterEach<STATE extends BaseState> = (inner: (state: STATE['worker'] & STATE['test']) => Promise<void>) => void;
-type BeforeAll<STATE extends BaseState> = (inner: (state: STATE['worker']) => Promise<void>) => void;
-type AfterAll<STATE extends BaseState> = (inner: (state: STATE['worker']) => Promise<void>) => void;
+type BeforeEach<WorkerState, TestState> = (inner: (state: WorkerState & TestState) => Promise<void>) => void;
+type AfterEach<WorkerState, TestState> = (inner: (state: WorkerState & TestState) => Promise<void>) => void;
+type BeforeAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
+type AfterAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
 
-class Fixtures<STATE extends BaseState> {
-  it: It<STATE> = spec.it;
-  fit: Fit<STATE> = spec.it.only;
-  xit: Xit<STATE> = spec.it.skip;
+class Fixtures<WorkerState, TestState> {
+  it: It<WorkerState, TestState> = spec.it;
+  fit: Fit<WorkerState, TestState> = spec.it.only;
+  xit: Xit<WorkerState, TestState> = spec.it.skip;
   describe: Describe = spec.describe;
   fdescribe: FDescribe = spec.describe.only;
   xdescribe: XDescribe = spec.describe.skip;
-  beforeEach: BeforeEach<STATE> = spec.beforeEach;
-  afterEach: AfterEach<STATE> = spec.afterEach;
-  beforeAll: BeforeAll<STATE> = spec.beforeAll;
-  afterAll: AfterAll<STATE> = spec.afterAll;
+  beforeEach: BeforeEach<WorkerState, TestState> = spec.beforeEach;
+  afterEach: AfterEach<WorkerState, TestState> = spec.afterEach;
+  beforeAll: BeforeAll<WorkerState> = spec.beforeAll;
+  afterAll: AfterAll<WorkerState> = spec.afterAll;
   expect: typeof expectFunction = expectFunction;
   parameters: typeof parametersObject = parameters;
 
-  extend<T extends BaseState>(): Fixtures<STATE & T> {
-    return this as any as Fixtures<STATE & T>;
+  extend<W, T>(): Fixtures<WorkerState & W, TestState & T>;
+  extend<T>(): Fixtures<WorkerState, TestState & T>;
+  extend<T>(): Fixtures<WorkerState, TestState & T> {
+    return this as any as Fixtures<WorkerState, TestState & T>;
   }
 
-  registerWorkerFixture<T extends keyof STATE['worker']>(name: T, fn: (params: STATE['worker'], runTest: (arg: STATE['worker'][T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  extendWorker<T>(): Fixtures<WorkerState & T, TestState> {
+    return this as any as Fixtures<WorkerState & T, TestState>;
+  }
+
+  registerWorkerFixture<T extends keyof WorkerState>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerWorkerFixtureImpl(name as string, fn);
   }
 
-  registerFixture<T extends keyof STATE['test']>(name: T, fn: (params: STATE['worker'] & STATE['test'], runTest: (arg: STATE['test'][T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+  registerFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerFixtureImpl(name as string, fn);
   }
 
-  overrideWorkerFixture<T extends keyof STATE['worker']>(name: T, fn: (params: STATE['worker'], runTest: (arg: STATE['worker'][T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  overrideWorkerFixture<T extends keyof WorkerState>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerWorkerFixtureImpl(name as string, fn);
   }
 
-  overrideFixture<T extends keyof STATE['test']>(name: T, fn: (params: STATE['worker'] & STATE['test'], runTest: (arg: STATE['test'][T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+  overrideFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerFixtureImpl(name as string, fn);
   }
 }
 
-export type DefaultState = {
-  worker: {
-    config: RunnerConfig;
-    parallelIndex: number;
-  };
-  test: {
-    tmpDir: string;
-    outputFile: (suffix: string) => Promise<string>;
-  };
+export type DefaultWorkerState = {
+  config: RunnerConfig;
+  parallelIndex: number;
 };
-export const fixtures = new Fixtures<DefaultState>();
+export type DefaultTestState = {
+  tmpDir: string;
+  outputFile: (suffix: string) => Promise<string>;
+};
+export const fixtures = new Fixtures<DefaultWorkerState, DefaultTestState>();
 export const it = fixtures.it;
 export const fit = fixtures.fit;
 export const xit = fixtures.xit;

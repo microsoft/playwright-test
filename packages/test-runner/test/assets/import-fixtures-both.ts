@@ -15,8 +15,8 @@
  */
 
 import { fixtures } from './export-wrap.fixtures';
-import { TypeOnlyState } from './export-type-only.fixtures';
-const { overrideFixture, overrideWorkerFixture, it, expect } = fixtures.extend<TypeOnlyState>();
+import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
+const { overrideFixture, overrideWorkerFixture, it, expect } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 overrideFixture('testWrap', async ({}, runTest, info) => {
   await runTest('override');

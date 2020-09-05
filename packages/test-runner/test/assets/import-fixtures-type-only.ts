@@ -15,18 +15,14 @@
  */
 
 import { fixtures } from '../..';
-import { TypeOnlyState } from './export-type-only.fixtures';
-const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyState>();
-
-// Should be able to use state definition.
-const foo: TypeOnlyState['worker']['workerTypeOnly'] = 17;
+import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
+const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 overrideFixture('testTypeOnly', async ({}, runTest, info) => {
   await runTest('override');
 });
 
 it('ensure that override works', async ({ testTypeOnly, workerTypeOnly }) => {
-  expect(foo).toBe(17);
   expect(testTypeOnly).toBe('override');
   expect(workerTypeOnly).toBe(42);
 });

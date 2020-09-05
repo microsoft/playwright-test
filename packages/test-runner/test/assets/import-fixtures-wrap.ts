@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-import { fixtures, WrapState, it, expect } from './export-wrap.fixtures';
-
-// Should be able to use state definition.
-const foo: WrapState['worker']['workerWrap'] = 17;
+import { fixtures, it, expect } from './export-wrap.fixtures';
 
 fixtures.overrideFixture('testWrap', async ({}, runTest, info) => {
   await runTest('override');
 });
 
 fixtures.it('ensure that testRunner.* work', async ({}) => {
-  fixtures.expect(foo).toBe(17);
+  fixtures.expect(1).toBe(1);
 });
 
 it('ensure that exported members work', async ({}) => {
-  expect(foo).toBe(17);
+  expect(2).toBe(2);
 });
 
 it('ensure that override works', async ({ testWrap, workerWrap }) => {

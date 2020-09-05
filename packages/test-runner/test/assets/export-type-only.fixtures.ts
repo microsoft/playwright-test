@@ -16,12 +16,14 @@
 
 import { fixtures as imported } from '../..';
 
-export type TypeOnlyState = {
-  test: { testTypeOnly: string },
-  worker: { workerTypeOnly: number },
+export type TypeOnlyTestState = {
+  testTypeOnly: string;
+};
+export type TypeOnlyWorkerState = {
+  workerTypeOnly: number;
 };
 
-const fixtures = imported.extend<TypeOnlyState>();
+const fixtures = imported.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 fixtures.registerFixture('testTypeOnly', async ({config}, runTest, info) => {
   await runTest('testTypeOnly');

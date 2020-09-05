@@ -16,11 +16,13 @@
 
 import { fixtures as imported } from '../..';
 
-export type WrapState = {
-  test: { testWrap: string },
-  worker: { workerWrap: number },
+type WrapWorkerState = {
+  workerWrap: number;
 };
-export const fixtures = imported.extend<WrapState>();
+type WrapTestState = {
+  testWrap: string;
+};
+export const fixtures = imported.extend<WrapWorkerState, WrapTestState>();
 
 export const it = fixtures.it;
 export const fit = fixtures.fit;

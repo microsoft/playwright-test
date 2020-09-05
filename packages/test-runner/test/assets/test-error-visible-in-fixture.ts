@@ -18,7 +18,7 @@ import { fixtures } from '../../';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const { it, registerFixture, expect } = fixtures.extend<{ test: { postProcess: string } }>();
+const { it, registerFixture, expect } = fixtures.extend<{ postProcess: string }>();
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');

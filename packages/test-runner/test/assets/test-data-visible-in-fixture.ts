@@ -16,7 +16,7 @@
 
 import { fixtures } from '../../';
 
-const { registerFixture, it, expect } = fixtures.extend<{ test: { postProcess: string } }>();
+const { registerFixture, it, expect } = fixtures.extend<{ postProcess: string }>();
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
