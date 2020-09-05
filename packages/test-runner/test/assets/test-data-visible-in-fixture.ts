@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-import { it, expect, registerFixture } from '../../';
+import { fixtures } from '../../';
 
-declare global {
-  interface TestState {
-    postProcess: string;
-  }
-}
+const { registerFixture, it, expect } = fixtures.extend<{ postProcess: string }>();
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');

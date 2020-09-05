@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../..');
+import { fixtures, it, expect } from './export-wrap.fixtures';
 
-registerWorkerFixture('fixture', async ({}, runTest) => {
-  await runTest('');
+fixtures.overrideFixture('testWrap', async ({}, runTest, info) => {
+  await runTest('override');
 });
 
-it('test that uses fixture', async ({fixture}) => {
-  console.log('test that uses fixture');
+fixtures.it('ensure that testRunner.* work', async ({}) => {
+  fixtures.expect(1).toBe(1);
 });
 
-it('test that does not use fixtures', async ({}) => {
-  console.log('test that does not use fixtures');
+it('ensure that exported members work', async ({}) => {
+  expect(2).toBe(2);
 });
 
-it('test that uses fixture 2', async ({fixture}) => {
-  console.log('another test that uses fixture');
+it('ensure that override works', async ({ testWrap, workerWrap }) => {
+  expect(testWrap).toBe('override');
+  expect(workerWrap).toBe(42);
 });

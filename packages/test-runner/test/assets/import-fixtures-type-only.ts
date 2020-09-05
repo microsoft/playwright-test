@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../..');
+import { fixtures } from '../..';
+import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
+const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
-registerWorkerFixture('fixture', async ({}, runTest) => {
-  await runTest('');
+overrideFixture('testTypeOnly', async ({}, runTest, info) => {
+  await runTest('override');
 });
 
-it('test that uses fixture', async ({fixture}) => {
-  console.log('test that uses fixture');
-});
-
-it('test that does not use fixtures', async ({}) => {
-  console.log('test that does not use fixtures');
-});
-
-it('test that uses fixture 2', async ({fixture}) => {
-  console.log('another test that uses fixture');
+it('ensure that override works', async ({ testTypeOnly, workerTypeOnly }) => {
+  expect(testTypeOnly).toBe('override');
+  expect(workerTypeOnly).toBe(42);
 });
