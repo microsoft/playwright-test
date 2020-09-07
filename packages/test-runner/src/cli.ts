@@ -84,9 +84,9 @@ program
         }
       });
 
-      const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
       let result;
       try {
+        const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
         result = await run(config, files, new Multiplexer(reporterObjects));
       } catch (err) {
         console.error(err);
@@ -113,6 +113,8 @@ program.parse(process.argv);
 
 function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
   const fullDir = path.join(testDir, dir);
+  if (!fs.existsSync(fullDir))
+    throw new Error(`${fullDir} does not exist`);
   if (fs.statSync(fullDir).isFile())
     return [fullDir];
   const files = [];

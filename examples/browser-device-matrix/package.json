@@ -10,7 +10,7 @@
     "playwright-runner": "^0.2.1"
   },
   "scripts": {
-    "test": "test-runner test"
+    "test": "test-runner tests"
   },
   "keywords": [],
   "author": "",

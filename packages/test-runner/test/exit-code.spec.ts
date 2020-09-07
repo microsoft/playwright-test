@@ -68,3 +68,7 @@ it('should respect global timeout', async ({ runTest }) => {
   expect(exitCode).toBe(1);
   expect(output).toContain('Timed out waiting 0.5s for the entire test run');
 });
+
+it('should exit with code 1 if the specified folder/file does not exist', async ({runTest}) => {
+  await expect(runTest('111111111111.js')).rejects.toThrowError(/111111111111.js does not exist/);
+});
