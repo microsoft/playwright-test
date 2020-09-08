@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { it, expect } from '../../..';
+import { fixtures } from '../../..';
+const { it, expect } = fixtures;
 import * as fs from 'fs';
 import * as path from 'path';
 

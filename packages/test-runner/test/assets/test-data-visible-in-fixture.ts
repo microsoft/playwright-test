@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import { fixtures } from '../../';
-
-const { registerFixture, it, expect } = fixtures.extend<{ postProcess: string }>();
+import { fixtures as baseFixtures } from '../../';
+const { it, expect, registerFixture } = baseFixtures.extend<{ postProcess: string }>();
 
 registerFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');

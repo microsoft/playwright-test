@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { it, expect } = require('../../');
+
+const { fixtures } = require('../..');
+const { it } = fixtures;
 
 it('timeout', async () => {
   await new Promise(f => setTimeout(f, 10000));

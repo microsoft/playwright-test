@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { it, expect } = require('../../');
+
+const { fixtures } = require('../../');
+const { it, expect } = fixtures;
 
 it('fails', test => test.fail(), () => {
   expect(1 + 1).toBe(3);

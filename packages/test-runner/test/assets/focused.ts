@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { it, expect, fit, describe, fdescribe } from '../..';
+import { fixtures } from '../..';
+const { it, fit, expect, describe, fdescribe } = fixtures;
 
 it('included test', () => {
   expect(1 + 1).toBe(3);

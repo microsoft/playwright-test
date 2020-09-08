@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { it, describe } = require('../../');
+
+const { fixtures } = require('../../');
+const { it, describe, expect } = fixtures;
 
 describe('skipped', suite => {
   suite.skip(true);

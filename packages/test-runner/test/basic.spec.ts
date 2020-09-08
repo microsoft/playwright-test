@@ -22,7 +22,7 @@ it('should fail', async ({ runTest }) => {
   expect(result.exitCode).toBe(1);
   expect(result.passed).toBe(0);
   expect(result.failed).toBe(1);
-  expect(result.output).toContain('one-failure.ts:18:1');
+  expect(result.output).toContain('one-failure.ts:20:1');
 });
 
 it('should timeout', async ({ runTest }) => {

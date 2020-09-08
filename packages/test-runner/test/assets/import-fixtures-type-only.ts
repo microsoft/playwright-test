@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { fixtures } from '../..';
+import { fixtures as baseFixtures } from '../..';
 import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
-const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+const { it, expect, overrideFixture } = baseFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 overrideFixture('testTypeOnly', async ({}, runTest, info) => {
   await runTest('override');

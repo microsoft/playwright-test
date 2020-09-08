@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { fixtures } from '../../..';
-const { it, expect, registerFixture, parameters } = fixtures.extend<{ foo: string, bar: string }>();
+import { fixtures as baseFixtures } from '../../..';
+const { it, expect, registerFixture, parameters } = baseFixtures.extend<{ foo: string, bar: string }>();
 
 registerFixture('foo', async ({}, runTest) => {
   await runTest('default');
