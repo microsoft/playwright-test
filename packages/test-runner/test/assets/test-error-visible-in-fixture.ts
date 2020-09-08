@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { fixtures } from '../../';
+import fixtures from '../../';
 import * as fs from 'fs';
 import * as path from 'path';
 

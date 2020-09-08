@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-const { it, expect, fixtures } = require('../../');
+const { it, expect, registerFixture } = require('../../');
 
-fixtures.registerFixture('timeout', async ({}, runTest) => {
+registerFixture('timeout', async ({}, runTest) => {
   await runTest();
   await new Promise(f => setTimeout(f, 100000));
 });

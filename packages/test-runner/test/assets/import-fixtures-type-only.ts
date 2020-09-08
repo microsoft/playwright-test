@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { fixtures } from '../..';
+import fixtures from '../..';
 import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
 const { it, expect, overrideFixture } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
