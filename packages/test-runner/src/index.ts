@@ -72,14 +72,15 @@ class Fixtures<WorkerState, TestState> {
   expect: typeof expectFunction = expectFunction;
   parameters: typeof parametersObject = parametersObject;
 
-  extend<W, T>(): Fixtures<WorkerState & W, TestState & T>;
-  extend<T>(): Fixtures<WorkerState, TestState & T>;
-  extend<T>(): Fixtures<WorkerState, TestState & T> {
-    return this as any as Fixtures<WorkerState, TestState & T>;
+  union<W1, T1>(other1: Fixtures<W1, T1>): Fixtures<WorkerState & W1, TestState & T1>;
+  union<W1, T1, W2, T2>(other1: Fixtures<W1, T1>, other2: Fixtures<W2, T2>): Fixtures<WorkerState & W1 & W2, TestState & T1 & T2>;
+  union<W1, T1, W2, T2, W3, T3>(other1: Fixtures<W1, T1>, other2: Fixtures<W2, T2>, other3: Fixtures<W3, T3>): Fixtures<WorkerState & W1 & W2 & W3, TestState & T1 & T2 & T3>;
+  union(...others) {
+    return this;
   }
 
-  extendWorker<T>(): Fixtures<WorkerState & T, TestState> {
-    return this as any as Fixtures<WorkerState & T, TestState>;
+  extend<W, T>(): Fixtures<WorkerState & W, TestState & T> {
+    return this as any;
   }
 
   registerWorkerFixture<T extends keyof WorkerState>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {

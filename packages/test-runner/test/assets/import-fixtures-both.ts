@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { fixtures } from './export-wrap.fixtures';
-import { TypeOnlyWorkerState, TypeOnlyTestState } from './export-type-only.fixtures';
-const { overrideFixture, overrideWorkerFixture, it, expect } = fixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+import { fixtures1 } from './export-1.fixtures';
+import { fixtures2 } from './export-2.fixtures';
+const { overrideFixture, overrideWorkerFixture, it, expect } = fixtures1.union(fixtures2);
 
 overrideFixture('testWrap', async ({}, runTest, info) => {
   await runTest('override');
