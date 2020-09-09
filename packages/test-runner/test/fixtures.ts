@@ -58,6 +58,7 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     output += String(chunk);
   });
   const status = await new Promise<number>(x => testProcess.on('close', x));
+  let exitCode = status;
   const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
   const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
   const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
@@ -68,9 +69,8 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
   try {
     report = JSON.parse(fs.readFileSync(reportFile).toString());
   } catch (e) {
-    const error = new Error(output);
-    (error as any).exitCode = status;
-    throw error;
+    report = e;
+    exitCode = 1;
   }
   return {
     exitCode: status,
@@ -98,8 +98,15 @@ fixtures.registerFixture('outputDir', async ({ parallelIndex }, testRun) => {
   await testRun(path.join(__dirname, 'test-results', String(parallelIndex)));
 });
 
-fixtures.registerFixture('runTest', async ({ outputDir }, testRun) => {
+fixtures.registerFixture('runTest', async ({ outputDir }, testRun, testInfo) => {
   const reportFile = path.join(outputDir, `results.json`);
   await removeFolderAsync(outputDir).catch(e => { });
-  await testRun(runTest.bind(null, reportFile, outputDir));
+  // Print output on failure.
+  let result: RunResult;
+  await testRun(async (filePath, options) => {
+    result = await runTest(reportFile, outputDir, filePath, options);
+    return result;
+  });
+  if (testInfo.result.status === 'failed')
+    console.log(result.output);
 });

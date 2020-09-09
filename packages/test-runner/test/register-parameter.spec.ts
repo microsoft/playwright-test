@@ -14,5 +14,22 @@
  * limitations under the License.
  */
 
-(global as any).setParameterValues('foo', ['foo1', 'foo2', 'foo3']);
-(global as any).setParameterValues('bar', ['bar1', 'bar2']);
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
+
+it('should allow custom parameters', async ({ runTest }) => {
+  const result = await runTest('register-parameter.js', {
+    'param1': 'value1',
+  });
+  expect(result.exitCode).toBe(0);
+});
+
+it('should fail on unknown parameters', async ({ runTest }) => {
+  const result = await runTest('register-parameter.js', {
+    'param1': 'value1',
+    'param3': 'value3'
+  });
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain('unknown option');
+  expect(result.output).toContain('param3');
+});

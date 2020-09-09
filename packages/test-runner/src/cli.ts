@@ -35,6 +35,8 @@ export const reporters = {
 
 const availableReporters = Object.keys(reporters).map(r => `"${r}"`).join();
 
+let runAction: any = runStage1;
+
 program
     .version('Version ' + /** @type {any} */ (require)('../package.json').version)
     .option('--debug', 'Run tests in-process for debugging', false)
@@ -52,65 +54,95 @@ program
     .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds), default: 10000', '10000')
     .option('--trial-run', 'Only collect the matching tests and report them as passing')
     .option('-u, --update-snapshots', 'Use this flag to re-record every snapshot that fails during this test run')
-    .action(async command => {
-      const testDir = path.resolve(process.cwd(), command.args[0] || '.');
-      const config: RunnerConfig = {
-        debug: command.debug,
-        forbidOnly: command.forbidOnly,
-        quiet: command.quiet,
-        grep: command.grep,
-        jobs: parseInt(command.jobs, 10),
-        outputDir: command.output,
-        repeatEach: parseInt(command.repeatEach, 10),
-        retries: parseInt(command.retries, 10),
-        snapshotDir: path.join(testDir, '__snapshots__'),
-        testDir,
-        timeout: parseInt(command.timeout, 10),
-        globalTimeout: parseInt(command.globalTimeout, 10),
-        trialRun: command.trialRun,
-        updateSnapshots: command.updateSnapshots
-      };
+    .action(command => runAction(command));
 
-      const reporterList = command.reporter.split(',');
-      const reporterObjects: Reporter[] = reporterList.map(c => {
-        if (reporters[c])
-          return new reporters[c]();
-        try {
-          const p = path.resolve(process.cwd(), c);
-          return new (require(p).default)();
-        } catch (e) {
-          console.error('Invalid reporter ' + c, e);
-          process.exit(1);
-        }
-      });
+let runner: Runner;
 
-      let result;
-      try {
-        const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
-        const runner = new Runner(config, files, new Multiplexer(reporterObjects));
-        result = await runner.run();
-      } catch (err) {
-        console.error(err);
-        process.exit(1);
-      }
-      if (result === 'forbid-only') {
-        console.error('=====================================');
-        console.error(' --forbid-only found a focused test.');
-        console.error('=====================================');
-        process.exit(1);
-      }
-
-      if (result === 'no-tests') {
-        console.error('=================');
-        console.error(' no tests found.');
-        console.error('=================');
-        process.exit(1);
-      }
-
-      process.exit(result === 'failed' ? 1 : 0);
-    });
-
+program.allowUnknownOption(true);
 program.parse(process.argv);
+
+
+async function runStage1(command) {
+  const filteredArguments = [];
+  for (const arg of command.args) {
+    if (arg.startsWith('-'))
+      break;
+    filteredArguments.push(arg);
+  }
+
+  const testDir = path.resolve(process.cwd(), filteredArguments[0] || '.');
+  const config: RunnerConfig = {
+    debug: command.debug,
+    forbidOnly: command.forbidOnly,
+    quiet: command.quiet,
+    grep: command.grep,
+    jobs: parseInt(command.jobs, 10),
+    outputDir: command.output,
+    repeatEach: parseInt(command.repeatEach, 10),
+    retries: parseInt(command.retries, 10),
+    snapshotDir: path.join(testDir, '__snapshots__'),
+    testDir,
+    timeout: parseInt(command.timeout, 10),
+    globalTimeout: parseInt(command.globalTimeout, 10),
+    trialRun: command.trialRun,
+    updateSnapshots: command.updateSnapshots
+  };
+
+  const reporterList = command.reporter.split(',');
+  const reporterObjects: Reporter[] = reporterList.map(c => {
+    if (reporters[c])
+      return new reporters[c]();
+    try {
+      const p = path.resolve(process.cwd(), c);
+      return new (require(p).default)();
+    } catch (e) {
+      console.error('Invalid reporter ' + c, e);
+      process.exit(1);
+    }
+  });
+
+  try {
+    const files = collectFiles(testDir, '', filteredArguments.slice(1), command.testMatch, command.testIgnore);
+    runner = new Runner(config, files, new Multiplexer(reporterObjects));
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+
+  runAction = runStage2;
+  program.allowUnknownOption(false);
+  for (const param of runner.parameters())
+    program.option(`--${param.name} <value>`, param.description);
+  program.parse(process.argv);
+}
+
+async function runStage2(command) {
+  for (const param of runner.parameters()) {
+    const value = command[param.name];
+    if (value)
+      runner.setParameterValue(param.name, value);
+  }
+
+  try {
+    const result = await runner.run();
+    if (result === 'forbid-only') {
+      console.error('=====================================');
+      console.error(' --forbid-only found a focused test.');
+      console.error('=====================================');
+      process.exit(1);
+    }
+    if (result === 'no-tests') {
+      console.error('=================');
+      console.error(' no tests found.');
+      console.error('=================');
+      process.exit(1);
+    }
+    process.exit(result === 'failed' ? 1 : 0);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+}
 
 function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
   const fullDir = path.join(testDir, dir);

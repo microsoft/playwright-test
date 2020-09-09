@@ -33,3 +33,9 @@ it('should run with each configuration', async ({ runTest }) => {
       expect(objects.find(o => o.foo === foo && o.bar === bar)).toBeTruthy();
   }
 });
+
+it('should fail on invalid parameters', async ({ runTest }) => {
+  const result = await runTest('invalid-parameter');
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`Unregistered parameter 'invalid'`);
+});

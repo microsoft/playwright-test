@@ -14,5 +14,8 @@
  * limitations under the License.
  */
 
-(global as any).setParameterValues('foo', ['foo1', 'foo2', 'foo3']);
-(global as any).setParameterValues('bar', ['bar1', 'bar2']);
+import { fixtures } from '../../..';
+const { it } = fixtures;
+
+it('success', async ({}) => {
+});

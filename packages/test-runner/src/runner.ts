@@ -28,19 +28,12 @@ import { Matrix, TestCollector } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
 import { spec } from './spec';
+import { ParameterRegistration, parameterRegistrations } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test, TestResult, Configuration } from './test';
 
 const removeFolderAsync = promisify(rimraf);
-
-const beforeFunctions: Function[] = [];
-const afterFunctions: Function[] = [];
-let matrix: Matrix = {};
-
-global['before'] = (fn: Function) => beforeFunctions.push(fn);
-global['after'] = (fn: Function) => afterFunctions.push(fn);
-global['matrix'] = (m: Matrix) => matrix = m;
 
 type RunResult = 'passed' | 'failed' | 'forbid-only' | 'no-tests';
 
@@ -48,10 +41,28 @@ export class Runner {
   private _suites: Suite[] = [];
   private _config: RunnerConfig;
   private _reporter: Reporter;
+  private _beforeFunctions: Function[] = [];
+  private _afterFunctions: Function[] = [];
+  private _parameterValues: Matrix = {};
 
   constructor(config: RunnerConfig, files: string[], reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
+
+    // First traverse tests.
+    for (const file of files) {
+      const suite = new Suite('');
+      const revertBabelRequire = spec(suite, file, config.timeout);
+      require(file);
+      revertBabelRequire();
+      this._suites.push(suite);
+    }
+
+    // Set default values
+    for (const param of this.parameters())
+      this.setParameterValue(param.name, param.defaultValue);
+
+    // Then read config.
     const revertBabelRequire = installTransform();
     let hasSetup = false;
     try {
@@ -62,17 +73,28 @@ export class Runner {
       hasSetup = hasSetup || fs.statSync(path.join(config.testDir, 'setup.ts')).isFile();
     } catch (e) {
     }
-    if (hasSetup)
+    if (hasSetup) {
+      global['setParameterValue'] = this.setParameterValue.bind(this);
+      global['setParameterValues'] = this.setParameterValues.bind(this);
+      global['before'] = (fn: Function) => this._beforeFunctions.push(fn);
+      global['after'] = (fn: Function) => this._afterFunctions.push(fn);
       require(path.join(config.testDir, 'setup'));
-    revertBabelRequire();
-
-    for (const file of files) {
-      const suite = new Suite('');
-      const revertBabelRequire = spec(suite, file, config.timeout);
-      require(file);
-      revertBabelRequire();
-      this._suites.push(suite);
     }
+    revertBabelRequire();
+  }
+
+  parameters(): ParameterRegistration[] {
+    return [...parameterRegistrations.values()];
+  }
+
+  setParameterValue(name: string, value: string) {
+    this.setParameterValues(name, [value]);
+  }
+
+  setParameterValues(name: string, values: string[]) {
+    if (!parameterRegistrations.has(name))
+      throw new Error(`Unregistered parameter '${name}' was set.`);
+    this._parameterValues[name] = values;
   }
 
   async run(): Promise<RunResult> {
@@ -81,7 +103,7 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const testCollector = new TestCollector(this._suites, matrix, this._config);
+    const testCollector = new TestCollector(this._suites, this._parameterValues, this._config);
     const suite = testCollector.suite;
     if (this._config.forbidOnly) {
       const hasOnly = suite.findTest(t => t._only) || suite.eachSuite(s => s._only);
@@ -105,12 +127,12 @@ export class Runner {
     const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
     const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);
     try {
-      for (const f of beforeFunctions)
+      for (const f of this._beforeFunctions)
         await f();
       await runner.run();
       await runner.stop();
     } finally {
-      for (const f of afterFunctions)
+      for (const f of this._afterFunctions)
         await f();
     }
     return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
