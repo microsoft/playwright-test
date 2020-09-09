@@ -15,10 +15,8 @@
  */
 
 import crypto from 'crypto';
-import path from 'path';
 import { registrations, fixturesForCallback, rerunRegistrations } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
-import { spec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 
 
@@ -34,7 +32,7 @@ export class TestCollector {
   private _grep: RegExp;
   private _hasOnly: boolean;
 
-  constructor(files: string[], matrix: Matrix, config: RunnerConfig) {
+  constructor(suites: Suite[], matrix: Matrix, config: RunnerConfig) {
     this._matrix = matrix;
     this._config = config;
     this.suite = new Suite('');
@@ -42,10 +40,8 @@ export class TestCollector {
       const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
       this._grep = new RegExp(match[1] || match[0], match[2]);
     }
-
-    for (const file of files)
-      this._addFile(file);
-
+    for (const suite of suites)
+      this._processSuite(suite);
     this._hasOnly = this._filterOnly(this.suite);
   }
 
@@ -53,15 +49,10 @@ export class TestCollector {
     return this._hasOnly;
   }
 
-  private _addFile(file: string) {
-    const suite = new Suite('');
-    const revertBabelRequire = spec(suite, file, this._config.timeout);
-    require(file);
-    revertBabelRequire();
-
+  private _processSuite(suite: Suite) {
     // Rerun registrations so that the registrations map pointed to the
     // topmost overridden registrations.
-    rerunRegistrations(file, 'worker');
+    rerunRegistrations(suite.file, 'worker');
     const workerGeneratorConfigurations = new Map();
 
     // Name each test.

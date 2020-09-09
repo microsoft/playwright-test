@@ -18,7 +18,7 @@ import program from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import { isMatch } from 'micromatch';
-import { run, RunnerConfig } from './runner';
+import { Runner, RunnerConfig } from './runner';
 import PytestReporter from './reporters/pytest';
 import DotReporter from './reporters/dot';
 import ListReporter from './reporters/list';
@@ -87,7 +87,8 @@ program
       let result;
       try {
         const files = collectFiles(testDir, '', command.args.slice(1), command.testMatch, command.testIgnore);
-        result = await run(config, files, new Multiplexer(reporterObjects));
+        const runner = new Runner(config, files, new Multiplexer(reporterObjects));
+        result = await runner.run();
       } catch (err) {
         console.error(err);
         process.exit(1);

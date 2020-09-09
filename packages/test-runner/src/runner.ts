@@ -27,6 +27,7 @@ import { Suite } from './test';
 import { Matrix, TestCollector } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
+import { spec } from './spec';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test, TestResult, Configuration } from './test';
@@ -43,56 +44,75 @@ global['matrix'] = (m: Matrix) => matrix = m;
 
 type RunResult = 'passed' | 'failed' | 'forbid-only' | 'no-tests';
 
-export async function run(config: RunnerConfig, files: string[], reporter: Reporter): Promise<RunResult> {
-  if (!config.trialRun) {
-    await removeFolderAsync(config.outputDir).catch(e => {});
-    fs.mkdirSync(config.outputDir, { recursive: true });
-  }
-  const revertBabelRequire = installTransform();
-  let hasSetup = false;
-  try {
-    hasSetup = fs.statSync(path.join(config.testDir, 'setup.js')).isFile();
-  } catch (e) {
-  }
-  try {
-    hasSetup = hasSetup || fs.statSync(path.join(config.testDir, 'setup.ts')).isFile();
-  } catch (e) {
-  }
-  if (hasSetup)
-    require(path.join(config.testDir, 'setup'));
-  revertBabelRequire();
+export class Runner {
+  private _suites: Suite[] = [];
+  private _config: RunnerConfig;
+  private _reporter: Reporter;
 
-  const testCollector = new TestCollector(files, matrix, config);
-  const suite = testCollector.suite;
-  if (config.forbidOnly) {
-    const hasOnly = suite.findTest(t => t._only) || suite.eachSuite(s => s._only);
-    if (hasOnly)
-      return 'forbid-only';
+  constructor(config: RunnerConfig, files: string[], reporter: Reporter) {
+    this._config = config;
+    this._reporter = reporter;
+    const revertBabelRequire = installTransform();
+    let hasSetup = false;
+    try {
+      hasSetup = fs.statSync(path.join(config.testDir, 'setup.js')).isFile();
+    } catch (e) {
+    }
+    try {
+      hasSetup = hasSetup || fs.statSync(path.join(config.testDir, 'setup.ts')).isFile();
+    } catch (e) {
+    }
+    if (hasSetup)
+      require(path.join(config.testDir, 'setup'));
+    revertBabelRequire();
+
+    for (const file of files) {
+      const suite = new Suite('');
+      const revertBabelRequire = spec(suite, file, config.timeout);
+      require(file);
+      revertBabelRequire();  
+      this._suites.push(suite);
+    }
   }
 
-  const total = suite.total();
-  if (!total)
-    return 'no-tests';
-  const { result, timedOut } = await raceAgainstTimeout(runTests(config, suite, reporter), config.globalTimeout);
-  if (timedOut) {
-    reporter.onTimeout(config.globalTimeout);
-    process.exit(1);
-  }
-  return result;
-}
+  async run(): Promise<RunResult> {
+    if (!this._config.trialRun) {
+      await removeFolderAsync(this._config.outputDir).catch(e => {});
+      fs.mkdirSync(this._config.outputDir, { recursive: true });
+    }
 
-async function runTests(config: RunnerConfig, suite: Suite, reporter: Reporter) {
-  // Trial run does not need many workers, use one.
-  const jobs = (config.trialRun || config.debug) ? 1 : config.jobs;
-  const runner = new Dispatcher(suite, { ...config, jobs }, reporter);
-  try {
-    for (const f of beforeFunctions)
-      await f();
-    await runner.run();
-    await runner.stop();
-  } finally {
-    for (const f of afterFunctions)
-      await f();
+    const testCollector = new TestCollector(this._suites, matrix, this._config);
+    const suite = testCollector.suite;
+    if (this._config.forbidOnly) {
+      const hasOnly = suite.findTest(t => t._only) || suite.eachSuite(s => s._only);
+      if (hasOnly)
+        return 'forbid-only';
+    }
+  
+    const total = suite.total();
+    if (!total)
+      return 'no-tests';
+    const { result, timedOut } = await raceAgainstTimeout(this._runTests(suite), this._config.globalTimeout);
+    if (timedOut) {
+      this._reporter.onTimeout(this._config.globalTimeout);
+      process.exit(1);
+    }
+    return result;
   }
-  return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
+
+  private async _runTests(suite: Suite): Promise<RunResult> {
+    // Trial run does not need many workers, use one.
+    const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
+    const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);
+    try {
+      for (const f of beforeFunctions)
+        await f();
+      await runner.run();
+      await runner.stop();
+    } finally {
+      for (const f of afterFunctions)
+        await f();
+    }
+    return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
+  }  
 }

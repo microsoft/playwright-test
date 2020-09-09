@@ -15,7 +15,7 @@
  */
 
 import debug from 'debug';
-import {RunnerConfig} from './runnerConfig';
+import { RunnerConfig } from './runnerConfig';
 import { serializeError, Test, TestResult } from './test';
 import { raceAgainstTimeout } from './util';
 
