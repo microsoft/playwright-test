@@ -62,10 +62,7 @@ export function installTransform(): () => void {
         ['@babel/preset-env', { targets: {node: '10.17.0'} }],
         ['@babel/preset-typescript', { onlyRemoveTypeImports: true }],
       ],
-      plugins: [
-        ['@babel/plugin-proposal-class-properties', {loose: true}],
-        ['babel-plugin-replace-ts-export-assignment'],
-      ],
+      plugins: [['@babel/plugin-proposal-class-properties', {loose: true}]],
       sourceMaps: true,
     });
     if (result.code) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import baseFixtures from '../..';
+import { fixtures as imported } from '../..';
 
 export type TypeOnlyTestState = {
   testTypeOnly: string;
@@ -23,7 +23,7 @@ export type TypeOnlyWorkerState = {
   workerTypeOnly: number;
 };
 
-const fixtures = baseFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+const fixtures = imported.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 fixtures.registerFixture('testTypeOnly', async ({config}, runTest, info) => {
   await runTest('testTypeOnly');

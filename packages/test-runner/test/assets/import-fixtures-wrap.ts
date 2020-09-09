@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-import { it, expect, overrideFixture } from './export-wrap.fixtures';
+import { fixtures, it, expect } from './export-wrap.fixtures';
 
-overrideFixture('testWrap', async ({}, runTest, info) => {
+fixtures.overrideFixture('testWrap', async ({}, runTest, info) => {
   await runTest('override');
+});
+
+fixtures.it('ensure that testRunner.* work', async ({}) => {
+  fixtures.expect(1).toBe(1);
+});
+
+it('ensure that exported members work', async ({}) => {
+  expect(2).toBe(2);
 });
 
 it('ensure that override works', async ({ testWrap, workerWrap }) => {

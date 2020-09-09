@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import fixtures from '../../';
+import { fixtures } from '../../';
 
 const { registerFixture, it, expect } = fixtures.extend<{ postProcess: string }>();
 

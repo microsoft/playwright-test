@@ -19,7 +19,7 @@ import './fixtures';
 
 it('should be able to import/export wrapped fixtures', async ({ runTest }) => {
   const { exitCode, passed } = await runTest('import-fixtures-wrap.ts');
-  expect(passed).toBe(1);
+  expect(passed).toBe(3);
   expect(exitCode).toBe(0);
 });
 
