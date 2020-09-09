@@ -16,19 +16,19 @@
 
 import { fixtures as baseFixtures } from '../..';
 
-export type TypeOnlyTestState = {
+type TypeOnlyTestState = {
   testTypeOnly: string;
 };
-export type TypeOnlyWorkerState = {
+type TypeOnlyWorkerState = {
   workerTypeOnly: number;
 };
 
-const { registerFixture, registerWorkerFixture } = baseFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+export const fixtures2 = baseFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
-registerFixture('testTypeOnly', async ({config}, runTest, info) => {
+fixtures2.registerFixture('testTypeOnly', async ({config}, runTest, info) => {
   await runTest('testTypeOnly');
 });
 
-registerWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
+fixtures2.registerWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
   await runTest(42);
 });

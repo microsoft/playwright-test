@@ -17,19 +17,7 @@
 import { it, expect } from '@playwright/test-runner';
 import './fixtures';
 
-it('should be able to import/export wrapped fixtures', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('import-fixtures-wrap.ts');
-  expect(passed).toBe(3);
-  expect(exitCode).toBe(0);
-});
-
-it('should be able to import/export type-only fixtures', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('import-fixtures-type-only.ts');
-  expect(passed).toBe(1);
-  expect(exitCode).toBe(0);
-});
-
-it('should be able to import/export both wrapped and type-only fixtures', async ({ runTest }) => {
+it('should be able to import/export fixtures', async ({ runTest }) => {
   const { exitCode, passed } = await runTest('import-fixtures-both.ts');
   expect(passed).toBe(1);
   expect(exitCode).toBe(0);

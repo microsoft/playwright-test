@@ -70,7 +70,7 @@ export class Runner {
       const suite = new Suite('');
       const revertBabelRequire = spec(suite, file, config.timeout);
       require(file);
-      revertBabelRequire();  
+      revertBabelRequire();
       this._suites.push(suite);
     }
   }
@@ -88,7 +88,7 @@ export class Runner {
       if (hasOnly)
         return 'forbid-only';
     }
-  
+
     const total = suite.total();
     if (!total)
       return 'no-tests';
@@ -114,5 +114,5 @@ export class Runner {
         await f();
     }
     return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
-  }  
+  }
 }

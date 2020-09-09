@@ -15,7 +15,7 @@
  */
 
 import { fixtures as baseFixtures } from '../../..';
-const { it, expect, registerFixture, parameters } = baseFixtures.extend<{ foo: string, bar: string }>();
+const { it, expect, registerFixture, parameters } = baseFixtures.extend<{}, { foo: string, bar: string }>();
 
 registerFixture('foo', async ({}, runTest) => {
   await runTest('default');
