@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-const { it, expect } = require('../../');
+const { fixtures } = require('../../');
+const { it, expect } = fixtures;
 
 if (new Error().stack.includes('testRunner'))
   throw new Error('Suite error');

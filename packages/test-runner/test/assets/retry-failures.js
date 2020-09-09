@@ -16,7 +16,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { it, expect } = require('../../');
+const { fixtures } = require('../../');
+const { it, expect } = fixtures;
 
 it('flake', async ({}) => {
   try {

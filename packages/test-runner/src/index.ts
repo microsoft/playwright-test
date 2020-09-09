@@ -111,23 +111,8 @@ export type DefaultTestState = {
   tmpDir: string;
   outputFile: (suffix: string) => Promise<string>;
 };
+
 export const fixtures = new Fixtures<DefaultWorkerState, DefaultTestState>();
-export const it = fixtures.it;
-export const fit = fixtures.fit;
-export const xit = fixtures.xit;
-export const describe = fixtures.describe;
-export const fdescribe = fixtures.fdescribe;
-export const xdescribe = fixtures.xdescribe;
-export const beforeEach = fixtures.beforeEach;
-export const afterEach = fixtures.afterEach;
-export const beforeAll = fixtures.beforeAll;
-export const afterAll = fixtures.afterAll;
-export const parameters = fixtures.parameters;
-export const expect = fixtures.expect;
-export const registerFixture = fixtures.registerFixture;
-export const registerWorkerFixture = fixtures.registerWorkerFixture;
-export const overrideFixture = fixtures.overrideFixture;
-export const overrideWorkerFixture = fixtures.overrideWorkerFixture;
 
 fixtures.registerWorkerFixture('config', async ({}, test) => {
   // Worker injects the value for this one.

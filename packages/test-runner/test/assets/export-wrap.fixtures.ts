@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { fixtures as imported } from '../..';
+import { fixtures as baseFixtures } from '../..';
 
 type WrapWorkerState = {
   workerWrap: number;
@@ -22,20 +22,8 @@ type WrapWorkerState = {
 type WrapTestState = {
   testWrap: string;
 };
-export const fixtures = imported.extend<WrapWorkerState, WrapTestState>();
 
-export const it = fixtures.it;
-export const fit = fixtures.fit;
-export const xit = fixtures.xit;
-export const describe = fixtures.describe;
-export const fdescribe = fixtures.fdescribe;
-export const xdescribe = fixtures.xdescribe;
-export const beforeEach = fixtures.beforeEach;
-export const afterEach = fixtures.afterEach;
-export const beforeAll = fixtures.beforeAll;
-export const afterAll = fixtures.afterAll;
-export const parameters = fixtures.parameters;
-export const expect = fixtures.expect;
+export const fixtures = baseFixtures.extend<WrapWorkerState, WrapTestState>();
 
 fixtures.registerFixture('testWrap', async ({config}, runTest, info) => {
   await runTest('testWrap');

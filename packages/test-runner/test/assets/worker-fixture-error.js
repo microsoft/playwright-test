@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-const { it, registerWorkerFixture } = require('../../');
+const { fixtures } = require('../..');
+const { it, registerWorkerFixture } = fixtures;
 
 registerWorkerFixture('failure', async ({}, runTest) => {
   throw new Error('Worker failed');
