@@ -23,7 +23,7 @@ import { promisify } from 'util';
 import { registerFixture as registerFixtureImpl, registerWorkerFixture as registerWorkerFixtureImpl, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
-import { parameters as parametersObject } from './fixtures';
+import { parameters as parametersObject, registerParameter } from './fixtures';
 import * as spec from './spec';
 import { Test, Suite } from './test';
 
@@ -101,6 +101,10 @@ class FixturesImpl<WorkerState, TestState> {
   overrideFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerFixtureImpl(name as string, fn);
+  }
+
+  registerParameter(name: string, description: string, defaultValue?: string) {
+    registerParameter(name, description, defaultValue);
   }
 }
 

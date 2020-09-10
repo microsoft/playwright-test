@@ -27,13 +27,8 @@ it('should collect stdio', async ({ runTest }) => {
 });
 
 it('should work with not defined errors', async ({runTest}) => {
-  let error;
-  try {
-    const result = await runTest('is-not-defined-error.ts');
-  } catch (err) {
-    error = err;
-  }
-  expect(error.exitCode).toBe(1);
+  const result = await runTest('is-not-defined-error.ts');
+  expect(result.exitCode).toBe(1);
 });
 
 it('should work with typescript', async ({ runTest }) => {
@@ -70,5 +65,7 @@ it('should respect global timeout', async ({ runTest }) => {
 });
 
 it('should exit with code 1 if the specified folder/file does not exist', async ({runTest}) => {
-  await expect(runTest('111111111111.js')).rejects.toThrowError(/111111111111.js does not exist/);
+  const result = await runTest('111111111111.js');
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain('111111111111.js does not exist');
 });

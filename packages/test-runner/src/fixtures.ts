@@ -40,6 +40,14 @@ export const registrations = new Map<string, FixtureRegistration>();
 const registrationsByFile = new Map<string, FixtureRegistration[]>();
 export let parameters: any = {};
 
+export type ParameterRegistration = {
+  name: string;
+  description: string;
+  defaultValue?: string;
+};
+
+export const parameterRegistrations = new Map<string, ParameterRegistration>();
+
 export function setParameters(params: any) {
   parameters = Object.assign(parameters, params);
   for (const name of Object.keys(params))
@@ -240,6 +248,10 @@ export function registerFixture(name: string, fn: (params: any, runTest: (arg: a
 
 export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, config: RunnerConfig) => Promise<void>) {
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
+}
+
+export function registerParameter(name: string, description: string, defaultValue?: string) {
+  parameterRegistrations.set(name, { name, description, defaultValue });
 }
 
 function collectRequires(file: string, result: Set<string>) {

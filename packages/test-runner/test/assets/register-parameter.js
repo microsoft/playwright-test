@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-import { fixtures as baseFixtures } from '../../..';
-const { it, expect, registerFixture, registerParameter, parameters } = baseFixtures.extend<{}, { foo: string, bar: string }>();
+const { fixtures } = require('../..');
+const { it, expect, registerParameter, registerWorkerFixture } = fixtures;
 
-registerParameter('foo', 'Foo parameters', 'foo');
-registerParameter('bar', 'Bar parameters', 'bar');
+registerParameter('param1', 'Custom parameter 1');
+registerParameter('param2', 'Custom parameter 2', 'value2');
 
-registerFixture('foo', async ({}, runTest) => {
-  await runTest('default');
+registerWorkerFixture('param1', async ({}, runTest) => {
+  await runTest('');
 });
 
-registerFixture('bar', async ({}, runTest) => {
-  await runTest('default');
+registerWorkerFixture('param2', async ({}, runTest) => {
+  await runTest('');
 });
 
-it('runs 6 times', async ({ foo, bar }) => {
-  expect(foo).toContain('foo');
-  expect(bar).toContain('bar');
-  expect(parameters.foo).toBe(foo);
-  expect(parameters.bar).toBe(bar);
+it('pass', async ({ param1, param2 }) => {
+  expect(param1).toBe('value1');
+  expect(param2).toBe('value2');
 });
