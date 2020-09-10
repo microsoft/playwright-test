@@ -191,12 +191,20 @@ export class Dispatcher {
     });
     worker.on('testStdOut', params => {
       const chunk = chunkFromParams(params);
+      if (params.id === undefined) {
+        process.stdout.write(chunk);
+        return;
+      }
       const { test, result } = this._testById.get(params.id);
       result.stdout.push(chunk);
       this._reporter.onTestStdOut(test, chunk);
     });
     worker.on('testStdErr', params => {
       const chunk = chunkFromParams(params);
+      if (params.id === undefined) {
+        process.stderr.write(chunk);
+        return;
+      }
       const { test, result } = this._testById.get(params.id);
       result.stderr.push(chunk);
       this._reporter.onTestStdErr(test, chunk);
