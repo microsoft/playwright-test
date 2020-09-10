@@ -15,7 +15,7 @@
  */
 
 import { registerFixture } from '@playwright/test-runner';
-import { spawnSync } from 'child_process';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import rimraf from 'rimraf';
@@ -36,7 +36,7 @@ export type RunResult = {
 };
 
 async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
-  const { output, status } = spawnSync('node', [
+  const testProcess = spawn('node', [
     path.join(__dirname, '..', 'cli.js'),
     path.join(__dirname, 'assets', filePath),
     '--output=' + outputDir,
@@ -50,25 +50,31 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
       PWRUNNER_JSON_REPORT: reportFile,
     }
   });
+  let output = '';
+  testProcess.stderr.on('data', chunk => {
+    output += String(chunk);
+  });
+  testProcess.stdout.on('data', chunk => {
+    output += String(chunk);
+  });
+  const status = await new Promise<number>(x => testProcess.on('close', x));
   const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
   const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
   const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
   const expectedFlaky = (/(\d+) expected flaky/.exec(output.toString()) || [])[1];
   const unexpectedFlaky = (/(\d+) unexpected flaky/.exec(output.toString()) || [])[1];
   const skipped = (/(\d+) skipped/.exec(output.toString()) || [])[1];
-  let outputStr = output.toString();
-  outputStr = outputStr.substring(1, outputStr.length - 1);
   let report;
   try {
     report = JSON.parse(fs.readFileSync(reportFile).toString());
   } catch (e) {
-    const error = new Error(outputStr);
+    const error = new Error(output);
     (error as any).exitCode = status;
     throw error;
   }
   return {
     exitCode: status,
-    output: outputStr,
+    output,
     passed: parseInt(passed, 10),
     failed: parseInt(failed || '0', 10),
     timedOut: parseInt(timedOut || '0', 10),

@@ -110,8 +110,6 @@ export class TestRunner extends EventEmitter {
 
   stdout(chunk: string | Buffer) {
     this._stdOutBuffer.push(chunk);
-    if (!this._testId)
-      return;
     for (const c of this._stdOutBuffer)
       this.emit('testStdOut', { id: this._testId, ...chunkToParams(c) });
     this._stdOutBuffer = [];
@@ -119,8 +117,6 @@ export class TestRunner extends EventEmitter {
 
   stderr(chunk: string | Buffer) {
     this._stdErrBuffer.push(chunk);
-    if (!this._testId)
-      return;
     for (const c of this._stdErrBuffer)
       this.emit('testStdErr', { id: this._testId, ...chunkToParams(c) });
     this._stdErrBuffer = [];
