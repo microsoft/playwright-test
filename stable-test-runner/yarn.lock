@@ -863,14 +863,13 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@playwright/test-runner@^0.3.4":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.3.4.tgz#881f86ee30f6fc006e483b79e683037eb250a386"
-  integrity sha512-t0N/wIkTh4uRAu+ueyP6dHdfri9UpFstYonZDOd+mfhboG5Wlb+pWo1Bl31nh0o98OjUPsBRPxBluYtUfAc7aQ==
+"@playwright/test-runner@0.2.11":
+  version "0.2.11"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.2.11.tgz#ceb3596a6cee466b8b4a7f99d615b0621525e0ef"
+  integrity sha512-FSD/fcS3pJ1knQw9Orgx4oBN3sRFmOn9V9whfYQIGHkawGXoTI7RV8fB3kl2+iUziWoXcN69rMaR05e1jZHykA==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/core" "^7.11.4"
-    "@babel/plugin-proposal-class-properties" "^7.10.4"
     "@babel/preset-env" "^7.11.0"
     "@babel/preset-typescript" "^7.10.4"
     colors "^1.4.0"
