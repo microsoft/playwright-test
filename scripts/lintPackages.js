@@ -40,5 +40,7 @@ for (const {fileName, json} of packages) {
   }
 }
 
+require('./checkVersions')();
+
 if (anyError)
   process.exit(1);

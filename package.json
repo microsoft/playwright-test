@@ -13,6 +13,7 @@
     "watch": "tsc --build tsconfig.json --watch",
     "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
     "prepare": "yarn run build",
+    "preinstall": "yarn -s --cwd stable-test-runner",
     "update-version": "node scripts/updateVersion.js"
   },
   "version": "0.0.0",
