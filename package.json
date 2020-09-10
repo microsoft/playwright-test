@@ -20,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^10.17.29",
     "@types/rimraf": "^3.0.0",
+    "@types/source-map-support": "^0.5.3",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",
     "eslint": "^7.8.1",
