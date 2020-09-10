@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import './fixtures';
-import { it, expect } from '@playwright/test-runner';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should get top level stdio', async ({runTest}) => {
   const result = await runTest('log-something.js');

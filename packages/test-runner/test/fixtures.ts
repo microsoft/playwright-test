@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { registerFixture } from '@playwright/test-runner';
+import { fixtures as baseFixtures } from '@playwright/test-runner';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -92,11 +92,13 @@ declare global {
   }
 }
 
-registerFixture('outputDir', async ({ parallelIndex }, testRun) => {
+export const fixtures = baseFixtures.extend<{}, TestState>();
+
+fixtures.registerFixture('outputDir', async ({ parallelIndex }, testRun) => {
   await testRun(path.join(__dirname, 'test-results', String(parallelIndex)));
 });
 
-registerFixture('runTest', async ({ outputDir }, testRun) => {
+fixtures.registerFixture('runTest', async ({ outputDir }, testRun) => {
   const reportFile = path.join(outputDir, `results.json`);
   await removeFolderAsync(outputDir).catch(e => { });
   await testRun(runTest.bind(null, reportFile, outputDir));

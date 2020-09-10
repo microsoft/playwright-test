@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { it, expect } from '@playwright/test-runner';
 import * as fs from 'fs';
 import * as path from 'path';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should access error in fixture', async ({ runTest, outputDir }) => {
   const textFile = path.join(outputDir, 'test-error-visible-in-fixture.txt');

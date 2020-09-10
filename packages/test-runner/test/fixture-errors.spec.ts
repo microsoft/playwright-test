@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { it, expect } from '@playwright/test-runner';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should handle fixture timeout', async ({ runTest }) => {
   const { exitCode, output, failed, timedOut } = await runTest('fixture-timeout.js', { timeout: 500 });

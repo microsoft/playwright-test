@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { it, expect } from '@playwright/test-runner';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should shard workers by fixtures', async ({ runTest }) => {
   const result = await runTest('worker-fixture-combination.js');

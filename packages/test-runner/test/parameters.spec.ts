@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { it, expect } from '@playwright/test-runner';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should run with each configuration', async ({ runTest }) => {
   const result = await runTest('parametrized');
