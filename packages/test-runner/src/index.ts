@@ -58,7 +58,7 @@ type AfterEach<WorkerState, TestState> = (inner: (state: WorkerState & TestState
 type BeforeAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
 type AfterAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
 
-class Fixtures<WorkerState, TestState> {
+class FixturesImpl<WorkerState, TestState> {
   it: It<WorkerState, TestState> = spec.it;
   fit: Fit<WorkerState, TestState> = spec.it.only;
   xit: Xit<WorkerState, TestState> = spec.it.skip;
@@ -104,6 +104,10 @@ class Fixtures<WorkerState, TestState> {
   }
 }
 
+export interface Fixtures<W, T> extends FixturesImpl<W, T> {
+
+}
+
 export type DefaultWorkerState = {
   config: RunnerConfig;
   parallelIndex: number;
@@ -113,7 +117,7 @@ export type DefaultTestState = {
   outputFile: (suffix: string) => Promise<string>;
 };
 
-export const fixtures = new Fixtures<DefaultWorkerState, DefaultTestState>();
+export const fixtures = new FixturesImpl<DefaultWorkerState, DefaultTestState>();
 
 fixtures.registerWorkerFixture('config', async ({}, test) => {
   // Worker injects the value for this one.

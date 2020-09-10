@@ -31,7 +31,7 @@ export type TypeOnlyWorkerState = {
   device: null | string | BrowserContextOptions
 };
 
-const fixtures = importedFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+export const fixtures = importedFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
 
 export const it = fixtures.it;
 export const fit = fixtures.fit;
