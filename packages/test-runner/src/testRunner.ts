@@ -134,7 +134,7 @@ export class TestRunner extends EventEmitter {
     this._suite._assignIds();
     this._loaded = true;
 
-    rerunRegistrations(this._suite.file, 'test');
+    rerunRegistrations(this._suite.file);
     await this._runSuite(this._suite);
     this._reportDone();
   }

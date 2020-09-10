@@ -50,9 +50,9 @@ export class TestCollector {
   }
 
   private _processSuite(suite: Suite) {
-    // Rerun registrations so that the registrations map pointed to the
-    // topmost overridden registrations.
-    rerunRegistrations(suite.file, 'worker');
+    // Rerun registrations so that only fixutres for this file
+    // are registred
+    rerunRegistrations(suite.file);
     const workerGeneratorConfigurations = new Map();
 
     // Name each test.

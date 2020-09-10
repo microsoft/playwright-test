@@ -216,7 +216,14 @@ function fixtureParameterNames(fn: Function): string[] {
 
 function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: Function) {
   const obj = {stack: ''};
+  // disable source-map-support to match the locations seen in require.cache
+  const origPrepare = Error.prepareStackTrace;
+  Error.prepareStackTrace = null;
   Error.captureStackTrace(obj, caller);
+  // v8 doesn't actually prepare the stack trace until we access it
+  obj.stack;
+  Error.prepareStackTrace = origPrepare;
+
   const stackFrame = obj.stack.split('\n')[2];
   const location = stackFrame.replace(/.*at Object.<anonymous> \((.*)\)/, '$1');
   const file = location.replace(/^(.+):\d+:\d+$/, '$1');
@@ -247,7 +254,7 @@ function collectRequires(file: string, result: Set<string>) {
     collectRequires(dep, result);
 }
 
-function lookupRegistrations(file: string, scope: Scope) {
+function lookupRegistrations(file: string) {
   const deps = new Set<string>();
   collectRequires(file, deps);
   const allDeps = [...deps].reverse();
@@ -256,18 +263,17 @@ function lookupRegistrations(file: string, scope: Scope) {
     const registrationList = registrationsByFile.get(dep);
     if (!registrationList)
       continue;
-    for (const r of registrationList) {
-      if (scope && r.scope !== scope)
-        continue;
+    for (const r of registrationList)
       result.set(r.name, r);
-    }
+
   }
   return result;
 }
 
-export function rerunRegistrations(file: string, scope: Scope) {
+export function rerunRegistrations(file: string) {
+  registrations.clear();
   // When we are running several tests in the same worker, we should re-run registrations before
   // each file. That way we erase potential fixture overrides from the previous test runs.
-  for (const registration of lookupRegistrations(file, scope).values())
+  for (const registration of lookupRegistrations(file).values())
     registrations.set(registration.name, registration);
 }
