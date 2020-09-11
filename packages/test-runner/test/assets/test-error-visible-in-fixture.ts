@@ -18,9 +18,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fixtures } from '../../';
 
-const { it, expect, registerFixture } = fixtures.extend<{}, { postProcess: string }>();
+const { it, expect, defineTestFixture } = fixtures.declareTestFixtures<{ postProcess: string }>();
 
-registerFixture('postProcess', async ({}, runTest, info) => {
+defineTestFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
   const { result } = info;
   fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'test-error-visible-in-fixture.txt'), JSON.stringify(result.error, undefined, 2));

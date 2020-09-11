@@ -23,12 +23,14 @@ type TypeOnlyWorkerState = {
   workerTypeOnly: number;
 };
 
-export const fixtures2 = baseFixtures.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+export const fixtures2 = baseFixtures
+    .declareWorkerFixtures<TypeOnlyWorkerState>()
+    .declareTestFixtures<TypeOnlyTestState>();
 
-fixtures2.registerFixture('testTypeOnly', async ({config}, runTest, info) => {
+fixtures2.defineTestFixture('testTypeOnly', async ({config}, runTest, info) => {
   await runTest('testTypeOnly');
 });
 
-fixtures2.registerWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
+fixtures2.defineWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
   await runTest(42);
 });

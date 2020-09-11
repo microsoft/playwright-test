@@ -15,9 +15,9 @@
  */
 
 const { fixtures } = require('../..');
-const { it, registerWorkerFixture } = fixtures;
+const { it, defineWorkerFixture } = fixtures;
 
-registerWorkerFixture('timeout', async ({}, runTest) => {
+defineWorkerFixture('timeout', async ({}, runTest) => {
 });
 
 it('fails', async ({timeout}) => {

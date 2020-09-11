@@ -250,7 +250,7 @@ export function registerWorkerFixture(name: string, fn: (params: any, runTest: (
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 
-export function registerParameter(name: string, description: string, defaultValue?: string) {
+export function registerWorkerParameterImpl(name: string, description: string, defaultValue?: any) {
   parameterRegistrations.set(name, { name, description, defaultValue });
 }
 

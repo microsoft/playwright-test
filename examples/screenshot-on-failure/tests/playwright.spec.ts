@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import {TypeOnlyTestState, TypeOnlyWorkerState} from 'playwright-runner';
+import { TypeOnlyTestState, TypeOnlyWorkerState } from 'playwright-runner';
 import { expect, fixtures as fixtureImported} from '@playwright/test-runner';
 
-const fixtures = fixtureImported.extend<TypeOnlyWorkerState, TypeOnlyTestState>();
+const fixtures = fixtureImported
+    .declareWorkerFixtures<TypeOnlyWorkerState>()
+    .declareTestFixtures<TypeOnlyTestState>();
 
-fixtures.registerFixture('page', async ({context, outputFile}, runTest, info) => {
+fixtures.defineTestFixture('page', async ({context, outputFile}, runTest, info) => {
   const page = await context.newPage();
   await runTest(page);
   const {result} = info;
