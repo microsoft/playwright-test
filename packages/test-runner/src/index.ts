@@ -95,7 +95,7 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     registerWorkerFixtureImpl(name as string, async ({}, runTest) => runTest(defaultValue));
   }
 
-  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerWorkerFixtureImpl(name as string, fn);
   }
