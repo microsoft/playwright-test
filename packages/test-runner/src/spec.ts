@@ -71,7 +71,7 @@ export function spec(suite: Suite, file: string, timeout: number, parameters: an
       metaFn = null;
     }
     const child = new Suite(title, suites[0]);
-    if (metaFn)
+    if (metaFn && parameters)
       metaFn(child, parameters);
     suites[0]._addSuite(child);
     child.file = file;
