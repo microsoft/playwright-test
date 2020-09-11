@@ -22,7 +22,7 @@ import * as pirates from 'pirates';
 import * as babel from '@babel/core';
 import * as sourceMapSupport from 'source-map-support';
 
-const version = 2;
+const version = 3;
 const cacheDir = path.join(os.tmpdir(), 'playwright-transform-cache');
 const sourceMaps: Map<string, string> = new Map();
 
@@ -63,7 +63,7 @@ export function installTransform(): () => void {
         ['@babel/preset-typescript', { onlyRemoveTypeImports: true }],
       ],
       plugins: [['@babel/plugin-proposal-class-properties', {loose: true}]],
-      sourceMaps: true,
+      sourceMaps: 'both',
     });
     if (result.code) {
       fs.mkdirSync(path.dirname(cachePath), {recursive: true});

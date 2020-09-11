@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@playwright/test-runner": "./stable-test-runner/node_modules/@playwright/test-runner",
+    "@types/babel__core": "^7.1.9",
     "@types/micromatch": "^4.0.1"
   },
   "license": "Apache-2.0",
