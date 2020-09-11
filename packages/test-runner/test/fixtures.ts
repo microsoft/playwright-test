@@ -92,13 +92,13 @@ declare global {
   }
 }
 
-export const fixtures = baseFixtures.extend<{}, TestState>();
+export const fixtures = baseFixtures.declareTestFixtures<TestState>();
 
-fixtures.registerFixture('outputDir', async ({ parallelIndex }, testRun) => {
+fixtures.defineTestFixture('outputDir', async ({ parallelIndex }, testRun) => {
   await testRun(path.join(__dirname, 'test-results', String(parallelIndex)));
 });
 
-fixtures.registerFixture('runTest', async ({ outputDir }, testRun, testInfo) => {
+fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) => {
   const reportFile = path.join(outputDir, `results.json`);
   await removeFolderAsync(outputDir).catch(e => { });
   // Print output on failure.
