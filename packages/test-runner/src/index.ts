@@ -23,7 +23,7 @@ import { promisify } from 'util';
 import { registerFixture as registerFixtureImpl, registerWorkerFixture as registerWorkerFixtureImpl, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
-import { parameters as parametersObject, registerWorkerParameterImpl } from './fixtures';
+import { registerWorkerParameterImpl } from './fixtures';
 import * as spec from './spec';
 import { Test, Suite } from './test';
 
@@ -31,11 +31,11 @@ const mkdirAsync = promisify(fs.mkdir);
 const mkdtempAsync = promisify(fs.mkdtemp);
 const removeFolderAsync = promisify(rimraf);
 
-interface DescribeHelper {
+interface DescribeHelper<WorkerParameters> {
   describe(name: string, inner: () => void): void;
-  describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
+  describe(name: string, modifier: (suite: Suite, parameters: WorkerParameters) => any, inner: () => void): void;
 }
-type DescribeFunction = DescribeHelper['describe'];
+type DescribeFunction<WorkerParameters> = DescribeHelper<WorkerParameters>['describe'];
 interface ItHelper<WorkerParameters, WorkerFixtures, TestFixtures> {
   it(name: string, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
   it(name: string, modifier: (test: Test, parameters: WorkerParameters) => any, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
@@ -47,12 +47,12 @@ type It<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParam
 };
 type Fit<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
 type Xit<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
-type Describe = DescribeFunction & {
-  only: DescribeFunction;
-  skip: DescribeFunction;
+type Describe<WorkerParameters> = DescribeFunction<WorkerParameters> & {
+  only: DescribeFunction<WorkerParameters>;
+  skip: DescribeFunction<WorkerParameters>;
 };
-type FDescribe = DescribeFunction;
-type XDescribe = DescribeFunction;
+type FDescribe<WorkerParameters> = DescribeFunction<WorkerParameters>;
+type XDescribe<WorkerParameters> = DescribeFunction<WorkerParameters>;
 type BeforeEach<WorkerParameters, WorkerFixtures, TestFixtures> = (inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void>) => void;
 type AfterEach<WorkerParameters, WorkerFixtures, TestFixtures> = (inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void>) => void;
 type BeforeAll<WorkerFixtures> = (inner: (fixtures: WorkerFixtures) => Promise<void>) => void;
@@ -62,9 +62,9 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
   it: It<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it;
   fit: Fit<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it.only;
   xit: Xit<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it.skip;
-  describe: Describe = spec.describe;
-  fdescribe: FDescribe = spec.describe.only;
-  xdescribe: XDescribe = spec.describe.skip;
+  describe: Describe<WorkerParameters> = spec.describe;
+  fdescribe: FDescribe<WorkerParameters> = spec.describe.only;
+  xdescribe: XDescribe<WorkerParameters> = spec.describe.skip;
   beforeEach: BeforeEach<WorkerParameters, WorkerFixtures, TestFixtures> = spec.beforeEach;
   afterEach: AfterEach<WorkerParameters, WorkerFixtures, TestFixtures> = spec.afterEach;
   beforeAll: BeforeAll<WorkerFixtures> = spec.beforeAll;

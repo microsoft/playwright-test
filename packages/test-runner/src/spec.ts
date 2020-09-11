@@ -65,14 +65,14 @@ export function spec(suite: Suite, file: string, timeout: number, parameters: an
     return test;
   };
 
-  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite) => void | Function, fn?: Function) => {
+  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite, parameters: any) => void | Function, fn?: Function) => {
     if (typeof fn !== 'function') {
       fn = metaFn;
       metaFn = null;
     }
     const child = new Suite(title, suites[0]);
     if (metaFn)
-      metaFn(child);
+      metaFn(child, parameters);
     suites[0]._addSuite(child);
     child.file = file;
     child.location = extractLocation(new Error());
