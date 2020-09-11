@@ -15,9 +15,9 @@
  */
 
 const { fixtures } = require('../../');
-const { it, expect, registerFixture } = fixtures;
+const { it, expect, defineTestFixture } = fixtures;
 
-registerFixture('timeout', async ({}, runTest) => {
+defineTestFixture('timeout', async ({}, runTest) => {
   await runTest();
   await new Promise(f => setTimeout(f, 100000));
 });

@@ -40,20 +40,20 @@ export const afterEach = fn => currentSuites[0]._addHook('afterEach', fn);
 export const beforeAll = fn => currentSuites[0]._addHook('beforeAll', fn);
 export const afterAll = fn => currentSuites[0]._addHook('afterAll', fn);
 
-export function spec(suite: Suite, file: string, timeout: number): () => void {
+export function spec(suite: Suite, file: string, timeout: number, parameters: any): () => void {
   const suites = [suite];
   currentSuites = suites;
   suite.file = file;
 
-  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test) => void | Function, fn?: Function) => {
+  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test, parameters: any) => void | Function, fn?: Function) => {
     const suite = suites[0];
     if (typeof fn !== 'function') {
       fn = metaFn;
       metaFn = null;
     }
     const test = new Test(title, fn);
-    if (metaFn)
-      metaFn(test);
+    if (metaFn && parameters)
+      metaFn(test, parameters);
     test.file = file;
     test.location = extractLocation(new Error());
     test._timeout = timeout;

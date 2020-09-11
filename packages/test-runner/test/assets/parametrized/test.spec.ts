@@ -15,22 +15,16 @@
  */
 
 import { fixtures as baseFixtures } from '../../..';
-const { it, expect, registerFixture, registerParameter, parameters } = baseFixtures.extend<{}, { foo: string, bar: string }>();
 
-registerParameter('foo', 'Foo parameters', 'foo');
-registerParameter('bar', 'Bar parameters', 'bar');
+const fixtures = baseFixtures.declareParameters<{ foo: string, bar: string }>();
+fixtures.defineParameter('foo', 'Foo parameters', 'foo');
+fixtures.defineParameter('bar', 'Bar parameters', 'bar');
 
-registerFixture('foo', async ({}, runTest) => {
-  await runTest('default');
-});
+const { it, expect } = fixtures;
 
-registerFixture('bar', async ({}, runTest) => {
-  await runTest('default');
-});
-
-it('runs 6 times', async ({ foo, bar }) => {
+it('runs 6 times', (test, parameters) => {
+  test.skip(parameters.foo === 'foo1' && parameters.bar === 'bar1');
+}, async ({ foo, bar }) => {
   expect(foo).toContain('foo');
   expect(bar).toContain('bar');
-  expect(parameters.foo).toBe(foo);
-  expect(parameters.bar).toBe(bar);
 });

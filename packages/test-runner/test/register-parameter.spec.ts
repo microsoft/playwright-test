@@ -18,14 +18,14 @@ import { fixtures } from './fixtures';
 const { it, expect } = fixtures;
 
 it('should allow custom parameters', async ({ runTest }) => {
-  const result = await runTest('register-parameter.js', {
+  const result = await runTest('register-parameter.ts', {
     'param1': 'value1',
   });
   expect(result.exitCode).toBe(0);
 });
 
 it('should fail on unknown parameters', async ({ runTest }) => {
-  const result = await runTest('register-parameter.js', {
+  const result = await runTest('register-parameter.ts', {
     'param1': 'value1',
     'param3': 'value3'
   });

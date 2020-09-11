@@ -15,9 +15,9 @@
  */
 
 const { fixtures } = require('../..');
-const { it, registerWorkerFixture } = fixtures;
+const { it, defineWorkerFixture } = fixtures;
 
-registerWorkerFixture('failure', async ({}, runTest) => {
+defineWorkerFixture('failure', async ({}, runTest) => {
   throw new Error('Worker failed');
 });
 

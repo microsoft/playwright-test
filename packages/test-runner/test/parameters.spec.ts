@@ -20,7 +20,7 @@ const { it, expect } = fixtures;
 it('should run with each configuration', async ({ runTest }) => {
   const result = await runTest('parametrized');
   expect(result.exitCode).toBe(0);
-  expect(result.passed).toBe(6);
+  expect(result.passed).toBe(5);  // 6 total, one skipped
   const configurations = result.report.suites.map(s => s.configuration);
   const objects = configurations.map(c => {
     const object = {};

@@ -23,7 +23,7 @@ import { promisify } from 'util';
 import { registerFixture as registerFixtureImpl, registerWorkerFixture as registerWorkerFixtureImpl, TestInfo } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
-import { parameters as parametersObject, registerParameter } from './fixtures';
+import { parameters as parametersObject, registerWorkerParameterImpl } from './fixtures';
 import * as spec from './spec';
 import { Test, Suite } from './test';
 
@@ -36,110 +36,123 @@ interface DescribeHelper {
   describe(name: string, modifier: (suite: Suite) => any, inner: () => void): void;
 }
 type DescribeFunction = DescribeHelper['describe'];
-interface ItHelper<WorkerState, TestState> {
-  it(name: string, inner: (state: WorkerState & TestState) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test) => any, inner: (state: WorkerState & TestState) => Promise<void> | void): void;
+interface ItHelper<WorkerParameters, WorkerFixtures, TestFixtures> {
+  it(name: string, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
+  it(name: string, modifier: (test: Test, parameters: WorkerParameters) => any, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
 }
-type ItFunction<WorkerState, TestState> = ItHelper<WorkerState, TestState>['it'];
-type It<WorkerState, TestState> = ItFunction<WorkerState, TestState> & {
-  only: ItFunction<WorkerState, TestState>;
-  skip: ItFunction<WorkerState, TestState>;
+type ItFunction<WorkerParameters, WorkerFixtures, TestFixtures> = ItHelper<WorkerParameters, WorkerFixtures, TestFixtures>['it'];
+type It<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures> & {
+  only: ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
+  skip: ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
 };
-type Fit<WorkerState, TestState> = ItFunction<WorkerState, TestState>;
-type Xit<WorkerState, TestState> = ItFunction<WorkerState, TestState>;
+type Fit<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
+type Xit<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures>;
 type Describe = DescribeFunction & {
   only: DescribeFunction;
   skip: DescribeFunction;
 };
 type FDescribe = DescribeFunction;
 type XDescribe = DescribeFunction;
-type BeforeEach<WorkerState, TestState> = (inner: (state: WorkerState & TestState) => Promise<void>) => void;
-type AfterEach<WorkerState, TestState> = (inner: (state: WorkerState & TestState) => Promise<void>) => void;
-type BeforeAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
-type AfterAll<WorkerState> = (inner: (state: WorkerState) => Promise<void>) => void;
+type BeforeEach<WorkerParameters, WorkerFixtures, TestFixtures> = (inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void>) => void;
+type AfterEach<WorkerParameters, WorkerFixtures, TestFixtures> = (inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void>) => void;
+type BeforeAll<WorkerFixtures> = (inner: (fixtures: WorkerFixtures) => Promise<void>) => void;
+type AfterAll<WorkerFixtures> = (inner: (fixtures: WorkerFixtures) => Promise<void>) => void;
 
-class FixturesImpl<WorkerState, TestState> {
-  it: It<WorkerState, TestState> = spec.it;
-  fit: Fit<WorkerState, TestState> = spec.it.only;
-  xit: Xit<WorkerState, TestState> = spec.it.skip;
+class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
+  it: It<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it;
+  fit: Fit<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it.only;
+  xit: Xit<WorkerParameters, WorkerFixtures, TestFixtures> = spec.it.skip;
   describe: Describe = spec.describe;
   fdescribe: FDescribe = spec.describe.only;
   xdescribe: XDescribe = spec.describe.skip;
-  beforeEach: BeforeEach<WorkerState, TestState> = spec.beforeEach;
-  afterEach: AfterEach<WorkerState, TestState> = spec.afterEach;
-  beforeAll: BeforeAll<WorkerState> = spec.beforeAll;
-  afterAll: AfterAll<WorkerState> = spec.afterAll;
+  beforeEach: BeforeEach<WorkerParameters, WorkerFixtures, TestFixtures> = spec.beforeEach;
+  afterEach: AfterEach<WorkerParameters, WorkerFixtures, TestFixtures> = spec.afterEach;
+  beforeAll: BeforeAll<WorkerFixtures> = spec.beforeAll;
+  afterAll: AfterAll<WorkerFixtures> = spec.afterAll;
   expect: typeof expectFunction = expectFunction;
-  parameters: typeof parametersObject = parametersObject;
 
-  union<W1, T1>(other1: Fixtures<W1, T1>): Fixtures<WorkerState & W1, TestState & T1>;
-  union<W1, T1, W2, T2>(other1: Fixtures<W1, T1>, other2: Fixtures<W2, T2>): Fixtures<WorkerState & W1 & W2, TestState & T1 & T2>;
-  union<W1, T1, W2, T2, W3, T3>(other1: Fixtures<W1, T1>, other2: Fixtures<W2, T2>, other3: Fixtures<W3, T3>): Fixtures<WorkerState & W1 & W2 & W3, TestState & T1 & T2 & T3>;
+  union<P1, W1, T1>(other1: Fixtures<P1, W1, T1>): Fixtures<WorkerParameters & P1, WorkerFixtures & W1, TestFixtures & T1>;
+  union<P1, W1, T1, P2, W2, T2>(other1: Fixtures<P1, W1, T1>, other2: Fixtures<P2, W2, T2>): Fixtures<WorkerParameters & P1 & P2, WorkerFixtures & W1 & W2, TestFixtures & T1 & T2>;
+  union<P1, W1, T1, P2, W2, T2, P3, W3, T3>(other1: Fixtures<P1, W1, T1>, other2: Fixtures<P2, W2, T2>, other3: Fixtures<P3, W3, T3>): Fixtures<WorkerParameters & P1 & P2 & P3, WorkerFixtures & W1 & W2 & W3, TestFixtures & T1 & T2 & T3>;
   union(...others) {
     return this;
   }
 
-  extend<W, T>(): Fixtures<WorkerState & W, TestState & T> {
+  declareTestFixtures<T>(): Fixtures<WorkerParameters, WorkerFixtures, TestFixtures & T> {
     return this as any;
   }
 
-  registerWorkerFixture<T extends keyof WorkerState>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  declareWorkerFixtures<W>(): Fixtures<WorkerParameters, WorkerFixtures & W, TestFixtures> {
+    return this as any;
+  }
+
+  declareParameters<P>(): Fixtures<WorkerParameters & P, WorkerFixtures, TestFixtures> {
+    return this as any;
+  }
+
+  defineParameter<T extends keyof WorkerParameters>(name: T, description: string, defaultValue?: WorkerParameters[T]) {
+    registerWorkerParameterImpl(name as string, description, defaultValue);
+    registerWorkerFixtureImpl(name as string, async ({}, runTest) => runTest(defaultValue));
+  }
+
+  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerWorkerFixtureImpl(name as string, fn);
   }
 
-  registerFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+  defineTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerFixtureImpl(name as string, fn);
   }
 
-  overrideWorkerFixture<T extends keyof WorkerState>(name: T, fn: (params: WorkerState, runTest: (arg: WorkerState[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerWorkerFixtureImpl(name as string, fn);
   }
 
-  overrideFixture<T extends keyof TestState>(name: T, fn: (params: WorkerState & TestState, runTest: (arg: TestState[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerFixtureImpl(name as string, fn);
   }
-
-  registerParameter(name: string, description: string, defaultValue?: string) {
-    registerParameter(name, description, defaultValue);
-  }
 }
 
-export interface Fixtures<W, T> extends FixturesImpl<W, T> {
+export interface Fixtures<P, W, T> extends FixturesImpl<P, W, T> {
 
 }
 
-export type DefaultWorkerState = {
+export type DefaultWorkerParameters = {
+};
+
+export type DefaultWorkerFixtures = {
   config: RunnerConfig;
   parallelIndex: number;
 };
-export type DefaultTestState = {
+
+export type DefaultTestFixtures = {
   tmpDir: string;
   outputFile: (suffix: string) => Promise<string>;
 };
 
-export const fixtures = new FixturesImpl<DefaultWorkerState, DefaultTestState>();
+export const fixtures = new FixturesImpl<DefaultWorkerParameters, DefaultWorkerFixtures, DefaultTestFixtures>();
+export const expect = expectFunction;
 
-fixtures.registerWorkerFixture('config', async ({}, test) => {
+fixtures.defineWorkerFixture('config', async ({}, test) => {
   // Worker injects the value for this one.
   await test(undefined as any);
 });
 
-fixtures.registerWorkerFixture('parallelIndex', async ({}, test) => {
+fixtures.defineWorkerFixture('parallelIndex', async ({}, test) => {
   // Worker injects the value for this one.
   await test(undefined as any);
 });
 
-fixtures.registerFixture('tmpDir', async ({}, test) => {
+fixtures.defineTestFixture('tmpDir', async ({}, test) => {
   const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
   await test(tmpDir);
   await removeFolderAsync(tmpDir).catch(e => {});
 });
 
-fixtures.registerFixture('outputFile', async ({}, runTest, info) => {
+fixtures.defineTestFixture('outputFile', async ({}, runTest, info) => {
   const outputFile = async (suffix: string): Promise<string> => {
     const {config, test} = info;
     const relativePath = path.relative(config.testDir, test.file)

@@ -15,9 +15,9 @@
  */
 
 import { fixtures } from '../../';
-const { it, expect, registerFixture } = fixtures.extend<{}, { postProcess: string }>();
+const { it, expect, defineTestFixture } = fixtures.declareTestFixtures<{ postProcess: string }>();
 
-registerFixture('postProcess', async ({}, runTest, info) => {
+defineTestFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
   info.result.data['myname'] = 'myvalue';
 });
