@@ -89,7 +89,7 @@ declare global {
   interface TestState {
     outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
-    runMiniTest: (files: {[key: string]: string}) => Promise<{results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError']}>;
+    runInlineTest: (files: {[key: string]: string}) => Promise<{results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError']}>;
   }
 }
 
@@ -112,13 +112,13 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
     console.log(result.output);
 });
 
-fixtures.defineTestFixture('runMiniTest', async ({runTest}, testRun) => {
+fixtures.defineTestFixture('runInlineTest', async ({runTest}, testRun) => {
   const header = `
     const { fixtures } = require('${path.join(__dirname, '..')}');
     const { it, expect } = fixtures;
   `;
   await testRun(async files => {
-    const dir = await fs.promises.mkdtemp(path.join(tmpdir(), 'playwright-test-runMiniTest'));
+    const dir = await fs.promises.mkdtemp(path.join(tmpdir(), 'playwright-test-runInlineTest'));
     await Promise.all(Object.keys(files).map(async name => {
       await fs.promises.writeFile(path.join(dir, name), header + files[name]);
     }));
