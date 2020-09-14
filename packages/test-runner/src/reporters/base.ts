@@ -88,6 +88,10 @@ export class BaseReporter implements Reporter  {
     }
   }
 
+  onParseError(file: string, error: any) {
+    console.log(formatError(error, file));
+  }
+
   onTimeout(timeout: number) {
     this.timeout = timeout;
   }
@@ -163,28 +167,7 @@ export class BaseReporter implements Reporter  {
         tokens.push('');
         tokens.push(indent(colors.red(`Timeout of ${test._timeout}ms exceeded.`), '    '));
       } else {
-        const stack = result.error.stack;
-        if (stack) {
-          tokens.push('');
-          const messageLocation = result.error.stack.indexOf(result.error.message);
-          const preamble = result.error.stack.substring(0, messageLocation + result.error.message.length);
-          tokens.push(indent(preamble, '    '));
-          const position = positionInFile(stack, test.file);
-          if (position) {
-            const source = fs.readFileSync(test.file, 'utf8');
-            tokens.push('');
-            tokens.push(indent(codeFrameColumns(source, {
-              start: position,
-            },
-            { highlightCode: true}
-            ), '    '));
-          }
-          tokens.push('');
-          tokens.push(indent(colors.dim(stack.substring(preamble.length + 1)), '    '));
-        } else {
-          tokens.push('');
-          tokens.push(indent(String(result.error), '    '));
-        }
+        tokens.push(indent(formatError(result.error, test.file), '    '));
       }
       break;
     }
@@ -193,8 +176,35 @@ export class BaseReporter implements Reporter  {
   }
 }
 
+function formatError(error: any, file: string) {
+  const stack = error.stack;
+  const tokens = [];
+  if (stack) {
+    tokens.push('');
+    const messageLocation = error.stack.indexOf(error.message);
+    const preamble = error.stack.substring(0, messageLocation + error.message.length);
+    tokens.push(preamble);
+    const position = positionInFile(stack, file);
+    if (position) {
+      const source = fs.readFileSync(file, 'utf8');
+      tokens.push('');
+      tokens.push(codeFrameColumns(source, {
+        start: position,
+      },
+      { highlightCode: true}
+      ));
+    }
+    tokens.push('');
+    tokens.push(colors.dim(stack.substring(preamble.length + 1)));
+  } else {
+    tokens.push('');
+    tokens.push(String(error));
+  }
+  return tokens.join('\n');
+}
+
 function indent(lines: string, tab: string) {
-  return lines.replace(/^/gm, tab);
+  return lines.replace(/^(?=.+$)/gm, tab);
 }
 
 function positionInFile(stack: string, file: string): { column: number; line: number; } {

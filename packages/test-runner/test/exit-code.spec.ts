@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import path from 'path';
 import { fixtures } from './fixtures';
 const { it, expect } = fixtures;
 
@@ -28,6 +29,8 @@ it('should collect stdio', async ({ runTest }) => {
 
 it('should work with not defined errors', async ({runTest}) => {
   const result = await runTest('is-not-defined-error.ts');
+  expect(result.report.parseError.error.message).toBe('foo is not defined');
+  expect(result.report.parseError.file).toBe(path.join(__dirname, 'assets', 'is-not-defined-error.ts'));
   expect(result.exitCode).toBe(1);
 });
 
@@ -67,5 +70,5 @@ it('should respect global timeout', async ({ runTest }) => {
 it('should exit with code 1 if the specified folder/file does not exist', async ({runTest}) => {
   const result = await runTest('111111111111.js');
   expect(result.exitCode).toBe(1);
-  expect(result.output).toContain('111111111111.js does not exist');
+  expect(result.report.parseError.error).toBe(`${path.join(__dirname, 'assets', '111111111111.js')} does not exist`);
 });

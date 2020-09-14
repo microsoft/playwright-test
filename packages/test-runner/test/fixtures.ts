@@ -17,9 +17,11 @@
 import { fixtures as baseFixtures } from '@playwright/test-runner';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
+import { tmpdir } from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
+import type { ReportFormat } from '../src/reporters/json';
 
 const removeFolderAsync = promisify(rimraf);
 
@@ -32,7 +34,7 @@ export type RunResult = {
   expectedFlaky: number,
   unexpectedFlaky: number,
   skipped: number,
-  report: any
+  report: ReportFormat
 };
 
 async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
@@ -58,7 +60,6 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     output += String(chunk);
   });
   const status = await new Promise<number>(x => testProcess.on('close', x));
-  let exitCode = status;
   const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
   const failed = (/(\d+) failed/.exec(output.toString()) || [])[1];
   const timedOut = (/(\d+) timed out/.exec(output.toString()) || [])[1];
@@ -69,8 +70,7 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
   try {
     report = JSON.parse(fs.readFileSync(reportFile).toString());
   } catch (e) {
-    report = e;
-    exitCode = 1;
+    throw new Error('Internal TestRunner Error: ' + output);
   }
   return {
     exitCode: status,

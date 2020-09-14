@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import path from 'path';
 import { fixtures } from './fixtures';
 const { it, expect } = fixtures;
 
@@ -37,5 +37,6 @@ it('should run with each configuration', async ({ runTest }) => {
 it('should fail on invalid parameters', async ({ runTest }) => {
   const result = await runTest('invalid-parameter');
   expect(result.exitCode).toBe(1);
-  expect(result.output).toContain(`Unregistered parameter 'invalid'`);
+  expect(result.report.parseError.file).toBe(path.join(__dirname, 'assets', 'invalid-parameter', 'setup'));
+  expect(result.report.parseError.error.message).toBe(`Unregistered parameter 'invalid' was set.`);
 });
