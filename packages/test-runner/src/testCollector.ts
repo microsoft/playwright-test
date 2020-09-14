@@ -18,50 +18,39 @@ import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
 import { RunnerConfig } from './runnerConfig';
-
+import { ReportFormat } from './reporters/json';
 
 export type Matrix = {
   [key: string]: string[]
 };
 
-export class TestCollector {
-  suite: Suite;
-
-  private _matrix: Matrix;
-  private _config: RunnerConfig;
-  private _grep: RegExp;
-  private _hasOnly: boolean;
-
-  constructor(suites: Suite[], matrix: Matrix, config: RunnerConfig) {
-    this._matrix = matrix;
-    this._config = config;
-    this.suite = new Suite('');
-    if (config.grep) {
-      const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
-      this._grep = new RegExp(match[1] || match[0], match[2]);
-    }
-    for (const suite of suites)
-      this._processSuite(suite);
-    this._hasOnly = this._filterOnly(this.suite);
+export function parseTests(suites: Suite[], matrix: Matrix, config: RunnerConfig): {suite?: Suite, parseError?: ReportFormat['parseError']} {
+  const rootSuite = new Suite('');
+  let grep: RegExp = null;
+  if (config.grep) {
+    const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
+    grep = new RegExp(match[1] || match[0], match[2]);
   }
 
-  hasOnly() {
-    return this._hasOnly;
-  }
-
-  private _processSuite(suite: Suite) {
+  for (const suite of suites) {
     // Rerun registrations so that only fixutres for this file
-    // are registred
+    // are registreds
     rerunRegistrations(suite.file);
     const workerGeneratorConfigurations = new Map();
 
     // Name each test.
     suite._renumber();
 
-    suite.findTest((test: Test) => {
+    for (const test of suite.allTests()) {
       // Get all the fixtures that the test needs.
-      const fixtures = fixturesForCallback(test.fn);
-
+      let fixtures: string[];
+      try {
+        fixtures = fixturesForCallback(test.fn);
+      } catch (error) {
+        if (error instanceof Error)
+          error.stack = error.message + `\n    at ${test.location}`;
+        return {parseError: {error, file: test.file}};
+      }
       // For worker fixtures, trace them to their registrations to make sure
       // they are compatible.
       const registrationsHash = computeWorkerRegistrationHash(fixtures);
@@ -70,7 +59,7 @@ export class TestCollector {
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
       for (const name of fixtures) {
-        const values = this._matrix[name];
+        const values = matrix[name];
         if (!values)
           continue;
         const state = generatorConfigurations.length ? generatorConfigurations.slice() : [[]];
@@ -94,15 +83,15 @@ export class TestCollector {
           workerGeneratorConfigurations.set(workerHash, { configuration, configurationString, tests: new Set() });
         workerGeneratorConfigurations.get(workerHash).tests.add(test);
       }
-    });
+    }
 
     // Clone the suite as many times as we have repeat each.
-    for (let i = 0; i < this._config.repeatEach; ++i) {
+    for (let i = 0; i < config.repeatEach; ++i) {
       // Clone the suite as many times as there are worker hashes.
       // Only include the tests that requested these generations.
       for (const [workerHash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
-        const clone = this._cloneSuite(suite, tests);
-        this.suite._addSuite(clone);
+        const clone = cloneSuite(suite, tests, grep);
+        rootSuite._addSuite(clone);
         clone.title = '';
         clone.configuration = configuration;
         clone._configurationString = configurationString + `#repeat-${i}#`;
@@ -111,35 +100,37 @@ export class TestCollector {
       }
     }
   }
+  filterOnly(rootSuite);
+  return {suite: rootSuite};
+}
 
-  private _cloneSuite(suite: Suite, tests: Set<Test>) {
-    const copy = suite._clone();
-    for (const entry of suite._entries) {
-      if (entry instanceof Suite) {
-        copy._addSuite(this._cloneSuite(entry, tests));
-      } else {
-        const test = entry;
-        if (!tests.has(test))
-          continue;
-        if (this._grep && !this._grep.test(test.fullTitle()))
-          continue;
-        const testCopy = test._clone();
-        copy._addTest(testCopy);
-      }
-    }
-    return copy;
+function filterOnly(suite: Suite) {
+  const onlySuites = suite.suites.filter((child: Suite) => filterOnly(child) || child._only);
+  const onlyTests = suite.tests.filter((test: Test) => test._only);
+  if (onlySuites.length || onlyTests.length) {
+    suite.suites = onlySuites;
+    suite.tests = onlyTests;
+    return true;
   }
+  return false;
+}
 
-  private _filterOnly(suite) {
-    const onlySuites = suite.suites.filter((child: Suite) => this._filterOnly(child) || child._only);
-    const onlyTests = suite.tests.filter((test: Test) => test._only);
-    if (onlySuites.length || onlyTests.length) {
-      suite.suites = onlySuites;
-      suite.tests = onlyTests;
-      return true;
+function cloneSuite(suite: Suite, tests: Set<Test>, grep: RegExp | null) {
+  const copy = suite._clone();
+  for (const entry of suite._entries) {
+    if (entry instanceof Suite) {
+      copy._addSuite(cloneSuite(entry, tests, grep));
+    } else {
+      const test = entry;
+      if (!tests.has(test))
+        continue;
+      if (grep && !grep.test(test.fullTitle()))
+        continue;
+      const testCopy = test._clone();
+      copy._addTest(testCopy);
     }
-    return false;
   }
+  return copy;
 }
 
 function computeWorkerRegistrationHash(fixtures: string[]): string {
