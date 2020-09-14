@@ -40,7 +40,7 @@ export type RunResult = {
 async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
   const testProcess = spawn('node', [
     path.join(__dirname, '..', 'cli.js'),
-    path.join(__dirname, 'assets', filePath),
+    path.resolve(__dirname, 'assets', filePath),
     '--output=' + outputDir,
     '--reporter=dot,json',
     '--jobs=2',
@@ -89,6 +89,7 @@ declare global {
   interface TestState {
     outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
+    runMiniTest: (files: {[key: string]: string}) => Promise<{results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError']}>;
   }
 }
 
@@ -109,4 +110,34 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
   });
   if (testInfo.result.status === 'failed')
     console.log(result.output);
+});
+
+fixtures.defineTestFixture('runMiniTest', async ({runTest}, testRun) => {
+  const header = `
+    const { fixtures } = require('${path.join(__dirname, '..')}');
+    const { it, expect } = fixtures;
+  `;
+  await testRun(async files => {
+    const dir = await fs.promises.mkdtemp(path.join(tmpdir(), 'playwright-test-runMiniTest'));
+    await Promise.all(Object.keys(files).map(async name => {
+      await fs.promises.writeFile(path.join(dir, name), header + files[name]);
+    }));
+    const {report} = await runTest(dir);
+    await removeFolderAsync(dir);
+    if (report.parseError)
+      return {results: [], parseError: report.parseError};
+    const results = [];
+
+    function visitSuites(suites?: ReportFormat['suites']) {
+      if (!suites)
+        return;
+      for (const suite of suites) {
+        for (const test of suite.tests)
+          results.push(...test.results);
+        visitSuites(suite.suites);
+      }
+    }
+    visitSuites(report.suites);
+    return {results};
+  });
 });
