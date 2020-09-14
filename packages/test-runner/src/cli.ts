@@ -17,7 +17,6 @@
 import program from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import { isMatch } from 'micromatch';
 import { Runner, RunnerConfig } from './runner';
 import PytestReporter from './reporters/pytest';
 import DotReporter from './reporters/dot';
@@ -100,14 +99,9 @@ async function runStage1(command) {
       process.exit(1);
     }
   });
-
-  try {
-    const files = collectFiles(testDir, '', filteredArguments.slice(1), command.testMatch, command.testIgnore);
-    runner = new Runner(config, files, new Multiplexer(reporterObjects));
-  } catch (err) {
-    console.error(err);
+  runner = new Runner(config, new Multiplexer(reporterObjects));
+  if (!runner.loadFiles(testDir, filteredArguments.slice(1), command.testMatch, command.testIgnore).success)
     process.exit(1);
-  }
 
   runAction = runStage2;
   program.allowUnknownOption(false);
@@ -142,36 +136,4 @@ async function runStage2(command) {
     console.error(err);
     process.exit(1);
   }
-}
-
-function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
-  const fullDir = path.join(testDir, dir);
-  if (!fs.existsSync(fullDir))
-    throw new Error(`${fullDir} does not exist`);
-  if (fs.statSync(fullDir).isFile())
-    return [fullDir];
-  const files = [];
-  for (const name of fs.readdirSync(fullDir)) {
-    const relativeName = path.join(dir, name);
-    if (testIgnore && isMatch(relativeName, testIgnore))
-      continue;
-    if (fs.lstatSync(path.join(fullDir, name)).isDirectory()) {
-      files.push(...collectFiles(testDir, path.join(dir, name), filters, testMatch, testIgnore));
-      continue;
-    }
-    if (testIgnore && !isMatch(relativeName, testMatch))
-      continue;
-    const fullName = path.join(testDir, relativeName);
-    if (!filters.length) {
-      files.push(fullName);
-      continue;
-    }
-    for (const filter of filters) {
-      if (relativeName.includes(filter)) {
-        files.push(fullName);
-        break;
-      }
-    }
-  }
-  return files;
 }

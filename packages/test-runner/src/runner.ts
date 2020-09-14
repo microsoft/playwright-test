@@ -23,7 +23,7 @@ import { Dispatcher } from './dispatcher';
 import './expect';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
-import { Suite } from './test';
+import { serializeError, Suite } from './test';
 import { Matrix, TestCollector } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
@@ -32,6 +32,7 @@ import { ParameterRegistration, parameterRegistrations } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test, TestResult, Configuration } from './test';
+import { isMatch } from 'micromatch';
 
 const removeFolderAsync = promisify(rimraf);
 
@@ -45,42 +46,9 @@ export class Runner {
   private _afterFunctions: Function[] = [];
   private _parameterValues: Matrix = {};
 
-  constructor(config: RunnerConfig, files: string[], reporter: Reporter) {
+  constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
-
-    // First traverse tests.
-    for (const file of files) {
-      const suite = new Suite('');
-      const revertBabelRequire = spec(suite, file, config.timeout, undefined);
-      require(file);
-      revertBabelRequire();
-      this._suites.push(suite);
-    }
-
-    // Set default values
-    for (const param of this.parameters())
-      this.setParameterValue(param.name, param.defaultValue);
-
-    // Then read config.
-    const revertBabelRequire = installTransform();
-    let hasSetup = false;
-    try {
-      hasSetup = fs.statSync(path.join(config.testDir, 'setup.js')).isFile();
-    } catch (e) {
-    }
-    try {
-      hasSetup = hasSetup || fs.statSync(path.join(config.testDir, 'setup.ts')).isFile();
-    } catch (e) {
-    }
-    if (hasSetup) {
-      global['setParameterValue'] = this.setParameterValue.bind(this);
-      global['setParameterValues'] = this.setParameterValues.bind(this);
-      global['before'] = (fn: Function) => this._beforeFunctions.push(fn);
-      global['after'] = (fn: Function) => this._afterFunctions.push(fn);
-      require(path.join(config.testDir, 'setup'));
-    }
-    revertBabelRequire();
   }
 
   parameters(): ParameterRegistration[] {
@@ -95,6 +63,63 @@ export class Runner {
     if (!parameterRegistrations.has(name))
       throw new Error(`Unregistered parameter '${name}' was set.`);
     this._parameterValues[name] = values;
+  }
+
+  loadFiles(testDir: string, filters: string[], testMatch: string, testIgnore: string): {success: boolean} {
+    let files: string[];
+    try {
+      files = collectFiles(testDir, '', filters, testMatch, testIgnore);
+    } catch (error) {
+      this._reporter.onParseError(testDir, error.message);
+      return {success: false};
+    }
+
+    // First traverse tests.
+    for (const file of files) {
+      const suite = new Suite('');
+      const revertBabelRequire = spec(suite, file, this._config.timeout, undefined);
+      try {
+        require(file);
+      } catch (error) {
+        revertBabelRequire();
+        this._reporter.onParseError(file, serializeError(error));
+        return {success: false};
+      }
+      revertBabelRequire();
+      this._suites.push(suite);
+    }
+
+    // Set default values
+    for (const param of this.parameters())
+      this.setParameterValue(param.name, param.defaultValue);
+
+    // Then read config.
+    const revertBabelRequire = installTransform();
+    let hasSetup = false;
+    try {
+      hasSetup = fs.statSync(path.join(this._config.testDir, 'setup.js')).isFile();
+    } catch (e) {
+    }
+    try {
+      hasSetup = hasSetup || fs.statSync(path.join(this._config.testDir, 'setup.ts')).isFile();
+    } catch (e) {
+    }
+    if (hasSetup) {
+      global['setParameterValue'] = this.setParameterValue.bind(this);
+      global['setParameterValues'] = this.setParameterValues.bind(this);
+      global['before'] = (fn: Function) => this._beforeFunctions.push(fn);
+      global['after'] = (fn: Function) => this._afterFunctions.push(fn);
+      const setupPath = path.join(this._config.testDir, 'setup');
+      try {
+        require(setupPath);
+      } catch (error) {
+        revertBabelRequire();
+        this._reporter.onParseError(setupPath, serializeError(error));
+        return {success: false};
+      }
+    }
+    revertBabelRequire();
+    return {success: true};
   }
 
   async run(): Promise<RunResult> {
@@ -137,4 +162,36 @@ export class Runner {
     }
     return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
   }
+}
+
+function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
+  const fullDir = path.join(testDir, dir);
+  if (!fs.existsSync(fullDir))
+    throw new Error(`${fullDir} does not exist`);
+  if (fs.statSync(fullDir).isFile())
+    return [fullDir];
+  const files = [];
+  for (const name of fs.readdirSync(fullDir)) {
+    const relativeName = path.join(dir, name);
+    if (testIgnore && isMatch(relativeName, testIgnore))
+      continue;
+    if (fs.lstatSync(path.join(fullDir, name)).isDirectory()) {
+      files.push(...collectFiles(testDir, path.join(dir, name), filters, testMatch, testIgnore));
+      continue;
+    }
+    if (testIgnore && !isMatch(relativeName, testMatch))
+      continue;
+    const fullName = path.join(testDir, relativeName);
+    if (!filters.length) {
+      files.push(fullName);
+      continue;
+    }
+    for (const filter of filters) {
+      if (relativeName.includes(filter)) {
+        files.push(fullName);
+        break;
+      }
+    }
+  }
+  return files;
 }

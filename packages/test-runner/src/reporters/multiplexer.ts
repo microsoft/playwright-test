@@ -59,4 +59,9 @@ export class Multiplexer implements Reporter {
     for (const reporter of this._reporters)
       reporter.onEnd();
   }
+
+  onParseError(file: string, error: any) {
+    for (const reporter of this._reporters)
+      reporter.onParseError(file, error);
+  }
 }

@@ -14,13 +14,36 @@
  * limitations under the License.
  */
 
-import { BaseReporter } from './base';
-import { Suite, Test, TestResult } from '../test';
+import { Configuration, Suite, Test, TestResult } from '../test';
 import * as fs from 'fs';
+import path from 'path';
+import { RunnerConfig } from '../runnerConfig';
+import { Reporter } from '../reporter';
 
-class JSONReporter extends BaseReporter {
+interface SerializedSuite {
+  title: string;
+  file: string;
+  configuration: Configuration;
+  tests: ReturnType<JSONReporter['_serializeTest']>[];
+  suites?: SerializedSuite[];
+}
+
+export type ReportFormat = {
+  config: RunnerConfig;
+  parseError?: {file: string, error: any};
+  suites?: SerializedSuite[];
+};
+
+class JSONReporter implements Reporter {
+  config: RunnerConfig;
+  suite: Suite;
+
+  onBegin(config: RunnerConfig, suite: Suite) {
+    this.config = config;
+    this.suite = suite;
+  }
+
   onTimeout(timeout) {
-    super.onTimeout(timeout);
     this.onEnd();
   }
 
@@ -29,21 +52,25 @@ class JSONReporter extends BaseReporter {
 
   onTestStdErr(test: Test, chunk: string | Buffer) {
   }
-
-  onEnd() {
-    super.onEnd();
-    const result = {
+  onTestBegin(test: Test): void {
+  }
+  onTestEnd(test: Test, result: TestResult): void {
+  }
+  onParseError(file: string, error: any): void {
+    outputReport({
       config: this.config,
-      suites: this.suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s)
-    };
-    const report = JSON.stringify(result, undefined, 2);
-    if (process.env.PWRUNNER_JSON_REPORT)
-      fs.writeFileSync(process.env.PWRUNNER_JSON_REPORT, report);
-    else
-      console.log(report);
+      parseError: {file, error},
+    });
   }
 
-  private _serializeSuite(suite: Suite): any {
+  onEnd() {
+    outputReport({
+      config: this.config,
+      suites: this.suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s)
+    });
+  }
+
+  private _serializeSuite(suite: Suite): null | SerializedSuite {
     if (!suite.findTest(test => true))
       return null;
     const suites = suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s);
@@ -56,7 +83,7 @@ class JSONReporter extends BaseReporter {
     };
   }
 
-  private _serializeTest(test: Test): any {
+  private _serializeTest(test: Test) {
     return {
       title: test.title,
       file: test.file,
@@ -67,7 +94,7 @@ class JSONReporter extends BaseReporter {
     };
   }
 
-  private _serializeTestResult(result: TestResult): any {
+  private _serializeTestResult(result: TestResult) {
     return {
       status: result.status,
       duration: result.duration,
@@ -76,6 +103,16 @@ class JSONReporter extends BaseReporter {
       stderr: result.stderr.map(s => stdioEntry(s)),
       data: result.data
     };
+  }
+}
+
+function outputReport(report: ReportFormat) {
+  const reportString = JSON.stringify(report, undefined, 2);
+  if (process.env.PWRUNNER_JSON_REPORT) {
+    fs.mkdirSync(path.dirname(process.env.PWRUNNER_JSON_REPORT), { recursive: true });
+    fs.writeFileSync(process.env.PWRUNNER_JSON_REPORT, reportString);
+  } else {
+    console.log(reportString);
   }
 }
 
