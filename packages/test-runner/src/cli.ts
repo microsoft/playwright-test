@@ -15,11 +15,11 @@
  */
 
 import program from 'commander';
-import * as fs from 'fs';
 import * as path from 'path';
 import { Runner, RunnerConfig } from './runner';
 import PytestReporter from './reporters/pytest';
 import DotReporter from './reporters/dot';
+import LineReporter from './reporters/line';
 import ListReporter from './reporters/list';
 import JSONReporter from './reporters/json';
 import { Reporter } from './reporter';
@@ -27,8 +27,9 @@ import { Multiplexer } from './reporters/multiplexer';
 
 export const reporters = {
   'dot': DotReporter,
-  'list': ListReporter,
   'json': JSONReporter,
+  'line': LineReporter,
+  'list': ListReporter,
   'pytest': PytestReporter,
 };
 
@@ -46,7 +47,7 @@ program
     .option('--output <outputDir>', 'Folder for output artifacts, default: test-results', path.join(process.cwd(), 'test-results'))
     .option('--quiet', 'Suppress stdio', false)
     .option('--repeat-each <repeat-each>', 'Specify how many times to run the tests', '1')
-    .option('--reporter <reporter>', `Specify reporter to use, comma-separated, can be ${availableReporters}`, 'dot')
+    .option('--reporter <reporter>', `Specify reporter to use, comma-separated, can be ${availableReporters}`, 'line')
     .option('--retries <retries>', 'Specify retry count', '0')
     .option('--test-ignore <pattern>', 'Pattern used to ignore test files', '**/node_modules/**')
     .option('--test-match <pattern>', 'Pattern used to find test files', '**/?(*.)+(spec|test).[jt]s')
