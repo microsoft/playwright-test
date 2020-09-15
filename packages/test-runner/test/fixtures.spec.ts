@@ -29,7 +29,6 @@ it('should work', async ({runInlineTest}) => {
   expect(results[0].status).toBe('passed');
 });
 
-
 it('should work with a non-async function', test => {
   test.fail();
 }, async ({runInlineTest}) => {

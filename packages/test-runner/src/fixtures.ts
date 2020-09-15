@@ -15,6 +15,7 @@
  */
 
 import debug from 'debug';
+import * as fs from 'fs';
 import { RunnerConfig } from './runnerConfig';
 import { serializeError, Test, TestResult } from './test';
 import { raceAgainstTimeout } from './util';
@@ -283,6 +284,8 @@ function lookupRegistrations(file: string) {
 }
 
 export function rerunRegistrations(file: string) {
+  // Resolve symlinks.
+  file = fs.realpathSync(file);
   registrations.clear();
   // When we are running several tests in the same worker, we should re-run registrations before
   // each file. That way we erase potential fixture overrides from the previous test runs.
