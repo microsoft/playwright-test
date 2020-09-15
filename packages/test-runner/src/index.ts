@@ -20,10 +20,10 @@ import * as os from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import { registerFixture as registerFixtureImpl, registerWorkerFixture as registerWorkerFixtureImpl, TestInfo } from './fixtures';
+import { registerFixture, registerWorkerFixture, TestInfo, setParameterValues } from './fixtures';
 import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
-import { registerWorkerParameterImpl } from './fixtures';
+import { registerWorkerParameter } from './fixtures';
 import * as spec from './spec';
 import { Test, Suite } from './test';
 
@@ -82,8 +82,28 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     return this as any;
   }
 
+  defineTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+    // TODO: make this throw when overriding.
+    registerFixture(name as string, fn);
+  }
+
+  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
+    // TODO: make this throw when not overriding.
+    registerFixture(name as string, fn);
+  }
+
   declareWorkerFixtures<W>(): Fixtures<WorkerParameters, WorkerFixtures & W, TestFixtures> {
     return this as any;
+  }
+
+  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+    // TODO: make this throw when overriding.
+    registerWorkerFixture(name as string, fn);
+  }
+
+  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+    // TODO: make this throw when not overriding.
+    registerWorkerFixture(name as string, fn);
   }
 
   declareParameters<P>(): Fixtures<WorkerParameters & P, WorkerFixtures, TestFixtures> {
@@ -91,28 +111,12 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
   }
 
   defineParameter<T extends keyof WorkerParameters>(name: T, description: string, defaultValue?: WorkerParameters[T]) {
-    registerWorkerParameterImpl(name as string, description, defaultValue);
-    registerWorkerFixtureImpl(name as string, async ({}, runTest) => runTest(defaultValue));
+    registerWorkerParameter(name as string, description, defaultValue);
+    registerWorkerFixture(name as string, async ({}, runTest) => runTest(defaultValue));
   }
 
-  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
-    // TODO: make this throw when overriding.
-    registerWorkerFixtureImpl(name as string, fn);
-  }
-
-  defineTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
-    // TODO: make this throw when overriding.
-    registerFixtureImpl(name as string, fn);
-  }
-
-  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
-    // TODO: make this throw when not overriding.
-    registerWorkerFixtureImpl(name as string, fn);
-  }
-
-  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo) => Promise<void>) {
-    // TODO: make this throw when not overriding.
-    registerFixtureImpl(name as string, fn);
+  generateParametrizedTests<T extends keyof WorkerParameters>(name: T, values: WorkerParameters[T][]) {
+    setParameterValues(name as string, values);
   }
 }
 

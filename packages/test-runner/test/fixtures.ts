@@ -89,7 +89,8 @@ declare global {
   interface TestState {
     outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
-    runInlineTest: (files: {[key: string]: string}) => Promise<{results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError']}>;
+    runInlineTest: (files: { [key: string]: string }) => Promise<{ runResult: RunResult, results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError'] }>;
+    runInlineFixturesTest: (files: { [key: string]: string }) => Promise<{ runResult: RunResult, results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError'] }>;
   }
 }
 
@@ -112,20 +113,31 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
     console.log(result.output);
 });
 
-fixtures.defineTestFixture('runInlineTest', async ({runTest}, testRun) => {
-  const header = `
-    const { fixtures } = require('${path.join(__dirname, '..').replace(/\\/g, '\\\\')}');
+fixtures.defineTestFixture('runInlineTest', async ({ runTest }, testRun) => {
+  await runInlineTest(`
+    const { fixtures } = require(${JSON.stringify(path.join(__dirname, '..'))});
     const { it, expect } = fixtures;
-  `;
+  `, runTest, testRun);
+});
+
+
+fixtures.defineTestFixture('runInlineFixturesTest', async ({ runTest }, testRun) => {
+  await runInlineTest(`
+    const { fixtures: baseFixtures } = require(${JSON.stringify(path.join(__dirname, '..'))});
+  `, runTest, testRun);
+});
+
+async function runInlineTest(header: string, runTest, testRun) {
   await testRun(async files => {
     const dir = await fs.promises.mkdtemp(path.join(tmpdir(), 'playwright-test-runInlineTest'));
     await Promise.all(Object.keys(files).map(async name => {
       await fs.promises.writeFile(path.join(dir, name), header + files[name]);
     }));
-    const {report} = await runTest(dir);
+    const runResult = await runTest(dir);
+    const { report } = runResult;
     await removeFolderAsync(dir);
     if (report.parseError)
-      return {results: [], parseError: report.parseError};
+      return { runResult, results: [], parseError: report.parseError };
     const results = [];
 
     function visitSuites(suites?: ReportFormat['suites']) {
@@ -138,6 +150,6 @@ fixtures.defineTestFixture('runInlineTest', async ({runTest}, testRun) => {
       }
     }
     visitSuites(report.suites);
-    return {results};
+    return { runResult, results };
   });
-});
+}

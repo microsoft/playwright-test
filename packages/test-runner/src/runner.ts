@@ -24,11 +24,10 @@ import './expect';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
 import { serializeError, Suite } from './test';
-import { Matrix, parseTests } from './testCollector';
-import { installTransform } from './transform';
+import { parseTests } from './testCollector';
 import { raceAgainstTimeout } from './util';
 import { spec } from './spec';
-import { ParameterRegistration, parameterRegistrations } from './fixtures';
+import { ParameterRegistration, parameterRegistrations, matrix, setParameterValues } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Suite, Test, TestResult, Configuration } from './test';
@@ -44,7 +43,6 @@ export class Runner {
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
-  private _parameterValues: Matrix = {};
   private _rootSuite: Suite;
 
   constructor(config: RunnerConfig, reporter: Reporter) {
@@ -57,22 +55,16 @@ export class Runner {
   }
 
   setParameterValue(name: string, value: string) {
-    this.setParameterValues(name, [value]);
+    setParameterValues(name, [value]);
   }
 
-  setParameterValues(name: string, values: string[]) {
-    if (!parameterRegistrations.has(name))
-      throw new Error(`Unregistered parameter '${name}' was set.`);
-    this._parameterValues[name] = values;
-  }
-
-  loadFiles(testDir: string, filters: string[], testMatch: string, testIgnore: string): {success: boolean} {
+  loadFiles(testDir: string, filters: string[], testMatch: string, testIgnore: string): { success: boolean } {
     let files: string[];
     try {
       files = collectFiles(testDir, '', filters, testMatch, testIgnore);
     } catch (error) {
       this._reporter.onParseError(testDir, error.message);
-      return {success: false};
+      return { success: false };
     }
 
     // First traverse tests.
@@ -84,43 +76,18 @@ export class Runner {
       } catch (error) {
         revertBabelRequire();
         this._reporter.onParseError(file, serializeError(error));
-        return {success: false};
+        return { success: false };
       }
       revertBabelRequire();
       this._suites.push(suite);
     }
 
     // Set default values
-    for (const param of this.parameters())
-      this.setParameterValue(param.name, param.defaultValue);
-
-    // Then read config.
-    const revertBabelRequire = installTransform();
-    let hasSetup = false;
-    try {
-      hasSetup = fs.statSync(path.join(this._config.testDir, 'setup.js')).isFile();
-    } catch (e) {
+    for (const param of this.parameters()) {
+      if (!(param.name in matrix))
+        this.setParameterValue(param.name, param.defaultValue);
     }
-    try {
-      hasSetup = hasSetup || fs.statSync(path.join(this._config.testDir, 'setup.ts')).isFile();
-    } catch (e) {
-    }
-    if (hasSetup) {
-      global['setParameterValue'] = this.setParameterValue.bind(this);
-      global['setParameterValues'] = this.setParameterValues.bind(this);
-      global['before'] = (fn: Function) => this._beforeFunctions.push(fn);
-      global['after'] = (fn: Function) => this._afterFunctions.push(fn);
-      const setupPath = path.join(this._config.testDir, 'setup');
-      try {
-        require(setupPath);
-      } catch (error) {
-        revertBabelRequire();
-        this._reporter.onParseError(setupPath, serializeError(error));
-        return {success: false};
-      }
-    }
-    revertBabelRequire();
-    return {success: true};
+    return { success: true };
   }
 
   async run(): Promise<RunResult> {
@@ -129,7 +96,7 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const {suite, parseError} = parseTests(this._suites, this._parameterValues, this._config);
+    const {suite, parseError} = parseTests(this._suites, this._config);
     if (parseError) {
       this._reporter.onParseError(parseError.file, serializeError(parseError.error));
       return 'failed';

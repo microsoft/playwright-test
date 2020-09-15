@@ -49,11 +49,11 @@ export type ParameterRegistration = {
 
 export const parameterRegistrations = new Map<string, ParameterRegistration>();
 
-export function setParameters(params: any) {
+export function assignParameters(params: any) {
   parameters = Object.assign(parameters, params);
-  for (const name of Object.keys(params))
-    registerWorkerFixture(name, async ({}, test) => await test(parameters[name]));
 }
+
+export const matrix: any = {};
 
 class Fixture {
   pool: FixturePool;
@@ -255,8 +255,14 @@ export function registerWorkerFixture(name: string, fn: (params: any, runTest: (
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 
-export function registerWorkerParameterImpl(name: string, description: string, defaultValue?: any) {
+export function registerWorkerParameter(name: string, description: string, defaultValue?: any) {
   parameterRegistrations.set(name, { name, description, defaultValue });
+}
+
+export function setParameterValues(name: string, values: any[]) {
+  if (!parameterRegistrations.has(name))
+    throw new Error(`Unregistered parameter '${name}' was set.`);
+  matrix[name] = values;
 }
 
 function collectRequires(file: string, result: Set<string>) {

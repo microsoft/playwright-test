@@ -15,19 +15,16 @@
  */
 
 import crypto from 'crypto';
-import { registrations, fixturesForCallback, rerunRegistrations } from './fixtures';
+import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
 import { RunnerConfig } from './runnerConfig';
 
-export type Matrix = {
-  [key: string]: string[]
-};
 type ParseResult = {
   suite?: Suite,
   parseError?: {error: any, file: string}
 }
 
-export function parseTests(suites: Suite[], matrix: Matrix, config: RunnerConfig): ParseResult {
+export function parseTests(suites: Suite[], config: RunnerConfig): ParseResult {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {

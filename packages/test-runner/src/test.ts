@@ -269,10 +269,10 @@ export class Suite extends Runnable {
     return false;
   }
 
-  * _allTests(): Iterable<Test> {
-    for (const suite of this.suites)
-      yield * suite._allTests();
-    yield * this.tests;
+  _allTests(): Test[] {
+    const result: Test[] = [];
+    this.findTest(test => { result.push(test); });
+    return result;
   }
 
   _clone(): Suite {
