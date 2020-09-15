@@ -42,6 +42,9 @@ class LineReporter extends BaseReporter {
       console.log();
     }
   }
+
+  epilogue() {
+  }
 }
 
 export default LineReporter;
