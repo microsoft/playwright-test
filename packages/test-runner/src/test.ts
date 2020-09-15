@@ -137,6 +137,7 @@ export class Test extends Runnable {
   _ordinal: number;
   _overriddenFn: Function;
   _startTime: number;
+  _endTime: number;
   _timeout = 0;
 
   constructor(title: string, fn: Function) {
@@ -161,7 +162,19 @@ export class Test extends Runnable {
     return this._timeout;
   }
 
-  _ok(): boolean {
+  startTime(): number {
+    return this._startTime;
+  }
+
+  endTime(): number {
+    return this._endTime;
+  }
+
+  duration(): number {
+    return this._endTime - this._startTime;
+  }
+
+  ok(): boolean {
     if (this._isSkipped())
       return true;
     const hasFailedResults = !!this.results.find(r => r.status !== r.expectedStatus);

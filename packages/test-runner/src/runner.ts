@@ -160,7 +160,7 @@ export class Runner {
       for (const f of this._afterFunctions)
         await f();
     }
-    return suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
+    return suite.findTest(test => !test.ok()) ? 'failed' : 'passed';
   }
 }
 

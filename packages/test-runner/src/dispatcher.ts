@@ -178,6 +178,7 @@ export class Dispatcher {
       test._slow = params.slow;
       test._timeout = params.timeout;
       test._expectedStatus = params.expectedStatus;
+      test._startTime = Date.now();
       this._reporter.onTestBegin(test);
     });
     worker.on('testEnd', (params: TestEndPayload) => {
@@ -187,6 +188,7 @@ export class Dispatcher {
       delete workerResult.stderr;
       const { test, result } = this._testById.get(params.id);
       Object.assign(result, workerResult);
+      test._endTime = Date.now();
       this._reporter.onTestEnd(test, result);
     });
     worker.on('testStdOut', params => {
