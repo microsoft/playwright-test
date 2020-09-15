@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { FixturePool, rerunRegistrations, setParameters, TestInfo, parameters } from './fixtures';
+import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
 import { Test, Suite, Configuration, serializeError, TestResult, TestStatus } from './test';
@@ -123,7 +123,7 @@ export class TestRunner extends EventEmitter {
   }
 
   async run() {
-    setParameters(this._parsedGeneratorConfiguration);
+    assignParameters(this._parsedGeneratorConfiguration);
 
     const revertBabelRequire = spec(this._suite, this._suite.file, this._timeout, parameters);
     require(this._suite.file);
