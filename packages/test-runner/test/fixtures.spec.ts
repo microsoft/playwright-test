@@ -30,7 +30,9 @@ it('should work', async ({runInlineTest}) => {
 });
 
 
-it.skip('should work with a non-async function', async ({runInlineTest}) => {
+it('should work with a non-async function', test => {
+  test.fail();
+}, async ({runInlineTest}) => {
   const {results} = await runInlineTest({
     'a.test.js': `
       fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
@@ -42,7 +44,9 @@ it.skip('should work with a non-async function', async ({runInlineTest}) => {
   expect(results[0].status).toBe('passed');
 });
 
-it.skip('should fail with an unknown fixture', async ({runInlineTest}) => {
+it('should fail with an unknown fixture', test => {
+  test.fail();
+}, async ({runInlineTest}) => {
   const {results} = await runInlineTest({
     'a.test.js': `
       it('should use asdf', async ({asdf}) => {

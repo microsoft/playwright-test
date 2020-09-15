@@ -22,7 +22,7 @@ it('should run with each configuration', async ({ runTest }) => {
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(5);  // 6 total, one skipped
   const configurations = result.report.suites.map(s => s.configuration);
-  const objects = configurations.map(c => {
+  const objects: any[] = configurations.map(c => {
     const object = {};
     for (const { name, value } of c)
       object[name] = value;

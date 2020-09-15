@@ -95,7 +95,7 @@ class Fixture {
     const setupFence = new Promise((f, r) => { setupFenceFulfill = f; setupFenceReject = r; });
     const teardownFence = new Promise(f => this._teardownFenceCallback = f);
     debug('pw:test:hook')(`setup "${this.name}"`);
-    const param = info || config;
+    const param = this.scope === 'worker' ? config : info;
     this._tearDownComplete = this.fn(params, async (value: any) => {
       this.value = value;
       setupFenceFulfill();
