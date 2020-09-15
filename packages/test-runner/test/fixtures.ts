@@ -114,7 +114,7 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
 
 fixtures.defineTestFixture('runInlineTest', async ({runTest}, testRun) => {
   const header = `
-    const { fixtures } = require('${path.join(__dirname, '..')}');
+    const { fixtures } = require('${path.join(__dirname, '..').replace(/\\/g, '\\\\')}');
     const { it, expect } = fixtures;
   `;
   await testRun(async files => {
