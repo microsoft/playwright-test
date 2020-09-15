@@ -108,7 +108,7 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
     result = await runTest(reportFile, outputDir, filePath, options);
     return result;
   });
-  if (testInfo.result.status === 'failed')
+  if (testInfo.result.status !== testInfo.result.expectedStatus)
     console.log(result.output);
 });
 

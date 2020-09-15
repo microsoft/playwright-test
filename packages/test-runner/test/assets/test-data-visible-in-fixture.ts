@@ -15,15 +15,21 @@
  */
 
 import { fixtures } from '../../';
-const { it, expect, defineTestFixture } = fixtures.declareTestFixtures<{ postProcess: string }>();
+const { it, expect, defineTestFixture, defineWorkerFixture } = fixtures
+    .declareTestFixtures<{ postProcess: string }>()
+    .declareWorkerFixtures<{ config: any }>();
 
 defineTestFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
   info.result.data['myname'] = 'myvalue';
 });
 
-it('ensure fixture handles test error', async ({ postProcess }) => {
+defineWorkerFixture('config', async ({}, runTest, config) => {
+  await runTest(config);
+});
+
+it('ensure fixture handles test error', async ({ postProcess, config }) => {
   console.log('console.log');
   console.error('console.error');
-  expect(true).toBe(false);
+  expect(config.outputDir).toBeTruthy();
 });
