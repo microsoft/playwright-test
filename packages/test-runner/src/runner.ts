@@ -24,7 +24,7 @@ import './expect';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
 import { serializeError, Suite } from './test';
-import { Matrix, TestCollector } from './testCollector';
+import { Matrix, parseTests } from './testCollector';
 import { installTransform } from './transform';
 import { raceAgainstTimeout } from './util';
 import { spec } from './spec';
@@ -45,6 +45,7 @@ export class Runner {
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
   private _parameterValues: Matrix = {};
+  private _rootSuite: Suite;
 
   constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
@@ -128,18 +129,23 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const testCollector = new TestCollector(this._suites, this._parameterValues, this._config);
-    const suite = testCollector.suite;
+    const {suite, parseError} = parseTests(this._suites, this._parameterValues, this._config);
+    if (parseError) {
+      this._reporter.onParseError(parseError.file, serializeError(parseError.error));
+      return 'failed';
+    }
+
+    this._rootSuite = suite;
     if (this._config.forbidOnly) {
-      const hasOnly = suite.findTest(t => t._only) || suite.eachSuite(s => s._only);
+      const hasOnly = this._rootSuite.findTest(t => t._only) || this._rootSuite.eachSuite(s => s._only);
       if (hasOnly)
         return 'forbid-only';
     }
 
-    const total = suite.total();
+    const total = this._rootSuite.total();
     if (!total)
       return 'no-tests';
-    const { result, timedOut } = await raceAgainstTimeout(this._runTests(suite), this._config.globalTimeout);
+    const { result, timedOut } = await raceAgainstTimeout(this._runTests(this._rootSuite), this._config.globalTimeout);
     if (timedOut) {
       this._reporter.onTimeout(this._config.globalTimeout);
       process.exit(1);

@@ -269,6 +269,12 @@ export class Suite extends Runnable {
     return false;
   }
 
+  * _allTests(): Iterable<Test> {
+    for (const suite of this.suites)
+      yield * suite._allTests();
+    yield * this.tests;
+  }
+
   _clone(): Suite {
     const suite = new Suite(this.title);
     suite._copyFrom(this);

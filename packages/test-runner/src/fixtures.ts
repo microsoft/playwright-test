@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import { RunnerConfig } from './runnerConfig';
 import { serializeError, Test, TestResult } from './test';
 import { raceAgainstTimeout } from './util';
-
+import {parse} from '@babel/core';
 
 type Scope = 'test' | 'worker';
 
@@ -216,11 +216,15 @@ export function fixturesForCallback(callback: Function): string[] {
 
 function fixtureParameterNames(fn: Function): string[] {
   const text = fn.toString();
-  const match = text.match(/async(?:\s+function)?\s*\(\s*{\s*([^}]*)\s*}/);
-  if (!match || !match[1].trim())
+  const obj = parse('(' + text + ')', {
+    filename: 'file.js'
+  }) as any;
+  const firstParam = obj.program.body[0].expression.params[0];
+  if (!firstParam)
     return [];
-  const signature = match[1];
-  return signature.split(',').map((t: string) => t.trim());
+  if (firstParam.type !== 'ObjectPattern')
+    throw new Error('First argument must use the object destructuring pattern.');
+  return firstParam.properties.map(p => p.key.name);
 }
 
 function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: Function) {

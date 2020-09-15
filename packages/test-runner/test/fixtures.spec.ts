@@ -29,9 +29,7 @@ it('should work', async ({runInlineTest}) => {
   expect(results[0].status).toBe('passed');
 });
 
-it('should work with a non-async function', test => {
-  test.fail();
-}, async ({runInlineTest}) => {
+it('should work with a sync function', async ({runInlineTest}) => {
   const {results} = await runInlineTest({
     'a.test.js': `
       fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
@@ -43,9 +41,57 @@ it('should work with a non-async function', test => {
   expect(results[0].status).toBe('passed');
 });
 
-it('should fail with an unknown fixture', test => {
-  test.fail();
-}, async ({runInlineTest}) => {
+it('should work with a non-arrow function', async ({runInlineTest}) => {
+  const {results} = await runInlineTest({
+    'a.test.js': `
+      fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
+      it('should use asdf', function ({asdf}) {
+        expect(asdf).toBe(123);
+      });
+    `,
+  });
+  expect(results[0].status).toBe('passed');
+});
+
+it('should work with a named function', async ({runInlineTest}) => {
+  const {results} = await runInlineTest({
+    'a.test.js': `
+      fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
+      it('should use asdf', async function hello({asdf}) {
+        expect(asdf).toBe(123);
+      });
+    `,
+  });
+  expect(results[0].status).toBe('passed');
+});
+
+it('should work with renamed parameters', async ({runInlineTest}) => {
+  const {results} = await runInlineTest({
+    'a.test.js': `
+      fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
+      it('should use asdf', function ({asdf: renamed}) {
+        expect(renamed).toBe(123);
+      });
+    `,
+  });
+  expect(results[0].status).toBe('passed');
+});
+
+it('should fail if parameters are not destructured', async ({runInlineTest}) => {
+  const {parseError} = await runInlineTest({
+    'a.test.js': `
+      fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
+      it('should use asdf', function (abc) {
+        expect(abc.asdf).toBe(123);
+      });
+    `,
+  });
+  expect(parseError.file).toContain('a.test.js');
+  expect(parseError.error.message).toBe('First argument must use the object destructuring pattern.');
+  expect(parseError.error.stack).toContain('a.test.js');
+});
+
+it.skip('should fail with an unknown fixture', async ({runInlineTest}) => {
   const {results} = await runInlineTest({
     'a.test.js': `
       it('should use asdf', async ({asdf}) => {
