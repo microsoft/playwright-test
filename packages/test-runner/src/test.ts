@@ -269,9 +269,9 @@ export class Suite extends Runnable {
     return false;
   }
 
-  * allTests(): Iterable<Test> {
+  * _allTests(): Iterable<Test> {
     for (const suite of this.suites)
-      yield * suite.allTests();
+      yield * suite._allTests();
     yield * this.tests;
   }
 

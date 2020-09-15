@@ -18,13 +18,16 @@ import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
 import { RunnerConfig } from './runnerConfig';
-import { ReportFormat } from './reporters/json';
 
 export type Matrix = {
   [key: string]: string[]
 };
+type ParseResult = {
+  suite?: Suite,
+  parseError?: {error: any, file: string}
+}
 
-export function parseTests(suites: Suite[], matrix: Matrix, config: RunnerConfig): {suite?: Suite, parseError?: ReportFormat['parseError']} {
+export function parseTests(suites: Suite[], matrix: Matrix, config: RunnerConfig): ParseResult {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {
@@ -41,7 +44,7 @@ export function parseTests(suites: Suite[], matrix: Matrix, config: RunnerConfig
     // Name each test.
     suite._renumber();
 
-    for (const test of suite.allTests()) {
+    for (const test of suite._allTests()) {
       // Get all the fixtures that the test needs.
       let fixtures: string[];
       try {
