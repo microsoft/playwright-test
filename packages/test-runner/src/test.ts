@@ -171,7 +171,7 @@ export class Test extends Runnable {
   }
 
   duration(): number {
-    return this._endTime - this._startTime;
+    return (this._endTime - this._startTime) || 0;
   }
 
   ok(): boolean {

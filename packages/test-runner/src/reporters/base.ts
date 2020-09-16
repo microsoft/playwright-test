@@ -35,6 +35,7 @@ export class BaseReporter implements Reporter  {
   config: RunnerConfig;
   suite: Suite;
   timeout: number;
+  fileDurations = new Map<string, number>();
 
   constructor() {
     process.on('SIGINT', async () => {
@@ -64,6 +65,10 @@ export class BaseReporter implements Reporter  {
   }
 
   onTestEnd(test: Test, result: TestResult) {
+    let duration = this.fileDurations.get(test.file) || 0;
+    duration += test.duration();
+    this.fileDurations.set(test.file, duration);
+
     if (result.status === 'skipped') {
       this.skipped.push(test);
       return;
@@ -100,9 +105,24 @@ export class BaseReporter implements Reporter  {
     this.duration = Date.now() - this.startTime;
   }
 
+  printSlowTests() {
+    const fileDurations = [...this.fileDurations.entries()];
+    fileDurations.sort((a, b) => b[1] - a[1]);
+    console.log(fileDurations);
+    for (let i = 0; i < 10 && i < fileDurations.length; ++i) {
+      const baseName = path.basename(fileDurations[i][0]);
+      const duration = fileDurations[i][1];
+      if (duration < 5000)
+        break;
+      console.log(colors.yellow('Slow test: ') + baseName + colors.yellow(` (${milliseconds(duration)})`));
+    }
+    console.log();
+  }
+
   epilogue() {
     console.log('');
 
+    this.printSlowTests();
     console.log(colors.green(`  ${this.asExpected.length} passed`) + colors.dim(` (${milliseconds(this.duration)})`));
 
     if (this.skipped.length)

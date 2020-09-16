@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import { BaseReporter } from './base';
+import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Suite, Test, TestResult } from '../test';
+import { BaseReporter } from './base';
 
 class LineReporter extends BaseReporter {
   private _total: number;
@@ -29,13 +30,11 @@ class LineReporter extends BaseReporter {
     console.log();
   }
 
-  onTestBegin(test: Test) {
-    super.onTestBegin(test);
-    process.stdout.write(`\u001B[1A\u001B[2K[${++this._current}/${this._total}] ${test.fullTitle()}\n`);
-  }
-
   onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
+    const baseName = path.basename(test.file);
+    const title = `${baseName} - ${test.fullTitle()}`;
+    process.stdout.write(`\u001B[1A\u001B[2K[${++this._current}/${this._total}] ${title}\n`);
     if (!test.ok()) {
       process.stdout.write(`\u001B[1A\u001B[2K`);
       console.log(super.formatFailure(test, ++this._failures));
@@ -43,7 +42,10 @@ class LineReporter extends BaseReporter {
     }
   }
 
-  epilogue() {
+  onEnd() {
+    super.onEnd();
+    console.log('');
+    this.printSlowTests();
   }
 }
 
