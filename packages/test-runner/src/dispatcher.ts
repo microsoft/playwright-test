@@ -88,7 +88,7 @@ export class Dispatcher {
       const entry = this._queue.shift();
       const requiredHash = entry.hash;
       let worker = await this._obtainWorker();
-      while (worker.hash && worker.hash !== requiredHash) {
+      while (!this._config.trialRun && worker.hash && worker.hash !== requiredHash) {
         this._restartWorker(worker);
         worker = await this._obtainWorker();
       }
