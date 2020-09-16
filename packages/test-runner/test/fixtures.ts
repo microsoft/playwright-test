@@ -132,7 +132,7 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
 fixtures.defineTestFixture('runInlineTest', async ({ runTest }, testRun) => {
   await runInlineTest(`
     const { fixtures } = require(${JSON.stringify(path.join(__dirname, '..'))});
-    const { it, expect } = fixtures;
+    const { it, describe, expect } = fixtures;
   `, runTest, testRun);
 });
 

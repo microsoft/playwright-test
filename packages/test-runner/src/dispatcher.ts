@@ -19,7 +19,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
 import { Suite, Test, TestResult } from './test';
-import { TestRunnerEntry, TestBeginPayload, TestEndPayload } from './testRunner';
+import { TestRunnerEntry, TestBeginPayload, TestEndPayload, SuiteBeginPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
 
@@ -28,6 +28,7 @@ export class Dispatcher {
   private _freeWorkers: Worker[] = [];
   private _workerClaimers: (() => void)[] = [];
 
+  private _suiteById = new Map<string, Suite>();
   private _testById = new Map<string, { test: Test, result: TestResult }>();
   private _queue: TestRunnerEntry[] = [];
   private _stopCallback: () => void;
@@ -41,6 +42,9 @@ export class Dispatcher {
 
     this._suite = suite;
     for (const suite of this._suite.suites) {
+      suite.findSuite(suite => {
+        this._suiteById.set(suite._id, suite);
+      });
       suite.findTest(test => {
         this._testById.set(test._id, { test, result: test._appendResult() });
       });
@@ -134,7 +138,7 @@ export class Dispatcher {
       // Only retry expected failures, not passes and only if the test failed.
       if (this._config.retries && params.failedTestId) {
         const pair = this._testById.get(params.failedTestId);
-        if (pair.result.expectedStatus === 'passed' && pair.test.results.length < this._config.retries + 1) {
+        if (pair.test.expectedStatus() === 'passed' && pair.test.results.length < this._config.retries + 1) {
           pair.result = pair.test._appendResult();
           remaining.unshift(pair.test._id);
         }
@@ -171,6 +175,23 @@ export class Dispatcher {
 
   _createWorker() {
     const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
+    worker.on('suiteBegin', (params: SuiteBeginPayload) => {
+      const suite = this._suiteById.get(params.id)!;
+      if (!suite) {
+        // That's ok, this suite was filtered out due to *.only.
+        return;
+      }
+      suite._skipped = params.skipped;
+      suite._flaky = params.flaky;
+      suite._slow = params.slow;
+      suite._expectedStatus = params.expectedStatus;
+      suite._annotations = params.annotations;
+      this._reporter.onSuiteBegin(suite);
+    });
+    worker.on('suiteEnd', (params: SuiteBeginPayload) => {
+      const suite = this._suiteById.get(params.id)!;
+      this._reporter.onSuiteEnd(suite);
+    });
     worker.on('testBegin', (params: TestBeginPayload) => {
       const { test } = this._testById.get(params.id);
       test._skipped = params.skipped;
@@ -179,6 +200,7 @@ export class Dispatcher {
       test._timeout = params.timeout;
       test._expectedStatus = params.expectedStatus;
       test._startTime = Date.now();
+      test._annotations = params.annotations;
       this._reporter.onTestBegin(test);
     });
     worker.on('testEnd', (params: TestEndPayload) => {
@@ -310,7 +332,7 @@ class InProcessWorker extends Worker {
     delete require.cache[entry.file];
     const { TestRunner } = require('./testRunner');
     const testRunner = new TestRunner(entry, this.runner._config, 0);
-    for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
+    for (const event of ['suiteBegin', 'suiteEnd', 'testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, this.emit.bind(this, event));
     testRunner.run();
   }

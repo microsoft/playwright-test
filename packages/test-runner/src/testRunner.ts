@@ -17,21 +17,27 @@
 import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
-import { Test, Suite, Configuration, serializeError, TestResult, TestStatus } from './test';
+import { Test, Suite, Configuration, serializeError, TestResult, TestStatus, Runnable } from './test';
 import { spec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
 
 export const fixturePool = new FixturePool();
 
-export type TestBeginPayload = {
+export type RunnablePayload = {
   id: string;
   skipped: boolean;
   flaky: boolean
   slow: boolean;
-  timeout: number;
   expectedStatus: TestStatus;
+  annotations: any[];
 }
+
+export type SuiteBeginPayload = RunnablePayload;
+
+export type TestBeginPayload = RunnablePayload & {
+  timeout: number;
+};
 
 export type TestEndPayload = {
   id: string;
@@ -140,6 +146,7 @@ export class TestRunner extends EventEmitter {
   }
 
   private async _runSuite(suite: Suite) {
+    this.emit('suiteBegin', runnableToPayload(suite));
     try {
       await this._runHooks(suite, 'beforeAll', 'before');
     } catch (e) {
@@ -158,6 +165,7 @@ export class TestRunner extends EventEmitter {
       this._fatalError = serializeError(e);
       this._reportDone();
     }
+    this.emit('suiteEnd', runnableToPayload(suite));
   }
 
   private async _runTest(test: Test) {
@@ -171,22 +179,20 @@ export class TestRunner extends EventEmitter {
     this._testId = id;
     // We only know resolved skipped/flaky value in the worker,
     // send it to the runner.
-    test._skipped = test._isSkipped();
+    test._skipped = test.isSkipped();
     test._flaky = test.isFlaky();
     test._slow = test._isSlow();
     test._timeout = test._isSlow() ? this._timeout * 3 : this._timeout;
-    this.emit('testBegin', {
+    const testBeginEvent: TestBeginPayload = {
       id,
-      skipped: test._skipped,
-      flaky: test._flaky,
-      slow: test._slow,
       timeout: test._timeout,
-    } as TestBeginPayload);
+      ...runnableToPayload(test)
+    };
+    this.emit('testBegin', testBeginEvent);
 
     const result: TestResult = {
       duration: 0,
       status: 'passed',
-      expectedStatus: test._expectedStatus,
       stdout: [],
       stderr: [],
       data: {}
@@ -195,7 +201,8 @@ export class TestRunner extends EventEmitter {
 
     if (test._skipped) {
       result.status = 'skipped';
-      this.emit('testEnd', { id, result });
+      const testEndEvent: TestEndPayload = { id, result };
+      this.emit('testEnd', testEndEvent);
       return;
     }
 
@@ -207,7 +214,7 @@ export class TestRunner extends EventEmitter {
         await fixturePool.runTestWithFixturesAndTimeout(test.fn, test._timeout, testInfo);
         await this._runHooks(test.parent, 'afterEach', 'after', testInfo);
       } else {
-        result.status = result.expectedStatus;
+        result.status = test.expectedStatus();
       }
     } catch (error) {
       // Error in the test fixture teardown.
@@ -246,4 +253,15 @@ export class TestRunner extends EventEmitter {
       remaining: [...this._remaining],
     });
   }
+}
+
+function runnableToPayload(runnable: Runnable): RunnablePayload {
+  return {
+    id: runnable._id,
+    skipped: runnable.isSkipped(),
+    flaky: runnable.isFlaky(),
+    slow: runnable.isSlow(),
+    annotations: runnable.annotations(),
+    expectedStatus: runnable.expectedStatus(),
+  };
 }

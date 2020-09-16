@@ -69,7 +69,7 @@ process.on('message', async message => {
   }
   if (message.method === 'run') {
     testRunner = new TestRunner(message.params.entry, message.params.config, workerId);
-    for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
+    for (const event of ['suiteBegin', 'suiteEnd', 'testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, sendMessageToParent.bind(null, event));
     await testRunner.run();
     testRunner = null;

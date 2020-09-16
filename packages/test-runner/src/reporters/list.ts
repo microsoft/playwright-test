@@ -45,7 +45,7 @@ class ListReporter extends BaseReporter {
       text = colors.green('  - ') + colors.cyan(test.fullTitle());
     } else {
       const statusMark = result.status === 'passed' ? '  ✓ ' : '  x ';
-      if (result.status === result.expectedStatus)
+      if (result.status === test.expectedStatus())
         text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(test.fullTitle()) + duration;
       else
         text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + test.fullTitle()) + duration;

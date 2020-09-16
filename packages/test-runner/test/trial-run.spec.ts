@@ -65,3 +65,35 @@ it('should work with parameters', async ({ runInlineTest }) => {
     log2.push(r.status);
   expect(log2.join('|')).toBe('passed|failed|failed|failed|passed|failed|failed|failed|passed');
 });
+
+it('should emit test annotations', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      it('should emit annotation', (test, parameters) => {
+        test.fail(true, 'Fail annotation');
+      }, async ({}) => {
+        expect(true).toBe(false);
+      });
+    `
+  }, { 'trial-run': true });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+  expect(result.report.suites[0].tests[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
+});
+
+it('should emit suite annotations', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      describe('annotate', test => {
+        test.fixme('Fix me!');
+      }, () => {
+        it('test', async ({}) => {
+          expect(true).toBe(false);
+        });
+      });
+    `
+  }, { 'trial-run': true });
+  expect(result.exitCode).toBe(0);
+  expect(result.skipped).toBe(1);
+  expect(result.report.suites[0].suites[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
+});

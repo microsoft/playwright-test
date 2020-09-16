@@ -24,6 +24,7 @@ export interface SerializedSuite {
   title: string;
   file: string;
   configuration: Configuration;
+  annotations: any[];
   tests: ReturnType<JSONReporter['_serializeTest']>[];
   suites?: SerializedSuite[];
 }
@@ -42,6 +43,12 @@ class JSONReporter implements Reporter {
   onBegin(config: RunnerConfig, suite: Suite) {
     this.config = config;
     this.suite = suite;
+  }
+
+  onSuiteBegin(suite: Suite) {
+  }
+
+  onSuiteEnd(suite: Suite) {
   }
 
   onTimeout(timeout) {
@@ -80,6 +87,7 @@ class JSONReporter implements Reporter {
       title: suite.title,
       file: suite.file,
       configuration: suite.configuration,
+      annotations: suite.annotations(),
       tests: suite.tests.map(test => this._serializeTest(test)),
       suites: suites.length ? suites : undefined,
     };
@@ -92,6 +100,8 @@ class JSONReporter implements Reporter {
       only: test.isOnly(),
       slow: test.isSlow(),
       timeout: test.timeout(),
+      annotations: test.annotations(),
+      expectedStatus: test.expectedStatus(),
       results: test.results.map(r => this._serializeTestResult(r))
     };
   }

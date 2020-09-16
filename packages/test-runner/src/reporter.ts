@@ -19,6 +19,8 @@ import { Suite, Test, TestResult } from './test';
 
 export interface Reporter {
   onBegin(config: RunnerConfig, suite: Suite): void;
+  onSuiteBegin(suite: Suite): void;
+  onSuiteEnd(suite: Suite): void;
   onTestBegin(test: Test): void;
   onTestStdOut(test: Test, chunk: string | Buffer): void;
   onTestStdErr(test: Test, chunk: string | Buffer): void;

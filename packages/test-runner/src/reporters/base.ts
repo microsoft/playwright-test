@@ -51,6 +51,12 @@ export class BaseReporter implements Reporter  {
     this.suite = suite;
   }
 
+  onSuiteBegin(suite: Suite) {
+  }
+
+  onSuiteEnd(suite: Suite) {
+  }
+
   onTestBegin(test: Test) {
   }
 
@@ -74,7 +80,7 @@ export class BaseReporter implements Reporter  {
       return;
     }
 
-    if (result.status === result.expectedStatus) {
+    if (result.status === test.expectedStatus()) {
       if (test.results.length === 1) {
         // as expected from the first attempt
         this.asExpected.push(test);

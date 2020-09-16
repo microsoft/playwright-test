@@ -28,7 +28,12 @@ export class Runnable {
   _skipped = false;
   _flaky = false;
   _slow = false;
-  _expectedStatus: TestStatus = 'passed';
+  _expectedStatus?: TestStatus = 'passed';
+  // Annotations are those created by test.fail('Annotation')
+  _annotations: any[] = [];
+
+  _id: string;
+  _ordinal: number;
 
   isOnly(): boolean {
     return this._only;
@@ -43,9 +48,14 @@ export class Runnable {
   slow(description: string): void;
   slow(condition: boolean, description: string): void;
   slow(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
+    const processed = this._interpretCondition(arg, description);
+    if (processed.condition) {
       this._slow = true;
+      this._annotations.push({
+        type: 'slow',
+        description: processed.description
+      });
+    }
   }
 
   skip(): void;
@@ -53,9 +63,14 @@ export class Runnable {
   skip(description: string): void;
   skip(condition: boolean, description: string): void;
   skip(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
+    const processed = this._interpretCondition(arg, description);
+    if (processed.condition) {
       this._skipped = true;
+      this._annotations.push({
+        type: 'fixme',
+        description: processed.description
+      });
+    }
   }
 
   fixme(): void;
@@ -63,9 +78,14 @@ export class Runnable {
   fixme(description: string): void;
   fixme(condition: boolean, description: string): void;
   fixme(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
+    const processed = this._interpretCondition(arg, description);
+    if (processed.condition) {
       this._skipped = true;
+      this._annotations.push({
+        type: 'fixme',
+        description: processed.description
+      });
+    }
   }
 
   flaky(): void;
@@ -73,9 +93,14 @@ export class Runnable {
   flaky(description: string): void;
   flaky(condition: boolean, description: string): void;
   flaky(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
+    const processed = this._interpretCondition(arg, description);
+    if (processed.condition) {
       this._flaky = true;
+      this._annotations.push({
+        type: 'flaky',
+        description: processed.description
+      });
+    }
   }
 
   fail(): void;
@@ -83,9 +108,14 @@ export class Runnable {
   fail(description: string): void;
   fail(condition: boolean, description: string): void;
   fail(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
+    const processed = this._interpretCondition(arg, description);
+    if (processed.condition) {
       this._expectedStatus = 'failed';
+      this._annotations.push({
+        type: 'fail',
+        description: processed.description
+      });
+    }
   }
 
   private _interpretCondition(arg?: boolean | string, description?: string): { condition: boolean, description?: string } {
@@ -96,12 +126,16 @@ export class Runnable {
     return { condition: !!arg, description };
   }
 
-  _isSkipped(): boolean {
-    return this._skipped || (this.parent && this.parent._isSkipped());
+  isSkipped(): boolean {
+    return this._skipped || (this.parent && this.parent.isSkipped());
   }
 
   _isSlow(): boolean {
     return this._slow || (this.parent && this.parent._isSlow());
+  }
+
+  expectedStatus(): TestStatus {
+    return this._expectedStatus || (this.parent && this.parent.expectedStatus()) || 'passed';
   }
 
   isFlaky(): boolean {
@@ -120,6 +154,10 @@ export class Runnable {
     return this.titlePath().join(' ');
   }
 
+  annotations(): any[] {
+    return this._annotations;
+  }
+
   _copyFrom(other: Runnable) {
     this.file = other.file;
     this.location = other.location;
@@ -127,14 +165,13 @@ export class Runnable {
     this._flaky = other._flaky;
     this._skipped = other._skipped;
     this._slow = other._slow;
+    this._ordinal = other._ordinal;
   }
 }
 
 export class Test extends Runnable {
   fn: Function;
   results: TestResult[] = [];
-  _id: string;
-  _ordinal: number;
   _overriddenFn: Function;
   _startTime: number;
   _endTime: number;
@@ -149,7 +186,6 @@ export class Test extends Runnable {
   _appendResult(): TestResult {
     const result: TestResult = {
       duration: 0,
-      expectedStatus: 'passed',
       stdout: [],
       stderr: [],
       data: {}
@@ -175,14 +211,14 @@ export class Test extends Runnable {
   }
 
   ok(): boolean {
-    if (this._isSkipped())
+    if (this.isSkipped())
       return true;
-    const hasFailedResults = !!this.results.find(r => r.status !== r.expectedStatus);
+    const hasFailedResults = !!this.results.find(r => r.status !== this.expectedStatus());
     if (!hasFailedResults)
       return true;
     if (!this.isFlaky())
       return false;
-    const hasPassedResults = !!this.results.find(r => r.status === r.expectedStatus);
+    const hasPassedResults = !!this.results.find(r => r.status === this.expectedStatus());
     return hasPassedResults;
   }
 
@@ -193,7 +229,6 @@ export class Test extends Runnable {
   _clone(): Test {
     const test = new Test(this.title, this.fn);
     test._copyFrom(this);
-    test._ordinal = this._ordinal;
     test._timeout = this._timeout;
     test._overriddenFn = this._overriddenFn;
     return test;
@@ -203,7 +238,6 @@ export class Test extends Runnable {
 export type TestResult = {
   duration: number;
   status?: TestStatus;
-  expectedStatus: TestStatus;
   error?: any;
   stdout: (string | Buffer)[];
   stderr: (string | Buffer)[];
@@ -269,6 +303,16 @@ export class Suite extends Runnable {
     return false;
   }
 
+  findSuite(fn: (suite: Suite) => boolean | void): boolean {
+    if (fn(this))
+      return true;
+    for (const suite of this.suites) {
+      if (suite.findSuite(fn))
+        return true;
+    }
+    return false;
+  }
+
   _allTests(): Test[] {
     const result: Test[] = [];
     this.findTest(test => { result.push(test); });
@@ -282,14 +326,22 @@ export class Suite extends Runnable {
   }
 
   _renumber() {
+    // All tests and suites are identified with their ordinals.
     let ordinal = 0;
+    this.findSuite((suite: Suite) => {
+      suite._ordinal = ordinal++;
+    });
+
+    ordinal = 0;
     this.findTest((test: Test) => {
-      // All tests are identified with their ordinals.
       test._ordinal = ordinal++;
     });
   }
 
   _assignIds() {
+    this.findSuite((suite: Suite) => {
+      suite._id = `${suite._ordinal}@${this.file}::[${this._configurationString}]`;
+    });
     this.findTest((test: Test) => {
       test._id = `${test._ordinal}@${this.file}::[${this._configurationString}]`;
     });
@@ -302,7 +354,7 @@ export class Suite extends Runnable {
   _hasTestsToRun(): boolean {
     let found = false;
     this.findTest(test => {
-      if (!test._isSkipped()) {
+      if (!test.isSkipped()) {
         found = true;
         return true;
       }
