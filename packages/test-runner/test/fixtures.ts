@@ -45,7 +45,7 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     '--output=' + outputDir,
     '--reporter=dot,json',
     '--jobs=2',
-    ...Object.keys(params).map(key => `--${key}=${params[key]}`)
+    ...Object.keys(params).map(key => params[key] === true ? `--${key}` : `--${key}=${params[key]}`)
   ], {
     env: {
       ...process.env,
@@ -105,8 +105,8 @@ declare global {
   interface TestState {
     outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
-    runInlineTest: (files: { [key: string]: string }) => Promise<RunResult>;
-    runInlineFixturesTest: (files: { [key: string]: string }) => Promise<RunResult>;
+    runInlineTest: (files: { [key: string]: string }, options?: any) => Promise<RunResult>;
+    runInlineFixturesTest: (files: { [key: string]: string }, options?: any) => Promise<RunResult>;
   }
 }
 
@@ -144,12 +144,12 @@ fixtures.defineTestFixture('runInlineFixturesTest', async ({ runTest }, testRun)
 });
 
 async function runInlineTest(header: string, runTest, testRun) {
-  await testRun(async files => {
+  await testRun(async (files, options) => {
     const dir = await fs.promises.mkdtemp(path.join(tmpdir(), 'playwright-test-runInlineTest'));
     await Promise.all(Object.keys(files).map(async name => {
       await fs.promises.writeFile(path.join(dir, name), header + files[name]);
     }));
-    const result = await runTest(dir);
+    const result = await runTest(dir, options);
     await removeFolderAsync(dir);
     return result;
   });
