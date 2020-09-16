@@ -216,15 +216,18 @@ export function fixturesForCallback(callback: Function): string[] {
 
 function fixtureParameterNames(fn: Function): string[] {
   const text = fn.toString();
-  const obj = parse('(' + text + ')', {
-    filename: 'file.js'
-  }) as any;
-  const firstParam = obj.program.body[0].expression.params[0];
-  if (!firstParam)
+  const match = text.match(/(?:async)?(?:\s+function)?[^\(]*\(([^})]*)/);
+  if (!match)
     return [];
-  if (firstParam.type !== 'ObjectPattern')
-    throw new Error('First argument must use the object destructuring pattern.');
-  return firstParam.properties.map(p => p.key.name);
+  const trimmedParams = match[1].trim();
+  if (!trimmedParams)
+    return [];
+  if (trimmedParams && trimmedParams[0] !== '{')
+    throw new Error('First argument must use the object destructuring pattern.'  + trimmedParams);
+  const signature = trimmedParams.substring(1).trim();
+  if (!signature)
+    return [];
+  return signature.split(',').map((t: string) => t.trim().split(':')[0].trim());
 }
 
 function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: Function) {
