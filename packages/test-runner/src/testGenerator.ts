@@ -24,7 +24,7 @@ type ParseResult = {
   parseError?: {error: any, file: string}
 }
 
-export function parseTests(suites: Suite[], config: RunnerConfig): ParseResult {
+export function generateTests(suites: Suite[], config: RunnerConfig): ParseResult {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {

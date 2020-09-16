@@ -24,7 +24,7 @@ import './expect';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
 import { serializeError, Suite } from './test';
-import { parseTests } from './testCollector';
+import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
 import { spec } from './spec';
 import { ParameterRegistration, parameterRegistrations, matrix, setParameterValues } from './fixtures';
@@ -96,7 +96,7 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const {suite, parseError} = parseTests(this._suites, this._config);
+    const {suite, parseError} = generateTests(this._suites, this._config);
     if (parseError) {
       this._reporter.onParseError(parseError.file, serializeError(parseError.error));
       return 'failed';
