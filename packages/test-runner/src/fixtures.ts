@@ -214,7 +214,15 @@ export function fixturesForCallback(callback: Function): string[] {
   return result;
 }
 
+const signatureSymbol = Symbol('signature');
+
 function fixtureParameterNames(fn: Function): string[] {
+  if (!fn[signatureSymbol])
+    fn[signatureSymbol] = innerFixtureParameterNames(fn);
+  return fn[signatureSymbol];
+}
+
+function innerFixtureParameterNames(fn: Function): string[] {
   const text = fn.toString();
   const match = text.match(/(?:async)?(?:\s+function)?[^\(]*\(([^})]*)/);
   if (!match)
