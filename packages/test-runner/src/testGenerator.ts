@@ -24,7 +24,7 @@ type ParseResult = {
   parseError?: {error: any, file: string}
 }
 
-export function generateTests(suites: Suite[], config: RunnerConfig): ParseResult {
+export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {
@@ -43,13 +43,12 @@ export function generateTests(suites: Suite[], config: RunnerConfig): ParseResul
 
     for (const test of suite._allTests()) {
       // Get all the fixtures that the test needs.
-      let fixtures: string[];
+      let fixtures: string[] = [];
       try {
         fixtures = fixturesForCallback(test.fn);
       } catch (error) {
-        if (error instanceof Error)
-          error.stack = error.message + `\n    at ${test.location}`;
-        return {parseError: {error, file: test.file}};
+        // It is totally fine if the test can't parse it's fixtures, worker will report
+        // this test as failing, not need to quit on the suite.
       }
       // For worker fixtures, trace them to their registrations to make sure
       // they are compatible.
@@ -101,7 +100,7 @@ export function generateTests(suites: Suite[], config: RunnerConfig): ParseResul
     }
   }
   filterOnly(rootSuite);
-  return {suite: rootSuite};
+  return rootSuite;
 }
 
 function filterOnly(suite: Suite) {

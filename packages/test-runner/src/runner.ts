@@ -96,11 +96,7 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const {suite, parseError} = generateTests(this._suites, this._config);
-    if (parseError) {
-      this._reporter.onParseError(parseError.file, serializeError(parseError.error));
-      return 'failed';
-    }
+    const suite = generateTests(this._suites, this._config);
 
     this._rootSuite = suite;
     if (this._config.forbidOnly) {

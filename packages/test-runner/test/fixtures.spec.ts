@@ -78,17 +78,21 @@ it('should work with renamed parameters', async ({ runInlineTest }) => {
 });
 
 it('should fail if parameters are not destructured', async ({ runInlineTest }) => {
-  const { parseError } = await runInlineTest({
+  const { runResult } = await runInlineTest({
     'a.test.js': `
       fixtures.defineTestFixture('asdf', async ({}, test) => await test(123));
+      it('should pass', function() {
+        expect(1).toBe(1);
+      });
       it('should use asdf', function (abc) {
         expect(abc.asdf).toBe(123);
       });
     `,
   });
-  expect(parseError.file).toContain('a.test.js');
-  expect(parseError.error.message).toBe('First argument must use the object destructuring pattern.');
-  expect(parseError.error.stack).toContain('a.test.js');
+  expect(runResult.passed).toBe(1);
+  expect(runResult.failed).toBe(1);
+  expect(runResult.output).toContain('First argument must use the object destructuring pattern.');
+  expect(runResult.output).toContain('a.test.js');
 });
 
 it.skip('should fail with an unknown fixture', async ({ runInlineTest }) => {
