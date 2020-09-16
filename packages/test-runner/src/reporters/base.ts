@@ -108,7 +108,6 @@ export class BaseReporter implements Reporter  {
   printSlowTests() {
     const fileDurations = [...this.fileDurations.entries()];
     fileDurations.sort((a, b) => b[1] - a[1]);
-    console.log(fileDurations);
     for (let i = 0; i < 10 && i < fileDurations.length; ++i) {
       const baseName = path.basename(fileDurations[i][0]);
       const duration = fileDurations[i][1];
