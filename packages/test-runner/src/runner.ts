@@ -70,7 +70,8 @@ export class Runner {
     // First traverse tests.
     for (const file of files) {
       const suite = new Suite('');
-      const revertBabelRequire = spec(suite, file, this._config.timeout, undefined);
+      suite.file = file;
+      const revertBabelRequire = spec(suite, this._config.timeout, undefined);
       try {
         require(file);
       } catch (error) {

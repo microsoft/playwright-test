@@ -40,10 +40,9 @@ export const afterEach = fn => currentSuites[0]._addHook('afterEach', fn);
 export const beforeAll = fn => currentSuites[0]._addHook('beforeAll', fn);
 export const afterAll = fn => currentSuites[0]._addHook('afterAll', fn);
 
-export function spec(suite: Suite, file: string, timeout: number, parameters: any): () => void {
+export function spec(suite: Suite, timeout: number, parameters: any): () => void {
   const suites = [suite];
   currentSuites = suites;
-  suite.file = file;
 
   currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test, parameters: any) => void | Function, fn?: Function) => {
     const suite = suites[0];
@@ -54,7 +53,7 @@ export function spec(suite: Suite, file: string, timeout: number, parameters: an
     const test = new Test(title, fn);
     if (metaFn && parameters)
       metaFn(test, parameters);
-    test.file = file;
+    test.file = suite.file;
     test.location = extractLocation(new Error());
     test._timeout = timeout;
     if (spec === 'only')
@@ -74,7 +73,7 @@ export function spec(suite: Suite, file: string, timeout: number, parameters: an
     if (metaFn && parameters)
       metaFn(child, parameters);
     suites[0]._addSuite(child);
-    child.file = file;
+    child.file = suite.file;
     child.location = extractLocation(new Error());
     if (spec === 'only')
       child._only = true;

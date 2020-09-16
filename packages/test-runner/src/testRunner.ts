@@ -125,7 +125,7 @@ export class TestRunner extends EventEmitter {
   async run() {
     assignParameters(this._parsedGeneratorConfiguration);
 
-    const revertBabelRequire = spec(this._suite, this._suite.file, this._timeout, parameters);
+    const revertBabelRequire = spec(this._suite, this._timeout, parameters);
     require(this._suite.file);
     revertBabelRequire();
     // Enumerate tests to assign ordinals.
