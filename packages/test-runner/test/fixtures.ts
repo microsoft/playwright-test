@@ -21,7 +21,7 @@ import { tmpdir } from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import type { ReportFormat } from '../src/reporters/json';
+import type { ReportFormat, SerializedSuite } from '../src/reporters/json';
 
 const removeFolderAsync = promisify(rimraf);
 
@@ -34,7 +34,8 @@ export type RunResult = {
   expectedFlaky: number,
   unexpectedFlaky: number,
   skipped: number,
-  report: ReportFormat
+  report: ReportFormat,
+  results: any[],
 };
 
 async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
@@ -70,8 +71,22 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
   try {
     report = JSON.parse(fs.readFileSync(reportFile).toString());
   } catch (e) {
-    throw new Error('Internal TestRunner Error: ' + output);
+    output += '\n' + e.toString();
   }
+
+  const results = [];
+  function visitSuites(suites?: ReportFormat['suites']) {
+    if (!suites)
+      return;
+    for (const suite of suites) {
+      for (const test of suite.tests)
+        results.push(...test.results);
+      visitSuites(suite.suites);
+    }
+  }
+  if (report)
+    visitSuites(report.suites);
+
   return {
     exitCode: status,
     output,
@@ -81,7 +96,8 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     expectedFlaky: parseInt(expectedFlaky || '0', 10),
     unexpectedFlaky: parseInt(unexpectedFlaky || '0', 10),
     skipped: parseInt(skipped || '0', 10),
-    report
+    report,
+    results,
   };
 }
 
@@ -89,8 +105,8 @@ declare global {
   interface TestState {
     outputDir: string;
     runTest: (filePath: string, options?: any) => Promise<RunResult>;
-    runInlineTest: (files: { [key: string]: string }) => Promise<{ runResult: RunResult, results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError'] }>;
-    runInlineFixturesTest: (files: { [key: string]: string }) => Promise<{ runResult: RunResult, results: ReportFormat['suites'][0]['tests'][0]['results'], parseError?: ReportFormat['parseError'] }>;
+    runInlineTest: (files: { [key: string]: string }) => Promise<RunResult>;
+    runInlineFixturesTest: (files: { [key: string]: string }) => Promise<RunResult>;
   }
 }
 
@@ -133,23 +149,8 @@ async function runInlineTest(header: string, runTest, testRun) {
     await Promise.all(Object.keys(files).map(async name => {
       await fs.promises.writeFile(path.join(dir, name), header + files[name]);
     }));
-    const runResult = await runTest(dir);
-    const { report } = runResult;
+    const result = await runTest(dir);
     await removeFolderAsync(dir);
-    if (report.parseError)
-      return { runResult, results: [], parseError: report.parseError };
-    const results = [];
-
-    function visitSuites(suites?: ReportFormat['suites']) {
-      if (!suites)
-        return;
-      for (const suite of suites) {
-        for (const test of suite.tests)
-          results.push(...test.results);
-        visitSuites(suite.suites);
-      }
-    }
-    visitSuites(report.suites);
-    return { runResult, results };
+    return result;
   });
 }

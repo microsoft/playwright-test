@@ -16,34 +16,33 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
 import { Dispatcher } from './dispatcher';
 import './expect';
+import { matrix, ParameterRegistration, parameterRegistrations, setParameterValues } from './fixtures';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
+import { spec } from './spec';
 import { serializeError, Suite } from './test';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
-import { spec } from './spec';
-import { ParameterRegistration, parameterRegistrations, matrix, setParameterValues } from './fixtures';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
-export { Suite, Test, TestResult, Configuration } from './test';
-import { isMatch } from 'micromatch';
+export { Configuration, Suite, Test, TestResult } from './test';
 
 const removeFolderAsync = promisify(rimraf);
 
 type RunResult = 'passed' | 'failed' | 'forbid-only' | 'no-tests';
 
 export class Runner {
-  private _suites: Suite[] = [];
   private _config: RunnerConfig;
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
   private _rootSuite: Suite;
+  private _hasBadFiles = false;
+  private _suites: Suite[] = [];
 
   constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
@@ -58,15 +57,7 @@ export class Runner {
     setParameterValues(name, [value]);
   }
 
-  loadFiles(testDir: string, filters: string[], testMatch: string, testIgnore: string): { success: boolean } {
-    let files: string[];
-    try {
-      files = collectFiles(testDir, '', filters, testMatch, testIgnore);
-    } catch (error) {
-      this._reporter.onParseError(testDir, error.message);
-      return { success: false };
-    }
-
+  loadFiles(files: string[]) {
     // First traverse tests.
     for (const file of files) {
       const suite = new Suite('');
@@ -74,13 +65,13 @@ export class Runner {
       const revertBabelRequire = spec(suite, this._config.timeout, undefined);
       try {
         require(file);
+        this._suites.push(suite);
       } catch (error) {
+        this._reporter.onFileError(file, serializeError(error));
+        this._hasBadFiles = true;
+      } finally {
         revertBabelRequire();
-        this._reporter.onParseError(file, serializeError(error));
-        return { success: false };
       }
-      revertBabelRequire();
-      this._suites.push(suite);
     }
 
     // Set default values
@@ -88,7 +79,6 @@ export class Runner {
       if (!(param.name in matrix))
         this.setParameterValue(param.name, param.defaultValue);
     }
-    return { success: true };
   }
 
   async run(): Promise<RunResult> {
@@ -97,9 +87,9 @@ export class Runner {
       fs.mkdirSync(this._config.outputDir, { recursive: true });
     }
 
-    const suite = generateTests(this._suites, this._config);
+    // We can only generate tests after parameters have been assigned.
+    this._rootSuite = generateTests(this._suites, this._config);
 
-    this._rootSuite = suite;
     if (this._config.forbidOnly) {
       const hasOnly = this._rootSuite.findTest(t => t._only) || this._rootSuite.eachSuite(s => s._only);
       if (hasOnly)
@@ -107,7 +97,7 @@ export class Runner {
     }
 
     const total = this._rootSuite.total();
-    if (!total)
+    if (!total && !this._hasBadFiles)
       return 'no-tests';
     const { result, timedOut } = await raceAgainstTimeout(this._runTests(this._rootSuite), this._config.globalTimeout);
     if (timedOut) {
@@ -130,38 +120,6 @@ export class Runner {
       for (const f of this._afterFunctions)
         await f();
     }
-    return suite.findTest(test => !test.ok()) ? 'failed' : 'passed';
+    return this._hasBadFiles || suite.findTest(test => !test.ok()) ? 'failed' : 'passed';
   }
-}
-
-function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
-  const fullDir = path.join(testDir, dir);
-  if (!fs.existsSync(fullDir))
-    throw new Error(`${fullDir} does not exist`);
-  if (fs.statSync(fullDir).isFile())
-    return [fullDir];
-  const files = [];
-  for (const name of fs.readdirSync(fullDir)) {
-    const relativeName = path.join(dir, name);
-    if (testIgnore && isMatch(relativeName, testIgnore))
-      continue;
-    if (fs.lstatSync(path.join(fullDir, name)).isDirectory()) {
-      files.push(...collectFiles(testDir, path.join(dir, name), filters, testMatch, testIgnore));
-      continue;
-    }
-    if (testIgnore && !isMatch(relativeName, testMatch))
-      continue;
-    const fullName = path.join(testDir, relativeName);
-    if (!filters.length) {
-      files.push(fullName);
-      continue;
-    }
-    for (const filter of filters) {
-      if (relativeName.includes(filter)) {
-        files.push(fullName);
-        break;
-      }
-    }
-  }
-  return files;
 }

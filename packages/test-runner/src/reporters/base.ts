@@ -88,7 +88,7 @@ export class BaseReporter implements Reporter  {
     }
   }
 
-  onParseError(file: string, error: any) {
+  onFileError(file: string, error: any) {
     console.log(formatError(error, file));
   }
 

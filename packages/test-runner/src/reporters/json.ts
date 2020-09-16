@@ -20,7 +20,7 @@ import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
 
-interface SerializedSuite {
+export interface SerializedSuite {
   title: string;
   file: string;
   configuration: Configuration;
@@ -30,13 +30,14 @@ interface SerializedSuite {
 
 export type ReportFormat = {
   config: RunnerConfig;
-  parseError?: {file: string, error: any};
+  fileErrors?: { file: string, error: any }[];
   suites?: SerializedSuite[];
 };
 
 class JSONReporter implements Reporter {
   config: RunnerConfig;
   suite: Suite;
+  private _fileErrors: { file: string, error: any }[] = [];
 
   onBegin(config: RunnerConfig, suite: Suite) {
     this.config = config;
@@ -52,21 +53,22 @@ class JSONReporter implements Reporter {
 
   onTestStdErr(test: Test, chunk: string | Buffer) {
   }
+
   onTestBegin(test: Test): void {
   }
+
   onTestEnd(test: Test, result: TestResult): void {
   }
-  onParseError(file: string, error: any): void {
-    outputReport({
-      config: this.config,
-      parseError: {file, error},
-    });
+
+  onFileError(file: string, error: any): void {
+    this._fileErrors.push({ file, error });
   }
 
   onEnd() {
     outputReport({
       config: this.config,
-      suites: this.suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s)
+      suites: this.suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s),
+      fileErrors: this._fileErrors
     });
   }
 
@@ -79,7 +81,7 @@ class JSONReporter implements Reporter {
       file: suite.file,
       configuration: suite.configuration,
       tests: suite.tests.map(test => this._serializeTest(test)),
-      suites: suites.length ? suites : undefined
+      suites: suites.length ? suites : undefined,
     };
   }
 

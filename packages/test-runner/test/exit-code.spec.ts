@@ -27,10 +27,12 @@ it('should collect stdio', async ({ runTest }) => {
   expect(stderr).toEqual([{ text: 'stderr text' }, { buffer: Buffer.from('stderr buffer').toString('base64') }]);
 });
 
-it('should work with not defined errors', async ({runTest}) => {
+it('should work with not defined errors', async ({runTest}) => { 
   const result = await runTest('is-not-defined-error.ts');
-  expect(result.report.parseError.error.message).toBe('foo is not defined');
-  expect(result.report.parseError.file).toBe(path.join(__dirname, 'assets', 'is-not-defined-error.ts'));
+  const { fileErrors } = result.report;
+  expect(fileErrors.length).toBe(1);
+  expect(fileErrors[0].file).toContain('assets/is-not-defined-error.ts');
+  expect(fileErrors[0].error.message).toContain('foo is not defined');
   expect(result.exitCode).toBe(1);
 });
 
@@ -70,5 +72,5 @@ it('should respect global timeout', async ({ runTest }) => {
 it('should exit with code 1 if the specified folder/file does not exist', async ({runTest}) => {
   const result = await runTest('111111111111.js');
   expect(result.exitCode).toBe(1);
-  expect(result.report.parseError.error).toBe(`${path.join(__dirname, 'assets', '111111111111.js')} does not exist`);
+  expect(result.output).toContain(`${path.join(__dirname, 'assets', '111111111111.js')} does not exist`);
 });

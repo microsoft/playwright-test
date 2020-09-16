@@ -226,6 +226,8 @@ export class Dispatcher {
   }
 
   async stop() {
+    if (!this._workers.size)
+      return;
     const result = new Promise(f => this._stopCallback = f);
     for (const worker of this._workers)
       worker.stop();

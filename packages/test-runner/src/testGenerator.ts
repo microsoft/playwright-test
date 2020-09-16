@@ -19,11 +19,6 @@ import { registrations, fixturesForCallback, rerunRegistrations, matrix } from '
 import { Test, Suite, serializeConfiguration } from './test';
 import { RunnerConfig } from './runnerConfig';
 
-type ParseResult = {
-  suite?: Suite,
-  parseError?: {error: any, file: string}
-}
-
 export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
@@ -33,8 +28,8 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
   }
 
   for (const suite of suites) {
-    // Rerun registrations so that only fixutres for this file
-    // are registreds
+    // Rerun registrations so that only fixtures for this file
+    // are registered.
     rerunRegistrations(suite.file);
     const workerGeneratorConfigurations = new Map();
 

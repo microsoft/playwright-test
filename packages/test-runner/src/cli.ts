@@ -15,15 +15,17 @@
  */
 
 import program from 'commander';
+import * as fs from 'fs';
+import { isMatch } from 'micromatch';
 import * as path from 'path';
-import { Runner, RunnerConfig } from './runner';
-import PytestReporter from './reporters/pytest';
+import { Reporter } from './reporter';
 import DotReporter from './reporters/dot';
+import JSONReporter from './reporters/json';
 import LineReporter from './reporters/line';
 import ListReporter from './reporters/list';
-import JSONReporter from './reporters/json';
-import { Reporter } from './reporter';
 import { Multiplexer } from './reporters/multiplexer';
+import PytestReporter from './reporters/pytest';
+import { Runner, RunnerConfig } from './runner';
 
 export const reporters = {
   'dot': DotReporter,
@@ -100,10 +102,18 @@ async function runStage1(command) {
       process.exit(1);
     }
   });
-  runner = new Runner(config, new Multiplexer(reporterObjects));
-  if (!runner.loadFiles(testDir, filteredArguments.slice(1), command.testMatch, command.testIgnore).success)
+  let files = [];
+  try {
+    files = collectFiles(testDir, '', filteredArguments.slice(1), command.testMatch, command.testIgnore);
+  } catch (e) {
+    // FIXME: figure out where to report fatal errors such as no file / folder.
+    // Collecting files failure is a CLI-level error, report it into the console.
+    console.log(e);
     process.exit(1);
+  }
 
+  runner = new Runner(config, new Multiplexer(reporterObjects));
+  runner.loadFiles(files);
   runAction = runStage2;
   program.allowUnknownOption(false);
   for (const param of runner.parameters())
@@ -137,4 +147,36 @@ async function runStage2(command) {
     console.error(err);
     process.exit(1);
   }
+}
+
+function collectFiles(testDir: string, dir: string, filters: string[], testMatch: string, testIgnore: string): string[] {
+  const fullDir = path.join(testDir, dir);
+  if (!fs.existsSync(fullDir))
+    throw new Error(`${fullDir} does not exist`);
+  if (fs.statSync(fullDir).isFile())
+    return [fullDir];
+  const files = [];
+  for (const name of fs.readdirSync(fullDir)) {
+    const relativeName = path.join(dir, name);
+    if (testIgnore && isMatch(relativeName, testIgnore))
+      continue;
+    if (fs.lstatSync(path.join(fullDir, name)).isDirectory()) {
+      files.push(...collectFiles(testDir, path.join(dir, name), filters, testMatch, testIgnore));
+      continue;
+    }
+    if (testIgnore && !isMatch(relativeName, testMatch))
+      continue;
+    const fullName = path.join(testDir, relativeName);
+    if (!filters.length) {
+      files.push(fullName);
+      continue;
+    }
+    for (const filter of filters) {
+      if (relativeName.includes(filter)) {
+        files.push(fullName);
+        break;
+      }
+    }
+  }
+  return files;
 }

@@ -18,7 +18,7 @@ import { fixtures } from './fixtures';
 const { it, expect } = fixtures;
 
 it('should run with each configuration', async ({ runInlineFixturesTest }) => {
-  const { runResult } = await runInlineFixturesTest({
+  const result = await runInlineFixturesTest({
     'a.test.ts': `
       const fixtures = baseFixtures.declareParameters<{ foo: string, bar: string }>();
       fixtures.defineParameter('foo', 'Foo parameters', 'foo');
@@ -38,9 +38,9 @@ it('should run with each configuration', async ({ runInlineFixturesTest }) => {
     `
   });
 
-  expect(runResult.exitCode).toBe(0);
-  expect(runResult.passed).toBe(5);  // 6 total, one skipped
-  const configurations = runResult.report.suites.map(s => s.configuration);
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(5);  // 6 total, one skipped
+  const configurations = result.report.suites.map(s => s.configuration);
   const objects: any[] = configurations.map(c => {
     const object = {};
     for (const { name, value } of c)
@@ -51,13 +51,13 @@ it('should run with each configuration', async ({ runInlineFixturesTest }) => {
     for (const bar of ['bar1', 'bar2']) {
       expect(objects.find(o => o.foo === foo && o.bar === bar)).toBeTruthy();
       if (foo !== 'foo1' && bar !== 'bar1')
-        expect(runResult.output).toContain(`${foo}:${bar}`);
+        expect(result.output).toContain(`${foo}:${bar}`);
     }
   }
 });
 
 it('should fail on invalid parameters', async ({ runInlineTest }) => {
-  const { runResult } = await runInlineTest({
+  const result = await runInlineTest({
     'a.spec.ts': `
       fixtures.generateParametrizedTests('invalid', ['value']);
 
@@ -65,7 +65,7 @@ it('should fail on invalid parameters', async ({ runInlineTest }) => {
       });
     `
   });
-  expect(runResult.exitCode).toBe(1);
-  expect(runResult.report.parseError.file).toContain('a.spec.ts');
-  expect(runResult.report.parseError.error.message).toBe(`Unregistered parameter 'invalid' was set.`);
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain('a.spec.ts');
+  expect(result.output).toContain(`Unregistered parameter 'invalid' was set.`);
 });

@@ -25,9 +25,9 @@ it('should allow custom parameters', async ({ runTest }) => {
 });
 
 it('should fail on unknown parameters', async ({ runTest }) => {
-  const error = await runTest('register-parameter.ts', {
+  const result = await runTest('register-parameter.ts', {
     'param1': 'value1',
     'param3': 'value3'
   }).catch(e => e);
-  expect(error.message).toContain(`unknown option '--param3=value3'`);
+  expect(result.output).toContain(`unknown option '--param3=value3'`);
 });
