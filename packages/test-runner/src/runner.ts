@@ -23,7 +23,7 @@ import './expect';
 import { matrix, ParameterRegistration, parameterRegistrations, setParameterValues } from './fixtures';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
-import { spec } from './spec';
+import { runSpec } from './spec';
 import { serializeError, Suite } from './test';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
@@ -62,7 +62,7 @@ export class Runner {
     for (const file of files) {
       const suite = new Suite('');
       suite.file = file;
-      const revertBabelRequire = spec(suite, this._config.timeout, undefined);
+      const revertBabelRequire = runSpec(suite, this._config.timeout, undefined);
       try {
         require(file);
         this._suites.push(suite);

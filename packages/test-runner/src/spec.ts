@@ -16,12 +16,12 @@
 
 import { Test, Suite } from './test';
 import { installTransform } from './transform';
+import { SuiteDeclaration, TestDeclaration } from './declarations';
 
 Error.stackTraceLimit = 15;
 
 let currentItImpl;
 let currentDescribeImpl;
-let currentSuites: Suite[];
 
 export const it = (...args) => {
   currentItImpl('default', ...args);
@@ -35,14 +35,18 @@ export const describe = (...args) => {
 describe.skip = (...args) => currentDescribeImpl('skip', ...args);
 describe.only = (...args) => currentDescribeImpl('only', ...args);
 
-export const beforeEach = fn => currentSuites[0]._addHook('beforeEach', fn);
-export const afterEach = fn => currentSuites[0]._addHook('afterEach', fn);
-export const beforeAll = fn => currentSuites[0]._addHook('beforeAll', fn);
-export const afterAll = fn => currentSuites[0]._addHook('afterAll', fn);
+// Run specs ------------------------------------------------------------------
 
-export function spec(suite: Suite, timeout: number, parameters: any): () => void {
+let currentRunSuites: Suite[];
+
+export const beforeEach = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('beforeEach', fn) : () => {};
+export const afterEach = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('afterEach', fn) : () => {};
+export const beforeAll = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('beforeAll', fn) : () => {};
+export const afterAll = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('afterAll', fn) : () => {};
+
+export function runSpec(suite: Suite, timeout: number, parameters: any): () => void {
   const suites = [suite];
-  currentSuites = suites;
+  currentRunSuites = suites;
 
   currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test, parameters: any) => void | Function, fn?: Function) => {
     const suite = suites[0];
@@ -79,6 +83,34 @@ export function spec(suite: Suite, timeout: number, parameters: any): () => void
       child._only = true;
     if (spec === 'skip')
       child._skipped = true;
+    suites.unshift(child);
+    fn();
+    suites.shift();
+  };
+
+  return installTransform();
+}
+
+// Declare specs ------------------------------------------------------------------
+
+export function declarationSpec(suite: SuiteDeclaration): () => void {
+  const suites = [suite];
+
+  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: any | Function, fn?: Function) => {
+    const suite = suites[0];
+    fn = fn || metaFn;
+    const test = new TestDeclaration(title, fn);
+    test.file = suite.file;
+    test.location = extractLocation(new Error());
+    return test;
+  };
+
+  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteDeclaration, parameters: any) => void | Function, fn?: Function) => {
+    fn = fn || metaFn;
+    const child = new SuiteDeclaration(title, suites[0]);
+    suites[0]._addSuite(child);
+    child.file = suite.file;
+    child.location = extractLocation(new Error());
     suites.unshift(child);
     fn();
     suites.shift();
