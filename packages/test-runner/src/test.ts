@@ -67,7 +67,7 @@ export class Runnable {
     if (processed.condition) {
       this._skipped = true;
       this._annotations.push({
-        type: 'fixme',
+        type: 'skip',
         description: processed.description
       });
     }
