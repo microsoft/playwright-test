@@ -234,7 +234,7 @@ export class TestRunner extends EventEmitter {
       // We could have reported end due to an unhandled exception.
       this.emit('testEnd', { id, result });
     }
-    if (result.status !== 'passed')
+    if (!this._trialRun && result.status !== 'passed')
       this._failedTestId = this._testId;
     this._testResult = null;
     this._testId = null;

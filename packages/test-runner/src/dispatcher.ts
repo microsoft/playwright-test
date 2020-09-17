@@ -22,6 +22,7 @@ import { Suite, Test, TestResult } from './test';
 import { TestRunnerEntry, TestBeginPayload, TestEndPayload, SuiteBeginPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
+import { assert } from 'console';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
@@ -201,6 +202,7 @@ export class Dispatcher {
       test._expectedStatus = params.expectedStatus;
       test._startTime = Date.now();
       test._annotations = params.annotations;
+      test._workerId = worker.id;
       this._reporter.onTestBegin(test);
     });
     worker.on('testEnd', (params: TestEndPayload) => {
@@ -243,6 +245,7 @@ export class Dispatcher {
   }
 
   async _restartWorker(worker) {
+    assert(!this._config.trialRun);
     await worker.stop();
     this._createWorker();
   }
@@ -262,10 +265,12 @@ let lastWorkerId = 0;
 class Worker extends EventEmitter {
   runner: Dispatcher;
   hash: string;
+  id: number;
 
   constructor(runner) {
     super();
     this.runner = runner;
+    this.id = lastWorkerId++;
   }
 
   run(entry: TestRunnerEntry) {
@@ -301,7 +306,7 @@ class OopWorker extends Worker {
   }
 
   async init() {
-    this.process.send({ method: 'init', params: { workerId: lastWorkerId++, ...this.runner._config } });
+    this.process.send({ method: 'init', params: { workerId: this.id, ...this.runner._config } });
     await new Promise(f => this.process.once('message', f));  // Ready ack
   }
 

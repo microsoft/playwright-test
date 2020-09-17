@@ -97,3 +97,24 @@ it('should emit suite annotations', async ({ runInlineTest }) => {
   expect(result.skipped).toBe(1);
   expect(result.report.suites[0].suites[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
 });
+
+it('should not restart worker', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      it('test1', test => {
+        test.fail();
+      }, () => {
+        expect(true).toBe(false);
+      });
+
+      it('test2', test => {
+        test.fail();
+      }, () => {
+        expect(true).toBe(false);
+      });
+    `
+  }, { 'trial-run': true });
+  expect(result.exitCode).toBe(0);
+  expect(result.report.suites[0].tests[0].workerId).toBe(0);
+  expect(result.report.suites[0].tests[1].workerId).toBe(0);
+});

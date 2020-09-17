@@ -176,6 +176,7 @@ export class Test extends Runnable {
   _startTime: number;
   _endTime: number;
   _timeout = 0;
+  _workerId: number;
 
   constructor(title: string, fn: Function) {
     super();
@@ -208,6 +209,10 @@ export class Test extends Runnable {
 
   duration(): number {
     return (this._endTime - this._startTime) || 0;
+  }
+
+  workerId(): number {
+    return this._workerId;
   }
 
   ok(): boolean {

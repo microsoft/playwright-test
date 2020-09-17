@@ -97,6 +97,7 @@ class JSONReporter implements Reporter {
     return {
       title: test.title,
       file: test.file,
+      workerId: test.workerId(),
       only: test.isOnly(),
       slow: test.isSlow(),
       timeout: test.timeout(),
