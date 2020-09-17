@@ -22,7 +22,7 @@ import { Suite, Test, TestResult } from './test';
 import { TestRunnerEntry, TestBeginPayload, TestEndPayload, SuiteBeginPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
-import { assert } from 'console';
+import assert from 'assert';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
