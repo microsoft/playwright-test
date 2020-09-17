@@ -18,7 +18,7 @@ import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
 import { Test, Suite, Configuration, serializeError, TestResult, TestStatus, Runnable } from './test';
-import { spec } from './spec';
+import { runSpec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
 
@@ -131,7 +131,7 @@ export class TestRunner extends EventEmitter {
   async run() {
     assignParameters(this._parsedGeneratorConfiguration);
 
-    const revertBabelRequire = spec(this._suite, this._timeout, parameters);
+    const revertBabelRequire = runSpec(this._suite, this._timeout, parameters);
 
     // Trial mode runs everything in one worker, delete test from cache.
     delete require.cache[this._suite.file];

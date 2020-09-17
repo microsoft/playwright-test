@@ -21,6 +21,10 @@ export class Declaration {
   file: string;
   location: string;
   parent?: SuiteDeclaration;
+
+  _only = false;
+  _skipped = false;
+
   _ordinal: number;
 
   titlePath(): string[] {
@@ -50,7 +54,8 @@ export class TestDeclaration extends Declaration {
 export class SuiteDeclaration extends Declaration {
   suites: SuiteDeclaration[] = [];
   tests: TestDeclaration[] = [];
- 
+  _entries: (SuiteDeclaration | TestDeclaration)[] = [];
+
   constructor(title: string, parent?: SuiteDeclaration) {
     super();
     this.title = title;
@@ -68,11 +73,13 @@ export class SuiteDeclaration extends Declaration {
   _addTest(test: TestDeclaration) {
     test.parent = this;
     this.tests.push(test);
+    this._entries.push(test);
   }
 
   _addSuite(suite: SuiteDeclaration) {
     suite.parent = this;
     this.suites.push(suite);
+    this._entries.push(suite);
   }
 
   eachSuite(fn: (suite: SuiteDeclaration) => boolean | void): boolean {

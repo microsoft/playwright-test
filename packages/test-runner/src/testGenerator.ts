@@ -16,10 +16,11 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Test, Suite, serializeConfiguration } from './test';
+import { Test, Suite, serializeConfiguration, Configuration } from './test';
 import { RunnerConfig } from './runnerConfig';
+import { SuiteDeclaration, TestDeclaration } from './declarations';
 
-export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
+export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig): Suite {
   const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {
@@ -31,7 +32,11 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
     // Rerun registrations so that only fixtures for this file
     // are registered.
     rerunRegistrations(suite.file);
-    const workerGeneratorConfigurations = new Map();
+    const workerGeneratorConfigurations = new Map<string, {
+      configuration: Configuration,
+      configurationString: string,
+      tests: Set<TestDeclaration>
+    }>();
 
     // Name each test.
     suite._renumber();
@@ -49,7 +54,7 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
       // they are compatible.
       const registrationsHash = computeWorkerRegistrationHash(fixtures);
 
-      const generatorConfigurations = [];
+      const generatorConfigurations: Configuration[] = [];
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
       for (const name of fixtures) {
@@ -84,13 +89,12 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
       // Clone the suite as many times as there are worker hashes.
       // Only include the tests that requested these generations.
       for (const [workerHash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
-        const clone = cloneSuite(suite, tests, grep);
-        rootSuite._addSuite(clone);
-        clone.title = '';
-        clone.configuration = configuration;
-        clone._configurationString = configurationString + `#repeat-${i}#`;
-        clone._workerHash = workerHash;
-        clone._assignIds();
+        const suiteRun = createSuiteRun(suite, tests, null, grep);
+        rootSuite._addSuite(suiteRun);
+        suiteRun.configuration = configuration;
+        suiteRun._configurationString = configurationString + `#repeat-${i}#`;
+        suiteRun._workerHash = workerHash;
+        suiteRun._assignIds();
       }
     }
   }
@@ -109,22 +113,37 @@ function filterOnly(suite: Suite) {
   return false;
 }
 
-function cloneSuite(suite: Suite, tests: Set<Test>, grep: RegExp | null) {
-  const copy = suite._clone();
+function createSuiteRun(suite: SuiteDeclaration, tests: Set<TestDeclaration>, parentSuite: Suite | null, grep: RegExp | null): Suite {
+  const result = new Suite(suite.title, parentSuite);
   for (const entry of suite._entries) {
-    if (entry instanceof Suite) {
-      copy._addSuite(cloneSuite(entry, tests, grep));
+    if (entry instanceof SuiteDeclaration) {
+      result._addSuite(createSuiteRun(entry, tests, result, grep));
     } else {
       const test = entry;
       if (!tests.has(test))
         continue;
       if (grep && !grep.test(test.fullTitle()))
         continue;
-      const testCopy = test._clone();
-      copy._addTest(testCopy);
+      const testCopy = createTestRun(test);
+      result._addTest(testCopy);
     }
   }
-  return copy;
+  result.location = suite.location;
+  result.file = suite.file;
+  result._ordinal = suite._ordinal;
+  result._only = suite._only;
+  result._skipped = suite._skipped;
+  return result;
+}
+
+function createTestRun(test: TestDeclaration): Test {
+  const result = new Test(test.title, test.fn);
+  result.location = test.location;
+  result.file = test.file;
+  result._ordinal = test._ordinal;
+  result._only = test._only;
+  result._skipped = test._skipped;
+  return result;
 }
 
 function computeWorkerRegistrationHash(fixtures: string[]): string {

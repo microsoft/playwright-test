@@ -39,10 +39,10 @@ describe.only = (...args) => currentDescribeImpl('only', ...args);
 
 let currentRunSuites: Suite[];
 
-export const beforeEach = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('beforeEach', fn) : () => {};
-export const afterEach = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('afterEach', fn) : () => {};
-export const beforeAll = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('beforeAll', fn) : () => {};
-export const afterAll = currentRunSuites[0] ? fn => currentRunSuites[0]._addHook('afterAll', fn) : () => {};
+export const beforeEach = fn => currentRunSuites ? currentRunSuites[0]._addHook('beforeEach', fn) : 0;
+export const afterEach = fn => currentRunSuites ? currentRunSuites[0]._addHook('afterEach', fn) : 0;
+export const beforeAll = fn => currentRunSuites ? currentRunSuites[0]._addHook('beforeAll', fn) : 0;
+export const afterAll = fn => currentRunSuites ? currentRunSuites[0]._addHook('afterAll', fn) : 0;
 
 export function runSpec(suite: Suite, timeout: number, parameters: any): () => void {
   const suites = [suite];
@@ -55,7 +55,7 @@ export function runSpec(suite: Suite, timeout: number, parameters: any): () => v
       metaFn = null;
     }
     const test = new Test(title, fn);
-    if (metaFn && parameters)
+    if (metaFn)
       metaFn(test, parameters);
     test.file = suite.file;
     test.location = extractLocation(new Error());
@@ -74,7 +74,7 @@ export function runSpec(suite: Suite, timeout: number, parameters: any): () => v
       metaFn = null;
     }
     const child = new Suite(title, suites[0]);
-    if (metaFn && parameters)
+    if (metaFn)
       metaFn(child, parameters);
     suites[0]._addSuite(child);
     child.file = suite.file;
@@ -102,6 +102,11 @@ export function declarationSpec(suite: SuiteDeclaration): () => void {
     const test = new TestDeclaration(title, fn);
     test.file = suite.file;
     test.location = extractLocation(new Error());
+    if (spec === 'only')
+      test._only = true;
+    if (spec === 'skip')
+      test._skipped = true;
+    suite._addTest(test);
     return test;
   };
 
@@ -111,6 +116,10 @@ export function declarationSpec(suite: SuiteDeclaration): () => void {
     suites[0]._addSuite(child);
     child.file = suite.file;
     child.location = extractLocation(new Error());
+    if (spec === 'only')
+      child._only = true;
+    if (spec === 'skip')
+      child._skipped = true;
     suites.unshift(child);
     fn();
     suites.shift();

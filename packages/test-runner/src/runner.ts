@@ -23,10 +23,11 @@ import './expect';
 import { matrix, ParameterRegistration, parameterRegistrations, setParameterValues } from './fixtures';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
-import { runSpec } from './spec';
+import { runSpec, declarationSpec } from './spec';
 import { serializeError, Suite } from './test';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
+import { SuiteDeclaration } from './declarations';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
 export { Configuration, Suite, Test, TestResult } from './test';
@@ -42,7 +43,7 @@ export class Runner {
   private _afterFunctions: Function[] = [];
   private _rootSuite: Suite;
   private _hasBadFiles = false;
-  private _suites: Suite[] = [];
+  private _suites: SuiteDeclaration[] = [];
 
   constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
@@ -60,9 +61,9 @@ export class Runner {
   loadFiles(files: string[]) {
     // First traverse tests.
     for (const file of files) {
-      const suite = new Suite('');
+      const suite = new SuiteDeclaration('');
       suite.file = file;
-      const revertBabelRequire = runSpec(suite, this._config.timeout, undefined);
+      const revertBabelRequire = declarationSpec(suite);
       try {
         require(file);
         this._suites.push(suite);

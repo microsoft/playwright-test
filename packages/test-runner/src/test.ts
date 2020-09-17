@@ -230,14 +230,6 @@ export class Test extends Runnable {
   _hasResultWithStatus(status: TestStatus): boolean {
     return !!this.results.find(r => r.status === status);
   }
-
-  _clone(): Test {
-    const test = new Test(this.title, this.fn);
-    test._copyFrom(this);
-    test._timeout = this._timeout;
-    test._overriddenFn = this._overriddenFn;
-    return test;
-  }
 }
 
 export type TestResult = {
@@ -322,12 +314,6 @@ export class Suite extends Runnable {
     const result: Test[] = [];
     this.findTest(test => { result.push(test); });
     return result;
-  }
-
-  _clone(): Suite {
-    const suite = new Suite(this.title);
-    suite._copyFrom(this);
-    return suite;
   }
 
   _renumber() {
