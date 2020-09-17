@@ -132,6 +132,10 @@ export class TestRunner extends EventEmitter {
     assignParameters(this._parsedGeneratorConfiguration);
 
     const revertBabelRequire = spec(this._suite, this._timeout, parameters);
+
+    // Trial mode runs everything in one worker, delete test from cache.
+    delete require.cache[this._suite.file];
+
     require(this._suite.file);
     revertBabelRequire();
     // Enumerate tests to assign ordinals.
@@ -147,11 +151,13 @@ export class TestRunner extends EventEmitter {
 
   private async _runSuite(suite: Suite) {
     this.emit('suiteBegin', runnableToPayload(suite));
-    try {
-      await this._runHooks(suite, 'beforeAll', 'before');
-    } catch (e) {
-      this._fatalError = serializeError(e);
-      this._reportDone();
+    if (!this._trialRun) {
+      try {
+        await this._runHooks(suite, 'beforeAll', 'before');
+      } catch (e) {
+        this._fatalError = serializeError(e);
+        this._reportDone();
+      }
     }
     for (const entry of suite._entries) {
       if (entry instanceof Suite)
@@ -159,11 +165,13 @@ export class TestRunner extends EventEmitter {
       else
         await this._runTest(entry);
     }
-    try {
-      await this._runHooks(suite, 'afterAll', 'after');
-    } catch (e) {
-      this._fatalError = serializeError(e);
-      this._reportDone();
+    if (!this._trialRun) {
+      try {
+        await this._runHooks(suite, 'afterAll', 'after');
+      } catch (e) {
+        this._fatalError = serializeError(e);
+        this._reportDone();
+      }
     }
     this.emit('suiteEnd', runnableToPayload(suite));
   }
