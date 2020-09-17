@@ -72,3 +72,16 @@ it('should respect focused tests', async ({ runTest }) => {
   expect(passed).toBe(4);
   expect(exitCode).toBe(0);
 });
+
+it('should have a small stack', async ({ runTest }) => {
+  const result = await runTest('one-failure.ts', {}, false);
+  const lines = result.output.split('\n');
+  const stackLines = lines.filter(x => /^\s+at /.test(x));
+  expect(stackLines.length).toBe(1);
+  expect([
+    // node 10
+    'at it (test/assets/one-failure.ts:20:17)',
+    // node 12+
+    'at test/assets/one-failure.ts:20:17',
+  ]).toContain(stackLines[0].trim());
+});

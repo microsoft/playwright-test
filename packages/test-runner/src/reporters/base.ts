@@ -22,7 +22,7 @@ import path from 'path';
 import StackUtils from 'stack-utils';
 import { Reporter, RunnerConfig, Suite, Test, TestResult, Configuration } from '../runner';
 
-const stackUtils = new StackUtils();
+const stackUtils = new StackUtils({cwd: 'invalid path'});
 
 export class BaseReporter implements Reporter  {
   skipped: Test[] = [];
@@ -220,7 +220,8 @@ function formatError(error: any, file: string) {
       ));
     }
     tokens.push('');
-    tokens.push(colors.dim(stack.substring(preamble.length + 1)));
+    const cleanedStack = cleanStack(stack.substring(preamble.length + 1), file);
+    tokens.push(colors.dim(cleanedStack));
   } else {
     tokens.push('');
     tokens.push(String(error));
@@ -241,6 +242,29 @@ function positionInFile(stack: string, file: string): { column: number; line: nu
       return {column: parsed.column, line: parsed.line};
   }
   return null;
+}
+
+function cleanStack(stack: string, testFile: string) {
+  const lines = stack.split('\n');
+  let testEntryPoint = lines.length;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    const parsed = stackUtils.parseLine(line);
+    if (parsed && parsed.file === testFile) {
+      testEntryPoint = i;
+      break;
+    }
+  }
+  return lines.slice(0, testEntryPoint + 1).filter(line => {
+    return !StackUtils.nodeInternals().some(regex => regex.test(line));
+  }).map(line => {
+    const parsed = stackUtils.parseLine(line);
+    if (parsed && parsed.file) {
+      const relative = path.relative(process.cwd(), parsed.file);
+      return line.replace(parsed.file, relative);
+    }
+    return line;
+  }).join('\n');
 }
 
 function serializeConfiguration(configuration: Configuration): string {

@@ -38,7 +38,7 @@ export type RunResult = {
   results: any[],
 };
 
-async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}): Promise<RunResult> {
+async function runTest(reportFile: string, outputDir: string, filePath: string, params: any = {}, color = true): Promise<RunResult> {
   const testProcess = spawn('node', [
     path.join(__dirname, '..', 'cli.js'),
     path.resolve(__dirname, 'assets', filePath),
@@ -51,6 +51,8 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
       ...process.env,
       PW_OUTPUT_DIR: outputDir,
       PWRUNNER_JSON_REPORT: reportFile,
+      FORCE_COLOR: color ? '1' : '0',
+      DEBUG_COLORS: color ? '1' : '0',
     }
   });
   let output = '';
@@ -104,7 +106,7 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
 declare global {
   interface TestState {
     outputDir: string;
-    runTest: (filePath: string, options?: any) => Promise<RunResult>;
+    runTest: (filePath: string, options?: any, color?: boolean) => Promise<RunResult>;
     runInlineTest: (files: { [key: string]: string }, options?: any) => Promise<RunResult>;
     runInlineFixturesTest: (files: { [key: string]: string }, options?: any) => Promise<RunResult>;
   }
@@ -121,8 +123,8 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
   await removeFolderAsync(outputDir).catch(e => { });
   // Print output on failure.
   let result: RunResult;
-  await testRun(async (filePath, options) => {
-    result = await runTest(reportFile, outputDir, filePath, options);
+  await testRun(async (filePath, options, color) => {
+    result = await runTest(reportFile, outputDir, filePath, options, color);
     return result;
   });
   if (testInfo.result.status !== testInfo.result.expectedStatus)

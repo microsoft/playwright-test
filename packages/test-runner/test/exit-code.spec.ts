@@ -27,7 +27,7 @@ it('should collect stdio', async ({ runTest }) => {
   expect(stderr).toEqual([{ text: 'stderr text' }, { buffer: Buffer.from('stderr buffer').toString('base64') }]);
 });
 
-it('should work with not defined errors', async ({runTest}) => { 
+it('should work with not defined errors', async ({runTest}) => {
   const result = await runTest('is-not-defined-error.ts');
   const { fileErrors } = result.report;
   expect(fileErrors.length).toBe(1);
