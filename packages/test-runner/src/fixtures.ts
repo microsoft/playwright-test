@@ -23,12 +23,13 @@ import {parse} from '@babel/core';
 
 type Scope = 'test' | 'worker';
 
-type FixtureRegistration = {
+export type FixtureRegistration = {
   name: string;
   scope: Scope;
   fn: Function;
   file: string;
   location: string;
+  super?: FixtureRegistration;
 };
 
 export type TestInfo = {
@@ -37,7 +38,7 @@ export type TestInfo = {
   result: TestResult;
 };
 
-export const registrations = new Map<string, FixtureRegistration>();
+const registrations = new Map<string, FixtureRegistration>();
 const registrationsByFile = new Map<string, FixtureRegistration[]>();
 export let parameters: any = {};
 
@@ -60,37 +61,39 @@ class Fixture {
   name: string;
   scope: Scope;
   fn: Function;
-  deps: string[];
-  usages: Set<string>;
+  deps: FixtureRegistration[];
+  usages: Set<FixtureRegistration>;
   hasGeneratorValue: boolean;
   value: any;
+  registration: FixtureRegistration;
   _teardownFenceCallback: (value?: unknown) => void;
   _tearDownComplete: Promise<void>;
   _setup = false;
   _teardown = false;
 
-  constructor(pool: FixturePool, name: string, scope: Scope, fn: any) {
+  constructor(pool: FixturePool, registration: FixtureRegistration) {
     this.pool = pool;
-    this.name = name;
-    this.scope = scope;
-    this.fn = fn;
-    this.deps = fixtureParameterNames(this.fn);
+    this.name = registration.name;
+    this.scope = registration.scope;
+    this.fn = registration.fn;
+    this.registration = registration;
+    this.deps = fixtureParameterNames(this.fn).map(name => name === this.name ? registration.super : getRegistration(name));
     this.usages = new Set();
-    this.hasGeneratorValue = name in parameters;
-    this.value = this.hasGeneratorValue ? parameters[name] : null;
+    this.hasGeneratorValue = this.name in parameters;
+    this.value = this.hasGeneratorValue ? parameters[this.name] : null;
   }
 
   async setup(config: RunnerConfig, info?: TestInfo) {
     if (this.hasGeneratorValue)
       return;
-    for (const name of this.deps) {
-      await this.pool.setupFixture(name, config, info);
-      this.pool.instances.get(name).usages.add(this.name);
+    for (const registration of this.deps) {
+      await this.pool.setupFixture(registration, config, info);
+      this.pool.instances.get(registration).usages.add(registration);
     }
 
     const params = {};
-    for (const n of this.deps)
-      params[n] = this.pool.instances.get(n).value;
+    for (const registration of this.deps)
+      params[registration.name] = this.pool.instances.get(registration).value;
     let setupFenceFulfill: { (): void; (value?: unknown): void; };
     let setupFenceReject: { (arg0: any): any; (reason?: any): void; };
     const setupFence = new Promise((f, r) => { setupFenceFulfill = f; setupFenceReject = r; });
@@ -112,8 +115,8 @@ class Fixture {
     if (this._teardown)
       return;
     this._teardown = true;
-    for (const name of this.usages) {
-      const fixture = this.pool.instances.get(name);
+    for (const registration of this.usages) {
+      const fixture = this.pool.instances.get(registration);
       if (!fixture)
         continue;
       await fixture.teardown();
@@ -123,26 +126,20 @@ class Fixture {
       this._teardownFenceCallback();
       await this._tearDownComplete;
     }
-    this.pool.instances.delete(this.name);
+    this.pool.instances.delete(this.registration);
   }
 }
 
 export class FixturePool {
-  instances: Map<string, Fixture>;
-  constructor() {
-    this.instances = new Map();
-  }
+  instances = new Map<FixtureRegistration, Fixture>();
 
-  async setupFixture(name: string, config: RunnerConfig, info?: TestInfo) {
-    let fixture = this.instances.get(name);
+  async setupFixture(registration: FixtureRegistration, config: RunnerConfig, info?: TestInfo) {
+    let fixture = this.instances.get(registration);
     if (fixture)
       return fixture;
 
-    if (!registrations.has(name))
-      throw new Error('Unknown fixture: ' + name);
-    const { scope, fn } = registrations.get(name);
-    fixture = new Fixture(this, name, scope, fn);
-    this.instances.set(name, fixture);
+    fixture = new Fixture(this, registration);
+    this.instances.set(registration, fixture);
     await fixture.setup(config, info);
     return fixture;
   }
@@ -157,10 +154,10 @@ export class FixturePool {
   async resolveParametersAndRun(fn: Function, config: RunnerConfig, info?: TestInfo) {
     const names = fixtureParameterNames(fn);
     for (const name of names)
-      await this.setupFixture(name, config, info);
+      await this.setupFixture(getRegistration(name), config, info);
     const params = {};
     for (const n of names)
-      params[n] = this.instances.get(n).value;
+      params[n] = this.instances.get(getRegistration(n)).value;
     return fn(params);
   }
 
@@ -194,21 +191,39 @@ export class FixturePool {
   }
 }
 
-export function fixturesForCallback(callback: Function): string[] {
-  const names = new Set<string>();
-  const visit  = (callback: Function) => {
-    for (const name of fixtureParameterNames(callback)) {
-      if (name in names)
-        continue;
-      names.add(name);
+function getRegistration(name: string) {
+  // It might seem that the below code is not correct, but we believe it is.
+  // For example, consider the case where we run testA.spec.ts and testB.spec.ts in the same worker.
+  // testA uses fixture "page" and testB overrides and uses fixture "page". Since we `rerun` test fixtures
+  // in the order of the require traversal, correct fixtures will be "on top" of the `registrations` map and will
+  // be looked up.
+  // And it does not matter for the worker level fixtures because complete worker fixture registration tree is
+  // captured in the worker hash, hence we know that all the tests in the same worker will share that fingerprint
+  // and that the latest fixture will be "on top" of the map.
+  const registration = registrations.get(name);
+  if (!registration)
+    throw new Error(`Could not find fixture "${name}"`);
+  return registration;
+}
+
+export function fixturesForCallback(callback: Function): FixtureRegistration[] {
+  const names = new Set<FixtureRegistration>();
+  const visit = (registration: FixtureRegistration) => {
+    if (names.has(registration))
+      return;
+    names.add(registration);
+    for (const name of fixtureParameterNames(registration.fn)) {
       if (!registrations.has(name))
         throw new Error('Using undefined fixture ' + name);
-
-      const { fn } = registrations.get(name);
-      visit(fn);
+      // todo error if trying to use undefined super;
+      const next = name === registration.name ? registration.super : getRegistration(name);
+      if (!next)
+        throw new Error(`Cannot use fixture ${name} before it is defined.`);
+      visit(next);
     }
   };
-  visit(callback);
+  for (const name of fixtureParameterNames(callback))
+    visit(getRegistration(name));
   const result = [...names];
   result.sort();
   return result;
@@ -252,10 +267,15 @@ function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: 
   const location = stackFrame.replace(/.*at Object.<anonymous> \((.*)\)/, '$1');
   const file = location.replace(/^(.+):\d+:\d+$/, '$1');
   const registration = { name, scope, fn, file, location };
-  registrations.set(name, registration);
+  setRegistration(name, registration);
   if (!registrationsByFile.has(file))
     registrationsByFile.set(file, []);
   registrationsByFile.get(file).push(registration);
+}
+
+function setRegistration(name: string, registration: FixtureRegistration) {
+  registration.super = registrations.get(name);
+  registrations.set(name, registration);
 }
 
 export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, info: TestInfo) => Promise<void>) {
@@ -283,25 +303,22 @@ function collectRequires(file: string, result: Set<string>) {
   const cache = require.cache[file];
   if (!cache)
     return;
-  const deps = cache.children.map((m: { id: any; }) => m.id).slice().reverse();
+  const deps = cache.children.map((m: { id: any; }) => m.id).slice();
   for (const dep of deps)
     collectRequires(dep, result);
+  result.delete(file);
+  result.add(file);
 }
 
-function lookupRegistrations(file: string) {
+function * lookupRegistrations(file: string): Iterable<FixtureRegistration> {
   const deps = new Set<string>();
   collectRequires(file, deps);
-  const allDeps = [...deps].reverse();
-  const result = new Map();
-  for (const dep of allDeps) {
+  for (const dep of deps) {
     const registrationList = registrationsByFile.get(dep);
     if (!registrationList)
       continue;
-    for (const r of registrationList)
-      result.set(r.name, r);
-
+    yield * registrationList;
   }
-  return result;
 }
 
 export function rerunRegistrations(file: string) {
@@ -310,6 +327,6 @@ export function rerunRegistrations(file: string) {
   registrations.clear();
   // When we are running several tests in the same worker, we should re-run registrations before
   // each file. That way we erase potential fixture overrides from the previous test runs.
-  for (const registration of lookupRegistrations(file).values())
-    registrations.set(registration.name, registration);
+  for (const registration of lookupRegistrations(file))
+    setRegistration(registration.name, registration);
 }

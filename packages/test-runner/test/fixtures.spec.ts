@@ -15,7 +15,7 @@
  */
 import { expect } from '@playwright/test-runner';
 import { fixtures } from './fixtures';
-const { it } = fixtures;
+const { it, describe } = fixtures;
 
 it('should work', async ({ runInlineTest }) => {
   const { results } = await runInlineTest({
@@ -95,7 +95,7 @@ it('should fail if parameters are not destructured', async ({ runInlineTest }) =
   expect(result.output).toContain('a.test.js');
 });
 
-it.skip('should fail with an unknown fixture', async ({ runInlineTest }) => {
+it('should fail with an unknown fixture', async ({runInlineTest}) => {
   const { results } = await runInlineTest({
     'a.test.js': `
       it('should use asdf', async ({asdf}) => {
@@ -103,8 +103,7 @@ it.skip('should fail with an unknown fixture', async ({ runInlineTest }) => {
       });
     `,
   });
-  expect(results[0].status).toBe('failed');
-  expect(results[0].error.message).toBe('Error: Using undefined fixture asdf');
+  expect(results[0].error.message).toBe('Could not find fixture "asdf"');
 });
 
 it('should run the fixture every time', async ({ runInlineTest }) => {
@@ -202,3 +201,135 @@ it('tests should be able to share worker fixtures', async ({ runInlineTest }) =>
   });
   expect(results.map(r => r.status)).toEqual(['passed', 'passed', 'passed']);
 });
+describe('nested fixtures', () => {
+  it('should work', async ({runInlineTest}) => {
+    const {results} = await runInlineTest({
+      'a.test.js': js`
+      defineTestFixture('foobar', async ({ }, runTest) => {
+        await runTest(1);
+      });
+      
+      defineTestFixture('foobar', async ({ foobar }, runTest) => {
+        expect(foobar).toBe(1);
+        await runTest(foobar + 1);
+      });
+      
+      defineTestFixture('foobar', async ({ foobar }, runTest) => {
+        expect(foobar).toBe(2);
+        await runTest(foobar + 1);
+      });
+      
+      it('assert foobar fixture value first time', async ({ foobar }) => {
+        expect(foobar).toBe(3);
+      });
+      
+      it('assert foobar fixture value second time', async ({ foobar }) => {
+        expect(foobar).toBe(3);
+      });
+    `
+    });
+    expect(results.map(r => r.status)).toEqual(['passed', 'passed']);
+  });
+
+  it('should work across files', async ({runInlineTest}) => {
+    const {results} = await runInlineTest({
+      'foobar.js': js`
+        defineTestFixture('foobar', async ({ }, runTest) => {
+          await runTest(1);
+        });
+      `,
+      '1.test.js': js`
+        require('./foobar');
+        it('assert foobar value', async ({ foobar }) => {
+          expect(foobar).toBe(1);
+        });
+      `,
+      '2.test.js': js`
+        require('./foobar');
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 1);
+        });
+        it('assert foobar value', async ({ foobar }) => {
+          expect(foobar).toBe(2);
+        });
+      `,
+      '2again.test.js': js`
+        require('./foobar');
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 1);
+        });
+        it('assert foobar value', async ({ foobar }) => {
+          expect(foobar).toBe(2);
+        });
+      `
+    });
+    expect(results.map(r => r.status)).toEqual(['passed', 'passed', 'passed']);
+  });
+  it('should fail with undefined super error', async ({runInlineTest}) => {
+    const {results} = await runInlineTest({
+      'a.test.js': js`
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 1);
+        });
+        it('dummy', ({foobar}) => {});
+      `
+    });
+    expect(results[0].status).toBe('failed');
+    // the current error message is bad
+    // expect(results[0].error.message).toBe('Cannot use fixture foobar before it is defined.');
+  });
+  it('should fail with undefined super error', async ({runInlineTest}) => {
+    const {results} = await runInlineTest({
+      'a.test.js': js`
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 1);
+        });
+        it('dummy', ({foobar}) => {});
+      `
+    });
+    expect(results[0].status).toBe('failed');
+    // the current error message is bad
+    // expect(results[0].error.message).toBe('Cannot use fixture foobar before it is defined.');
+  });
+  it('should isolate fixture order by file', async ({runInlineTest}) => {
+    const {results} = await runInlineTest({
+      'blank.js': js`
+        defineTestFixture('foobar', async ({ }, runTest) => {
+          await runTest('');
+        });
+      `,
+      'a.js': js`
+        require('./blank');
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 'a');
+        });
+      `,
+      'b.js': js`
+        require('./blank');
+        defineTestFixture('foobar', async ({ foobar }, runTest) => {
+          await runTest(foobar + 'b');
+        });
+      `,
+      'ab.test.js': js`
+        require('./a');
+        require('./b');
+        it('should be ab', ({foobar}) => {
+          expect(foobar).toBe('ab');
+        });
+      `,
+      'ba.test.js': js`
+        require('./b');
+        require('./a');
+        it('should be ba', ({foobar}) => {
+          expect(foobar).toBe('ba');
+        });
+      `
+    });
+    expect(results.map(r => r.status)).toEqual(['passed', 'passed']);
+  });
+});
+
+// Just for nice syntax highlighting
+function js(a) {
+  return a[0];
+}

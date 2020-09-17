@@ -15,7 +15,7 @@
  */
 
 import crypto from 'crypto';
-import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
+import { fixturesForCallback, rerunRegistrations, FixtureRegistration, matrix } from './fixtures';
 import { Test, Suite, serializeConfiguration } from './test';
 import { RunnerConfig } from './runnerConfig';
 
@@ -38,7 +38,7 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
 
     for (const test of suite._allTests()) {
       // Get all the fixtures that the test needs.
-      let fixtures: string[] = [];
+      let fixtures: FixtureRegistration[] = [];
       try {
         fixtures = fixturesForCallback(test.fn);
       } catch (error) {
@@ -52,15 +52,15 @@ export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
       const generatorConfigurations = [];
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
-      for (const name of fixtures) {
-        const values = matrix[name];
+      for (const fixture of fixtures) {
+        const values = matrix[fixture.name];
         if (!values)
           continue;
         const state = generatorConfigurations.length ? generatorConfigurations.slice() : [[]];
         generatorConfigurations.length = 0;
         for (const gen of state) {
           for (const value of values)
-            generatorConfigurations.push([...gen, { name, value }]);
+            generatorConfigurations.push([...gen, { name: fixture.name, value }]);
         }
       }
 
@@ -127,11 +127,10 @@ function cloneSuite(suite: Suite, tests: Set<Test>, grep: RegExp | null) {
   return copy;
 }
 
-function computeWorkerRegistrationHash(fixtures: string[]): string {
+function computeWorkerRegistrationHash(fixtures: FixtureRegistration[]): string {
   // Build worker hash - location of all worker fixtures as seen by this file.
   const hash = crypto.createHash('sha1');
-  for (const fixture of fixtures) {
-    const registration = registrations.get(fixture);
+  for (const registration of fixtures) {
     if (registration.scope !== 'worker')
       continue;
     hash.update(registration.location);
