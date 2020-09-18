@@ -1,4 +1,4 @@
-import { TestResult } from './ipc';
+import { TestRun } from './ipc';
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -15,15 +15,15 @@ import { TestResult } from './ipc';
  * limitations under the License.
  */
 
-import { RunnerConfig } from './runnerConfig';
-import { TestVariant, Suite } from './test';
+import { Config } from './config';
+import { Test, Suite } from './test';
 
 export interface Reporter {
-  onBegin(config: RunnerConfig, suite: Suite): void;
-  onTestBegin(test: TestVariant): void;
-  onTestStdOut(test: TestVariant, chunk: string | Buffer): void;
-  onTestStdErr(test: TestVariant, chunk: string | Buffer): void;
-  onTestEnd(test: TestVariant, result: TestResult): void;
+  onBegin(config: Config, suite: Suite): void;
+  onTestBegin(test: Test): void;
+  onTestStdOut(test: Test, chunk: string | Buffer): void;
+  onTestStdErr(test: Test, chunk: string | Buffer): void;
+  onTestEnd(test: Test, result: TestRun): void;
   onTimeout(timeout: number): void;
   onFileError(file: string, error: any): void;
   onEnd(): void;

@@ -17,10 +17,10 @@
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
 import { Parameters } from './ipc';
-import { RunnerConfig } from './runnerConfig';
-import { RunnerSuite, RunnerTest, RunnerTestVariant } from './runnerTest';
+import { Config } from './config';
+import { RunnerSuite, RunnerSpec, RunnerTest } from './runnerTest';
 
-export function generateTests(suites: RunnerSuite[], config: RunnerConfig): RunnerSuite {
+export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuite {
   const rootSuite = new RunnerSuite('');
   let grep: RegExp = null;
   if (config.grep) {
@@ -36,7 +36,7 @@ export function generateTests(suites: RunnerSuite[], config: RunnerConfig): Runn
     // Name each test.
     suite._renumber();
 
-    for (const test of suite._allTests()) {
+    for (const test of suite._allSpecs()) {
       if (grep && !grep.test(test.fullTitle()))
         continue;
     // Get all the fixtures that the test needs.
@@ -74,11 +74,11 @@ export function generateTests(suites: RunnerSuite[], config: RunnerConfig): Runn
         for (let i = 0; i < config.repeatEach; ++i) {
           const parametersString = serializeParameters(configuration) +  `#repeat-${i}#`;
           const workerHash = registrationsHash + '@' + parametersString;
-          const testRun = new RunnerTestVariant(test);
+          const testRun = new RunnerTest(test);
           testRun.parameters = configuration;
           testRun._parametersString = parametersString;
           testRun._workerHash = workerHash;
-          test.variants.push(testRun);
+          test.tests.push(testRun);
         }
       }
     }
@@ -90,10 +90,10 @@ export function generateTests(suites: RunnerSuite[], config: RunnerConfig): Runn
 
 function filterOnly(suite: RunnerSuite) {
   const onlySuites = suite.suites.filter((child: RunnerSuite) => filterOnly(child) || child._only);
-  const onlyTests = suite.tests.filter((test: RunnerTest) => test._only);
+  const onlyTests = suite.specs.filter((test: RunnerSpec) => test._only);
   if (onlySuites.length || onlyTests.length) {
     suite.suites = onlySuites;
-    suite.tests = onlyTests;
+    suite.specs = onlyTests;
     return true;
   }
   return false;

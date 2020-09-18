@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { WorkerTest, WorkerSuite } from './workerTest';
+import { WorkerSpec, WorkerSuite } from './workerTest';
 import { installTransform } from './transform';
 import { extractLocation } from './util';
 import { setImplementation } from './spec';
@@ -32,12 +32,12 @@ export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any)
       fn = modifierFn;
       modifierFn = null;
     }
-    const test = new WorkerTest(title, fn, suite);
+    const test = new WorkerSpec(title, fn, suite);
+    test._modifier.setTimeout(timeout);
     if (modifierFn)
       modifierFn(test._modifier, parameters);
     test.file = suite.file;
     test.location = extractLocation(new Error());
-    test._timeout = timeout;
     if (spec === 'skip')
       test._modifier.skip();
     return test;

@@ -23,9 +23,18 @@ export class TestModifier {
   private _expectedStatus?: TestStatus = 'passed';
   private _annotations: any[] = [];
   private _parent?: TestModifier;
+  private _timeout = 0;
 
   constructor(parent?: TestModifier) {
     this._parent = parent;
+  }
+
+  setTimeout(timeout: number) {
+    this._timeout = timeout;
+  }
+
+  _computeTimeout(): number {
+    return this._timeout || (this._parent && this._parent._computeTimeout());
   }
 
   slow(): void;
@@ -36,6 +45,7 @@ export class TestModifier {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
       this._slow = true;
+      this._timeout *= 3;
       this._annotations.push({
         type: 'slow',
         description: processed.description
@@ -103,20 +113,20 @@ export class TestModifier {
     }
   }
 
-  isSkipped(): boolean {
-    return this._skipped || (this._parent && this._parent.isSkipped());
+  _isSkipped(): boolean {
+    return this._skipped || (this._parent && this._parent._isSkipped());
   }
 
-  isSlow(): boolean {
-    return this._slow || (this._parent && this._parent.isSlow());
+  _isSlow(): boolean {
+    return this._slow || (this._parent && this._parent._isSlow());
   }
 
-  isFlaky(): boolean {
-    return this._flaky || (this._parent && this._parent.isFlaky());
+  _isFlaky(): boolean {
+    return this._flaky || (this._parent && this._parent._isFlaky());
   }
 й
-  expectedStatus(): TestStatus {
-    return this._expectedStatus || (this._parent && this._parent.expectedStatus()) || 'passed';
+  _computeExpectedStatus(): TestStatus {
+    return this._expectedStatus || (this._parent && this._parent._computeExpectedStatus()) || 'passed';
   }
 
   _collectAnnotations(): any[] {

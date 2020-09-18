@@ -18,41 +18,41 @@ import child_process from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
-import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestResult, Parameters } from './ipc';
-import { RunnerConfig } from './runnerConfig';
+import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestRun, Parameters } from './ipc';
+import { Config } from './config';
 import { Reporter } from './reporter';
 import assert from 'assert';
-import { RunnerSuite, RunnerTestVariant } from './runnerTest';
+import { RunnerSuite, RunnerTest } from './runnerTest';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
   private _freeWorkers: Worker[] = [];
   private _workerClaimers: (() => void)[] = [];
 
-  private _testById = new Map<string, { variant: RunnerTestVariant, result: TestResult }>();
+  private _testById = new Map<string, { test: RunnerTest, testRun: TestRun }>();
   private _queue: TestRunnerEntry[] = [];
   private _stopCallback: () => void;
-  readonly _config: RunnerConfig;
+  readonly _config: Config;
   private _suite: RunnerSuite;
   private _reporter: Reporter;
 
-  constructor(suite: RunnerSuite, config: RunnerConfig, reporter: Reporter) {
+  constructor(suite: RunnerSuite, config: Config, reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
 
     this._suite = suite;
     this._suite._assignIds();
     for (const suite of this._suite.suites) {
-      for (const test of suite._allTests()) {
-        for (const variant of test.variants as RunnerTestVariant[])
-          this._testById.set(variant._id, { variant, result: variant._appendResult() });
+      for (const test of suite._allSpecs()) {
+        for (const variant of test.tests as RunnerTest[])
+          this._testById.set(variant._id, { test: variant, testRun: variant._appendTestRun() });
       }
     }
 
     if (process.stdout.isTTY) {
       const workers = new Set<string>();
-      suite.findTest(test => {
-        for (const variant of test.variants as RunnerTestVariant[])
+      suite.findSpec(test => {
+        for (const variant of test.tests as RunnerTest[])
           workers.add(test.file + variant._workerHash);
       });
       const total = suite.total();
@@ -66,29 +66,29 @@ export class Dispatcher {
     const result: TestRunnerEntry[] = [];
     for (const suite of this._suite.suites) {
       const testsByWorkerHash = new Map<string, {
-        variants: RunnerTestVariant[],
+        tests: RunnerTest[],
         parameters: Parameters,
         parametersString: string
       }>();
-      for (const test of suite._allTests()) {
-        for (const variant of test.variants as RunnerTestVariant[]) {
+      for (const test of suite._allSpecs()) {
+        for (const variant of test.tests as RunnerTest[]) {
           let entry = testsByWorkerHash.get(variant._workerHash);
           if (!entry) {
             entry = {
-              variants: [],
+              tests: [],
               parameters: variant.parameters,
               parametersString: variant._parametersString
             };
             testsByWorkerHash.set(variant._workerHash, entry);
           }
-          entry.variants.push(variant);
+          entry.tests.push(variant);
         }
       }
       if (!testsByWorkerHash.size)
         continue;
       for (const [hash, entry] of testsByWorkerHash) {
         result.push({
-          ids: entry.variants.map(testRun => testRun._id),
+          ids: entry.tests.map(testRun => testRun._id),
           file: suite.file,
           parameters: entry.parameters,
           parametersString: entry.parametersString,
@@ -146,7 +146,7 @@ export class Dispatcher {
       if (params.fatalError) {
         // Report all the tests are failing with this error.
         for (const id of entry.ids) {
-          const { variant, result } = this._testById.get(id);
+          const { test: variant, testRun: result } = this._testById.get(id);
           this._reporter.onTestBegin(variant);
           result.status = 'failed';
           result.error = params.fatalError;
@@ -161,9 +161,9 @@ export class Dispatcher {
       // Only retry expected failures, not passes and only if the test failed.
       if (this._config.retries && params.failedTestId) {
         const pair = this._testById.get(params.failedTestId);
-        if (pair.variant.expectedStatus === 'passed' && pair.variant.runs.length < this._config.retries + 1) {
-          pair.result = pair.variant._appendResult();
-          remaining.unshift(pair.variant._id);
+        if (pair.testRun.expectedStatus === 'passed' && pair.test.runs.length < this._config.retries + 1) {
+          pair.testRun = pair.test._appendTestRun();
+          remaining.unshift(pair.test._id);
         }
       }
 
@@ -199,22 +199,15 @@ export class Dispatcher {
   _createWorker() {
     const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
     worker.on('testBegin', (params: TestBeginPayload) => {
-      const { variant } = this._testById.get(params.id);
-      variant.skipped = params.skipped;
-      variant.flaky = params.flaky;
-      variant.slow = params.slow;
-      variant.timeout = params.timeout;
-      variant.expectedStatus = params.expectedStatus;
-      variant.annotations = params.annotations;
-      variant.workerId = worker.id;
+      const { test: variant } = this._testById.get(params.id);
       this._reporter.onTestBegin(variant);
     });
     worker.on('testEnd', (params: TestEndPayload) => {
-      const workerResult: TestResult = params.result;
+      const workerResult: TestRun = params.testRun;
       // We were accumulating these below.
       delete workerResult.stdout;
       delete workerResult.stderr;
-      const { variant, result } = this._testById.get(params.id);
+      const { test: variant, testRun: result } = this._testById.get(params.id);
       Object.assign(result, workerResult);
       this._reporter.onTestEnd(variant, result);
     });
@@ -224,7 +217,7 @@ export class Dispatcher {
         process.stdout.write(chunk);
         return;
       }
-      const { variant, result } = this._testById.get(params.id);
+      const { test: variant, testRun: result } = this._testById.get(params.id);
       result.stdout.push(chunk);
       this._reporter.onTestStdOut(variant, chunk);
     });
@@ -234,7 +227,7 @@ export class Dispatcher {
         process.stderr.write(chunk);
         return;
       }
-      const { variant, result } = this._testById.get(params.id);
+      const { test: variant, testRun: result } = this._testById.get(params.id);
       result.stderr.push(chunk);
       this._reporter.onTestStdErr(variant, chunk);
     });

@@ -16,10 +16,10 @@
 
 import debug from 'debug';
 import * as fs from 'fs';
-import { RunnerConfig } from './runnerConfig';
+import { Config } from './config';
 import { raceAgainstTimeout, serializeError } from './util';
-import { TestResult } from './ipc';
-import { Test } from './test';
+import { TestRun } from './ipc';
+import { Spec } from './test';
 import { TestModifier } from './testModifier';
 
 type Scope = 'test' | 'worker';
@@ -33,10 +33,9 @@ type FixtureRegistration = {
 };
 
 export type TestInfo = {
-  config: RunnerConfig;
-  test: Test;
-  modifier: TestModifier;
-  result: TestResult;
+  config: Config;
+  spec: Spec;
+  testRun: TestRun;
 };
 
 export const registrations = new Map<string, FixtureRegistration>();
@@ -82,7 +81,7 @@ class Fixture {
     this.value = this.hasGeneratorValue ? parameters[name] : null;
   }
 
-  async setup(config: RunnerConfig, info?: TestInfo) {
+  async setup(config: Config, info?: TestInfo) {
     if (this.hasGeneratorValue)
       return;
     for (const name of this.deps) {
@@ -135,7 +134,7 @@ export class FixturePool {
     this.instances = new Map();
   }
 
-  async setupFixture(name: string, config: RunnerConfig, info?: TestInfo) {
+  async setupFixture(name: string, config: Config, info?: TestInfo) {
     let fixture = this.instances.get(name);
     if (fixture)
       return fixture;
@@ -156,7 +155,7 @@ export class FixturePool {
     }
   }
 
-  async resolveParametersAndRun(fn: Function, config: RunnerConfig, info?: TestInfo) {
+  async resolveParametersAndRun(fn: Function, config: Config, info?: TestInfo) {
     const names = fixtureParameterNames(fn);
     for (const name of names)
       await this.setupFixture(name, config, info);
@@ -169,28 +168,28 @@ export class FixturePool {
   async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo) {
     const { timedOut } = await raceAgainstTimeout(this._runTestWithFixtures(fn, info), timeout);
     // Do not overwrite test failure upon timeout in fixture.
-    if (timedOut && info.result.status === 'passed')
-      info.result.status = 'timedOut';
+    if (timedOut && info.testRun.status === 'passed')
+      info.testRun.status = 'timedOut';
   }
 
   async _runTestWithFixtures(fn: Function, info: TestInfo) {
     try {
       await this.resolveParametersAndRun(fn, info.config, info);
-      info.result.status = 'passed';
+      info.testRun.status = 'passed';
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.result.status === 'passed') {
-        info.result.status = 'failed';
-        info.result.error = serializeError(error);
+      if (info.testRun.status === 'passed') {
+        info.testRun.status = 'failed';
+        info.testRun.error = serializeError(error);
       }
     }
     try {
       await this.teardownScope('test');
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.result.status === 'passed') {
-        info.result.status = 'failed';
-        info.result.error = serializeError(error);
+      if (info.testRun.status === 'passed') {
+        info.testRun.status = 'failed';
+        info.testRun.error = serializeError(error);
       }
     }
   }
@@ -264,7 +263,7 @@ export function registerFixture(name: string, fn: (params: any, runTest: (arg: a
   innerRegisterFixture(name, 'test', fn, registerFixture);
 }
 
-export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, config: Config) => Promise<void>) {
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 

@@ -22,7 +22,7 @@ import path from 'path';
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import Diff from 'text-diff';
-import { RunnerConfig } from './runnerConfig';
+import { Config } from './config';
 
 const extensionToMimeType = {
   'png': 'image/png',
@@ -71,7 +71,7 @@ function compareText(actual: Buffer, expectedBuffer: Buffer): { diff?: object; e
   };
 }
 
-export function compare(actual: Buffer, name: string, config: RunnerConfig, testFile: string, options?: { threshold?: number }): { pass: boolean; message?: string; } {
+export function compare(actual: Buffer, name: string, config: Config, testFile: string, options?: { threshold?: number }): { pass: boolean; message?: string; } {
   let expectedPath: string;
   const relativeTestFile = path.relative(config.testDir, testFile);
   const testAssetsDir = relativeTestFile.replace(/\.spec\.[jt]s/, '');

@@ -16,16 +16,16 @@
 
 import colors from 'colors/safe';
 import { BaseReporter } from './base';
-import { TestResult } from '../ipc';
-import { TestVariant } from '../test';
+import { TestRun } from '../ipc';
+import { Test } from '../test';
 
 class DotReporter extends BaseReporter {
-  onTestEnd(test: TestVariant, result: TestResult) {
+  onTestEnd(test: Test, result: TestRun) {
     super.onTestEnd(test, result);
     switch (result.status) {
       case 'skipped': process.stdout.write(colors.yellow('∘')); break;
-      case 'passed': process.stdout.write(result.status === test.expectedStatus ? colors.green('·') : colors.red('P')); break;
-      case 'failed': process.stdout.write(result.status === test.expectedStatus ? colors.green('f') : colors.red('F')); break;
+      case 'passed': process.stdout.write(result.status === result.expectedStatus ? colors.green('·') : colors.red('P')); break;
+      case 'failed': process.stdout.write(result.status === result.expectedStatus ? colors.green('f') : colors.red('F')); break;
       case 'timedOut': process.stdout.write(colors.red('T')); break;
     }
   }

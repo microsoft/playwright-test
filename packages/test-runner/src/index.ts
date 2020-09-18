@@ -21,7 +21,7 @@ import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
 import { registerFixture, registerWorkerFixture, TestInfo, setParameterValues } from './fixtures';
-import { RunnerConfig } from './runnerConfig';
+import { Config } from './config';
 import { expect as expectFunction } from './expect';
 import { registerWorkerParameter } from './fixtures';
 import * as spec from './spec';
@@ -96,12 +96,12 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     return this as any;
   }
 
-  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: Config) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerWorkerFixture(name as string, fn);
   }
 
-  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: Config) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerWorkerFixture(name as string, fn);
   }
@@ -127,7 +127,7 @@ export type DefaultWorkerParameters = {
 };
 
 export type DefaultWorkerFixtures = {
-  config: RunnerConfig;
+  config: Config;
   parallelIndex: number;
 };
 
@@ -157,7 +157,7 @@ fixtures.defineTestFixture('tmpDir', async ({}, test) => {
 
 fixtures.defineTestFixture('outputFile', async ({}, runTest, info) => {
   const outputFile = async (suffix: string): Promise<string> => {
-    const {config, test} = info;
+    const {config, spec: test} = info;
     const relativePath = path.relative(config.testDir, test.file)
         .replace(/\.spec\.[jt]s/, '')
         .replace(new RegExp(`(tests|test|src)${path.sep}`), '');

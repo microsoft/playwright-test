@@ -22,20 +22,20 @@ import { Dispatcher } from './dispatcher';
 import './expect';
 import { matrix, ParameterRegistration, parameterRegistrations, setParameterValues } from './fixtures';
 import { Reporter } from './reporter';
-import { RunnerConfig } from './runnerConfig';
+import { Config } from './config';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout, serializeError } from './util';
 import { RunnerSuite } from './runnerTest';
 import { runnerSpec } from './runnerSpec';
 export { Reporter } from './reporter';
-export { RunnerConfig } from './runnerConfig';
+export { Config } from './config';
 
 const removeFolderAsync = promisify(rimraf);
 
 type RunResult = 'passed' | 'failed' | 'forbid-only' | 'no-tests';
 
 export class Runner {
-  private _config: RunnerConfig;
+  private _config: Config;
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
@@ -43,7 +43,7 @@ export class Runner {
   private _hasBadFiles = false;
   private _suites: RunnerSuite[] = [];
 
-  constructor(config: RunnerConfig, reporter: Reporter) {
+  constructor(config: Config, reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
   }
@@ -90,7 +90,7 @@ export class Runner {
     this._rootSuite = generateTests(this._suites, this._config);
 
     if (this._config.forbidOnly) {
-      const hasOnly = this._rootSuite.findTest(t => t._only) || this._rootSuite.findSuite(s => s._only);
+      const hasOnly = this._rootSuite.findSpec(t => t._only) || this._rootSuite.findSuite(s => s._only);
       if (hasOnly)
         return 'forbid-only';
     }
@@ -119,6 +119,6 @@ export class Runner {
       for (const f of this._afterFunctions)
         await f();
     }
-    return this._hasBadFiles || suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
+    return this._hasBadFiles || suite.findSpec(spec => !spec._ok()) ? 'failed' : 'passed';
   }
 }

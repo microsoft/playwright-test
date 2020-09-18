@@ -17,27 +17,27 @@
 import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
-import { RunnerConfig } from '../runnerConfig';
-import { Suite, TestVariant } from '../test';
-import { TestResult } from '../ipc';
+import { Config } from '../config';
+import { Suite, Test } from '../test';
+import { TestRun } from '../ipc';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
   private _lastRow = 0;
-  private _testRows = new Map<TestVariant, number>();
+  private _testRows = new Map<Test, number>();
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: Config, suite: Suite) {
     super.onBegin(config, suite);
     console.log();
   }
 
-  onTestBegin(test: TestVariant) {
+  onTestBegin(test: Test) {
     super.onTestBegin(test);
     process.stdout.write('    ' + colors.gray(test.spec.fullTitle() + ': ') + '\n');
     this._testRows.set(test, this._lastRow++);
   }
 
-  onTestEnd(test: TestVariant, result: TestResult) {
+  onTestEnd(test: Test, result: TestRun) {
     super.onTestEnd(test, result);
     const spec = test.spec;
 
@@ -47,7 +47,7 @@ class ListReporter extends BaseReporter {
       text = colors.green('  - ') + colors.cyan(spec.fullTitle());
     } else {
       const statusMark = result.status === 'passed' ? '  ✓ ' : '  x ';
-      if (result.status === test.expectedStatus)
+      if (result.status === result.expectedStatus)
         text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(spec.fullTitle()) + duration;
       else
         text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + spec.fullTitle()) + duration;

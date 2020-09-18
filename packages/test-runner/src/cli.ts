@@ -24,7 +24,7 @@ import JSONReporter from './reporters/json';
 import LineReporter from './reporters/line';
 import ListReporter from './reporters/list';
 import { Multiplexer } from './reporters/multiplexer';
-import { Runner, RunnerConfig } from './runner';
+import { Runner, Config } from './runner';
 
 export const reporters = {
   'dot': DotReporter,
@@ -71,7 +71,7 @@ async function runStage1(command) {
   }
 
   const testDir = path.resolve(process.cwd(), filteredArguments[0] || '.');
-  const config: RunnerConfig = {
+  const config: Config = {
     debug: command.debug,
     forbidOnly: command.forbidOnly,
     quiet: command.quiet,

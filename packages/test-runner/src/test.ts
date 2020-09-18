@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Parameters, TestResult, TestStatus } from "./ipc";
+import { Parameters, TestRun } from "./ipc";
 
 class Base {
   title: string;
@@ -43,25 +43,25 @@ class Base {
   }
 }
 
-export class Test extends Base {
+export class Spec extends Base {
   fn: Function;
-  variants: TestVariant[] = [];
+  tests: Test[] = [];
 
   constructor(title: string, fn: Function, suite: Suite) {
     super(title, suite);
     this.fn = fn;
-    suite._addTest(this);
+    suite._addSpec(this);
   }
 
   _ok(): boolean {
-    return !this.variants.find(r => !r.ok());
+    return !this.tests.find(r => !r.ok());
   }
 }
 
 export class Suite extends Base {
   suites: Suite[] = [];
-  tests: Test[] = [];
-  _entries: (Suite | Test)[] = [];
+  specs: Spec[] = [];
+  _entries: (Suite | Spec)[] = [];
 
   constructor(title: string, parent?: Suite) {
     super(title, parent);
@@ -71,16 +71,16 @@ export class Suite extends Base {
 
   total(): number {
     let count = 0;
-    this.findTest(test => {
-      count += test.variants.length;
+    this.findSpec(test => {
+      count += test.tests.length;
     });
     return count;
   }
 
-  _addTest(test: Test) {
-    test.parent = this;
-    this.tests.push(test);
-    this._entries.push(test);
+  _addSpec(spec: Spec) {
+    spec.parent = this;
+    this.specs.push(spec);
+    this._entries.push(spec);
   }
 
   _addSuite(suite: Suite) {
@@ -89,12 +89,12 @@ export class Suite extends Base {
     this._entries.push(suite);
   }
 
-  findTest(fn: (test: Test) => boolean | void): boolean {
+  findSpec(fn: (test: Spec) => boolean | void): boolean {
     for (const suite of this.suites) {
-      if (suite.findTest(fn))
+      if (suite.findSpec(fn))
         return true;
     }
-    for (const test of this.tests) {
+    for (const test of this.specs) {
       if (fn(test))
         return true;
     }
@@ -111,41 +111,40 @@ export class Suite extends Base {
     return false;
   }
 
-  _allTests(): Test[] {
-    const result: Test[] = [];
-    this.findTest(test => { result.push(test); });
+  _allSpecs(): Spec[] {
+    const result: Spec[] = [];
+    this.findSpec(test => { result.push(test); });
     return result;
   }
 
   _renumber() {
     // All tests are identified with their ordinals.
     let ordinal = 0;
-    this.findTest((test: Test) => {
+    this.findSpec((test: Spec) => {
       test._ordinal = ordinal++;
     });
   }
 }
 
-export class TestVariant {
-  spec: Test;
-  skipped: boolean;
-  flaky: boolean;
-  only: boolean;
-  slow: boolean;
-  expectedStatus: TestStatus;
-  timeout: number;
-  workerId: number;
-  annotations: any[];
-
+export class Test {
+  spec: Spec;
   parameters: Parameters;
-  runs: TestResult[] = [];
+  runs: TestRun[] = [];
 
-  constructor(spec: Test) {
+  constructor(spec: Spec) {
     this.spec = spec;
   }
 
-  _appendResult(): TestResult {
-    const result: TestResult = {
+  _appendTestRun(): TestRun {
+    const result: TestRun = {
+      skipped: false,
+      flaky: false,
+      slow: false,
+      expectedStatus: 'passed',
+      timeout: 0,
+      workerId: 0,
+      annotations: [],
+    
       duration: 0,
       stdout: [],
       stderr: [],
@@ -156,14 +155,15 @@ export class TestVariant {
   }
 
   ok(): boolean {
-    if (this.skipped)
-      return true;
-    const hasFailedResults = !!this.runs.find(r => r.status !== this.expectedStatus);
-    if (!hasFailedResults)
-      return true;
-    if (!this.flaky)
-      return false;
-    const hasPassedResults = !!this.runs.find(r => r.status === this.expectedStatus);
+    let hasPassedResults = false;
+    for (const result of this.runs) {
+      if (result.status === 'skipped')
+        return true;
+      if (!result.flaky && result.status !== result.expectedStatus)
+        return false;
+      if (result.status === result.expectedStatus)
+        hasPassedResults = true;
+    }
     return hasPassedResults;
   }
 }

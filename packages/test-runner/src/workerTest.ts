@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-import { Test, Suite } from './test';
+import { Spec, Suite } from './test';
 import { TestModifier } from './testModifier';
 
-export class WorkerTest extends Test {
+export class WorkerSpec extends Spec {
   _id: string;
-  _timeout = 0;
   _modifier: TestModifier;
 
   constructor(title: string, fn: Function, suite: WorkerSuite) {
@@ -38,7 +37,7 @@ export class WorkerSuite extends Suite {
   }
 
   _assignIds(parametersString: string) {
-    this.findTest((test: WorkerTest) => {
+    this.findSpec((test: WorkerSpec) => {
       test._id = `${test._ordinal}@${this.file}::[${parametersString}]`;
     });
   }
@@ -48,8 +47,8 @@ export class WorkerSuite extends Suite {
   }
 
   _hasTestsToRun(): boolean {
-    return this.findTest((test: WorkerTest) => {
-      if (!test._modifier.isSkipped()) {
+    return this.findSpec((test: WorkerSpec) => {
+      if (!test._modifier._isSkipped()) {
         return true;
       }
     });

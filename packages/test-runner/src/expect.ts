@@ -15,7 +15,7 @@
  */
 
 import { compare } from './golden';
-import { RunnerConfig } from './runnerConfig';
+import { Config } from './config';
 import expectLibrary from 'expect';
 
 export const expect = expectLibrary;
@@ -28,7 +28,7 @@ declare module 'expect/build/types' {
 
 let testFile: string;
 
-export function initializeImageMatcher(config: RunnerConfig) {
+export function initializeImageMatcher(config: Config) {
   function toMatchImage(received: Buffer, name: string, options?: { threshold?: number }) {
     const { pass, message } = compare(received, name, config, testFile, options);
     return { pass, message: () => message };

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export type RunnerConfig = {
+export type Config = {
   debug?: boolean;
   forbidOnly?: boolean;
   globalTimeout: number;

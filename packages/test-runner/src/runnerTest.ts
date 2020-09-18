@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { Test, Suite, TestVariant } from "./test";
+import { Spec, Suite, Test } from "./test";
 
-export class RunnerTest extends Test {
+export class RunnerSpec extends Spec {
   constructor(title: string, fn: Function, suite: RunnerSuite) {
     super(title, fn, suite);
   }
@@ -28,19 +28,19 @@ export class RunnerSuite extends Suite {
   }
 
   _assignIds() {
-    this.findTest((test: RunnerTest) => {
-      for (const run of test.variants as RunnerTestVariant[])
+    this.findSpec((test: RunnerSpec) => {
+      for (const run of test.tests as RunnerTest[])
         run._id = `${test._ordinal}@${run.spec.file}::[${run._parametersString}]`;
     });
   }
 }
 
-export class RunnerTestVariant extends TestVariant {
+export class RunnerTest extends Test {
   _parametersString: string;
   _workerHash: string;
   _id: string;
 
-  constructor(spec: RunnerTest) {
+  constructor(spec: RunnerSpec) {
     super(spec);
   }
 }

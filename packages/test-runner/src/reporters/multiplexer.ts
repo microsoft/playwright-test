@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { RunnerConfig } from '../runnerConfig';
+import { Config } from '../config';
 import { Reporter } from '../reporter';
-import { Suite, TestVariant } from '../test';
-import { TestResult } from '../ipc';
+import { Suite, Test } from '../test';
+import { TestRun } from '../ipc';
 
 export class Multiplexer implements Reporter {
   private _reporters: Reporter[];
@@ -26,27 +26,27 @@ export class Multiplexer implements Reporter {
     this._reporters = reporters;
   }
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: Config, suite: Suite) {
     for (const reporter of this._reporters)
       reporter.onBegin(config, suite);
   }
 
-  onTestBegin(test: TestVariant) {
+  onTestBegin(test: Test) {
     for (const reporter of this._reporters)
       reporter.onTestBegin(test);
   }
 
-  onTestStdOut(test: TestVariant, chunk: string | Buffer) {
+  onTestStdOut(test: Test, chunk: string | Buffer) {
     for (const reporter of this._reporters)
       reporter.onTestStdOut(test, chunk);
   }
 
-  onTestStdErr(test: TestVariant, chunk: string | Buffer) {
+  onTestStdErr(test: Test, chunk: string | Buffer) {
     for (const reporter of this._reporters)
       reporter.onTestStdErr(test, chunk);
   }
 
-  onTestEnd(test: TestVariant, result: TestResult) {
+  onTestEnd(test: Test, result: TestRun) {
     for (const reporter of this._reporters)
       reporter.onTestEnd(test, result);
   }

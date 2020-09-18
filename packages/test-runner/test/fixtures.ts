@@ -79,9 +79,9 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     if (!suites)
       return;
     for (const suite of suites) {
-      for (const test of suite.tests) {
-        for (const run of test.variants)
-          results.push(...run.runs);
+      for (const spec of suite.specs) {
+        for (const test of spec.tests)
+          results.push(...test.runs);
       }
       visitSuites(suite.suites);
     }

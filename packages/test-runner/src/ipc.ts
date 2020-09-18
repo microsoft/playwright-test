@@ -18,7 +18,15 @@ export type Parameters = { name: string, value: string }[];
 
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
-export type TestResult = {
+export type TestRun = {
+  skipped: boolean;
+  flaky: boolean;
+  slow: boolean;
+  expectedStatus: TestStatus;
+  timeout: number;
+  workerId: number;
+  annotations: any[];
+
   duration: number;
   status?: TestStatus;
   error?: any;
@@ -29,17 +37,12 @@ export type TestResult = {
 
 export type TestBeginPayload = {
   id: string;
-  skipped: boolean;
-  flaky: boolean
-  slow: boolean;
-  expectedStatus: TestStatus;
-  annotations: any[];
-  timeout: number;
+  testRun: TestRun;
 };
 
 export type TestEndPayload = {
   id: string;
-  result: TestResult;
+  testRun: TestRun;
 };
 
 export type TestRunnerEntry = {

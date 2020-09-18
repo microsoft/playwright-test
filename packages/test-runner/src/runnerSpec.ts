@@ -15,7 +15,7 @@
  */
 
 import { installTransform } from './transform';
-import { RunnerSuite, RunnerTest } from './runnerTest';
+import { RunnerSuite, RunnerSpec } from './runnerTest';
 import { extractLocation } from './util';
 import { setImplementation } from './spec';
 
@@ -25,7 +25,7 @@ export function runnerSpec(suite: RunnerSuite): () => void {
   const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: any | Function, fn?: Function) => {
     const suite = suites[0];
     fn = fn || modifierFn;
-    const test = new RunnerTest(title, fn, suite);
+    const test = new RunnerSpec(title, fn, suite);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     if (spec === 'only')

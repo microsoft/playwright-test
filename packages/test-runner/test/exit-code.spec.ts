@@ -21,7 +21,7 @@ const { it, expect } = fixtures;
 it('should collect stdio', async ({ runTest }) => {
   const { exitCode, report } = await runTest('stdio.js');
   expect(exitCode).toBe(0);
-  const testResult = report.suites[0].tests[0].variants[0].runs[0];
+  const testResult = report.suites[0].specs[0].tests[0].runs[0];
   const { stdout, stderr } = testResult;
   expect(stdout).toEqual([{ text: 'stdout text' }, { buffer: Buffer.from('stdout buffer').toString('base64') }]);
   expect(stderr).toEqual([{ text: 'stderr text' }, { buffer: Buffer.from('stderr buffer').toString('base64') }]);
@@ -45,8 +45,8 @@ it('should repeat each', async ({ runTest }) => {
   const { exitCode, report } = await runTest('one-success.js', { 'repeat-each': 3 });
   expect(exitCode).toBe(0);
   expect(report.suites.length).toBe(1);
-  expect(report.suites[0].tests.length).toBe(1);
-  expect(report.suites[0].tests[0].variants.length).toBe(3);
+  expect(report.suites[0].specs.length).toBe(1);
+  expect(report.suites[0].specs[0].tests.length).toBe(3);
 });
 
 it('should allow flaky', async ({ runTest }) => {
