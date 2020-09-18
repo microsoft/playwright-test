@@ -31,6 +31,6 @@ fixtures2.defineTestFixture('testTypeOnly', async ({config}, runTest, info) => {
   await runTest('testTypeOnly');
 });
 
-fixtures2.defineWorkerFixture('workerTypeOnly', async ({parallelIndex}, runTest, info) => {
+fixtures2.defineWorkerFixture('workerTypeOnly', async ({workerId}, runTest, info) => {
   await runTest(42);
 });

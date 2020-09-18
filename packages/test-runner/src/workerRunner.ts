@@ -64,7 +64,7 @@ export class WorkerRunner extends EventEmitter {
     for (const {name, value} of entry.parameters)
       this._parsedParameters[name] = value;
     this._parsedParameters['config'] = config;
-    this._parsedParameters['parallelIndex'] = workerId;
+    this._parsedParameters['workerId'] = workerId;
     setCurrentTestFile(this._suite.file);
   }
 

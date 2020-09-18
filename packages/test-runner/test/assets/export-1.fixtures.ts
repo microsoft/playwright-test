@@ -31,6 +31,6 @@ fixtures1.defineTestFixture('testWrap', async ({config}, runTest, info) => {
   await runTest('testWrap');
 });
 
-fixtures1.defineWorkerFixture('workerWrap', async ({parallelIndex}, runTest, info) => {
+fixtures1.defineWorkerFixture('workerWrap', async ({workerId}, runTest, info) => {
   await runTest(42);
 });
