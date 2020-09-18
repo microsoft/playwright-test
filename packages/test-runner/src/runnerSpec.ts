@@ -22,9 +22,9 @@ import { setImplementation } from './spec';
 export function runnerSpec(suite: SuiteSpec): () => void {
   const suites = [suite];
 
-  const it = (spec: 'default' | 'skip' | 'only', title: string, metaFn: any | Function, fn?: Function) => {
+  const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: any | Function, fn?: Function) => {
     const suite = suites[0];
-    fn = fn || metaFn;
+    fn = fn || modifierFn;
     const test = new TestSpec(title, fn, suite);
     test.file = suite.file;
     test.location = extractLocation(new Error());
@@ -35,8 +35,8 @@ export function runnerSpec(suite: SuiteSpec): () => void {
     return test;
   };
 
-  const describe = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteSpec, parameters: any) => void | Function, fn?: Function) => {
-    fn = fn || metaFn;
+  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (suite: SuiteSpec, parameters: any) => void | Function, fn?: Function) => {
+    fn = fn || modifierFn;
     const child = new SuiteSpec(title, suites[0]);
     child.file = suite.file;
     child.location = extractLocation(new Error());

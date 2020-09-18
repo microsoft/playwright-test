@@ -47,3 +47,35 @@ export const afterAll = fn => implementation.afterAll(fn);
 export function setImplementation(i: Implementation) {
   implementation = i;
 }
+
+export interface Modifier {
+  slow(): void;
+  slow(condition: boolean): void;
+  slow(description: string): void;
+  slow(condition: boolean, description: string): void;
+  slow(arg?: boolean | string, description?: string): void;
+
+  skip(): void;
+  skip(condition: boolean): void;
+  skip(description: string): void;
+  skip(condition: boolean, description: string): void;
+  skip(arg?: boolean | string, description?: string): void;
+
+  fixme(): void;
+  fixme(condition: boolean): void;
+  fixme(description: string): void;
+  fixme(condition: boolean, description: string): void;
+  fixme(arg?: boolean | string, description?: string): void;
+
+  flaky(): void;
+  flaky(condition: boolean): void;
+  flaky(description: string): void;
+  flaky(condition: boolean, description: string): void;
+  flaky(arg?: boolean | string, description?: string): void;
+
+  fail(): void;
+  fail(condition: boolean): void;
+  fail(description: string): void;
+  fail(condition: boolean, description: string): void;
+  fail(arg?: boolean | string, description?: string): void;
+}

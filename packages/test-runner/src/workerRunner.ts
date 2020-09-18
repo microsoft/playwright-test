@@ -17,7 +17,7 @@
 import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
-import { Test, Suite } from './workerTest';
+import { WorkerTest, WorkerSuite } from './workerTest';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
 import { serializeError } from './util';
@@ -47,13 +47,13 @@ export class WorkerRunner extends EventEmitter {
   private _stdOutBuffer: (string | Buffer)[] = [];
   private _stdErrBuffer: (string | Buffer)[] = [];
   private _testResult: TestResult | null = null;
-  private _suite: Suite;
+  private _suite: WorkerSuite;
   private _loaded = false;
   private _configurationString: string;
 
   constructor(entry: TestRunnerEntry, config: RunnerConfig, workerId: number) {
     super();
-    this._suite = new Suite('');
+    this._suite = new WorkerSuite('');
     this._suite.file = entry.file;
     this._configurationString = entry.configurationString;
     this._ids = new Set(entry.ids);
@@ -124,7 +124,7 @@ export class WorkerRunner extends EventEmitter {
     this._reportDone();
   }
 
-  private async _runSuite(suite: Suite) {
+  private async _runSuite(suite: WorkerSuite) {
     if (!this._trialRun) {
       try {
         await this._runHooks(suite, 'beforeAll', 'before');
@@ -134,7 +134,7 @@ export class WorkerRunner extends EventEmitter {
       }
     }
     for (const entry of suite._entries) {
-      if (entry instanceof Suite)
+      if (entry instanceof WorkerSuite)
         await this._runSuite(entry);
       else
         await this._runTest(entry);
@@ -149,7 +149,7 @@ export class WorkerRunner extends EventEmitter {
     }
   }
 
-  private async _runTest(test: Test) {
+  private async _runTest(test: WorkerTest) {
     if (this._failedTestId)
       return false;
     if (this._ids.size && !this._ids.has(test._id))
@@ -213,7 +213,7 @@ export class WorkerRunner extends EventEmitter {
     this._testId = null;
   }
 
-  private async _runHooks(suite: Suite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
+  private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
     if (!suite._hasTestsToRun())
       return;
     const all = [];
@@ -236,7 +236,7 @@ export class WorkerRunner extends EventEmitter {
   }
 }
 
-function testToPayload(test: Test): TestBeginPayload {
+function testToPayload(test: WorkerTest): TestBeginPayload {
   return {
     id: test._id,
     skipped: test.isSkipped(),

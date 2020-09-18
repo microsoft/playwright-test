@@ -15,12 +15,13 @@
  */
 
 import { TestResult, TestStatus } from './ipc';
+import { Modifier } from './spec';
 
-class Runnable {
+class Runnable implements Modifier {
   title: string;
   file: string;
   location: string;
-  parent?: Suite;
+  parent?: WorkerSuite;
 
   _only = false;
   _skipped = false;
@@ -33,10 +34,6 @@ class Runnable {
   _id: string;
   _ordinal: number;
 
-  slow(): void;
-  slow(condition: boolean): void;
-  slow(description: string): void;
-  slow(condition: boolean, description: string): void;
   slow(arg?: boolean | string, description?: string) {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
@@ -48,10 +45,6 @@ class Runnable {
     }
   }
 
-  skip(): void;
-  skip(condition: boolean): void;
-  skip(description: string): void;
-  skip(condition: boolean, description: string): void;
   skip(arg?: boolean | string, description?: string) {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
@@ -63,10 +56,6 @@ class Runnable {
     }
   }
 
-  fixme(): void;
-  fixme(condition: boolean): void;
-  fixme(description: string): void;
-  fixme(condition: boolean, description: string): void;
   fixme(arg?: boolean | string, description?: string) {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
@@ -78,10 +67,6 @@ class Runnable {
     }
   }
 
-  flaky(): void;
-  flaky(condition: boolean): void;
-  flaky(description: string): void;
-  flaky(condition: boolean, description: string): void;
   flaky(arg?: boolean | string, description?: string) {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
@@ -93,10 +78,6 @@ class Runnable {
     }
   }
 
-  fail(): void;
-  fail(condition: boolean): void;
-  fail(description: string): void;
-  fail(condition: boolean, description: string): void;
   fail(arg?: boolean | string, description?: string) {
     const processed = this._interpretCondition(arg, description);
     if (processed.condition) {
@@ -139,7 +120,7 @@ class Runnable {
   }
 }
 
-export class Test extends Runnable {
+export class WorkerTest extends Runnable {
   fn: Function;
   results: TestResult[] = [];
   _timeout = 0;
@@ -151,32 +132,32 @@ export class Test extends Runnable {
   }
 }
 
-export class Suite extends Runnable {
-  suites: Suite[] = [];
-  tests: Test[] = [];
+export class WorkerSuite extends Runnable {
+  suites: WorkerSuite[] = [];
+  tests: WorkerTest[] = [];
 
   _hooks: { type: string, fn: Function } [] = [];
-  _entries: (Suite | Test)[] = [];
+  _entries: (WorkerSuite | WorkerTest)[] = [];
 
-  constructor(title: string, parent?: Suite) {
+  constructor(title: string, parent?: WorkerSuite) {
     super();
     this.title = title;
     this.parent = parent;
   }
 
-  _addTest(test: Test) {
+  _addTest(test: WorkerTest) {
     test.parent = this;
     this.tests.push(test);
     this._entries.push(test);
   }
 
-  _addSuite(suite: Suite) {
+  _addSuite(suite: WorkerSuite) {
     suite.parent = this;
     this.suites.push(suite);
     this._entries.push(suite);
   }
 
-  findTest(fn: (test: Test) => boolean | void): boolean {
+  findTest(fn: (test: WorkerTest) => boolean | void): boolean {
     for (const suite of this.suites) {
       if (suite.findTest(fn))
         return true;
@@ -188,8 +169,8 @@ export class Suite extends Runnable {
     return false;
   }
 
-  _allTests(): Test[] {
-    const result: Test[] = [];
+  _allTests(): WorkerTest[] {
+    const result: WorkerTest[] = [];
     this.findTest(test => { result.push(test); });
     return result;
   }
@@ -199,13 +180,13 @@ export class Suite extends Runnable {
     let ordinal = 0;
 
     ordinal = 0;
-    this.findTest((test: Test) => {
+    this.findTest((test: WorkerTest) => {
       test._ordinal = ordinal++;
     });
   }
 
   _assignIds(configurationString: string) {
-    this.findTest((test: Test) => {
+    this.findTest((test: WorkerTest) => {
       test._id = `${test._ordinal}@${this.file}::[${configurationString}]`;
     });
   }

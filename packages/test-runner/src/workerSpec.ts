@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-import { Test, Suite } from './workerTest';
+import { WorkerTest, WorkerSuite } from './workerTest';
 import { installTransform } from './transform';
 import { extractLocation } from './util';
 import { setImplementation } from './spec';
 
-let currentRunSuites: Suite[];
+let currentRunSuites: WorkerSuite[];
 
-export function workerSpec(suite: Suite, timeout: number, parameters: any): () => void {
+export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any): () => void {
   const suites = [suite];
   currentRunSuites = suites;
 
-  const it = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test, parameters: any) => void | Function, fn?: Function) => {
+  const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: (test: WorkerTest, parameters: any) => void | Function, fn?: Function) => {
     const suite = suites[0];
     if (typeof fn !== 'function') {
-      fn = metaFn;
-      metaFn = null;
+      fn = modifierFn;
+      modifierFn = null;
     }
-    const test = new Test(title, fn);
-    if (metaFn)
-      metaFn(test, parameters);
+    const test = new WorkerTest(title, fn);
+    if (modifierFn)
+      modifierFn(test, parameters);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     test._timeout = timeout;
@@ -45,14 +45,14 @@ export function workerSpec(suite: Suite, timeout: number, parameters: any): () =
     return test;
   };
 
-  const describe = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite, parameters: any) => void | Function, fn?: Function) => {
+  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (suite: WorkerSuite, parameters: any) => void | Function, fn?: Function) => {
     if (typeof fn !== 'function') {
-      fn = metaFn;
-      metaFn = null;
+      fn = modifierFn;
+      modifierFn = null;
     }
-    const child = new Suite(title, suites[0]);
-    if (metaFn)
-      metaFn(child, parameters);
+    const child = new WorkerSuite(title, suites[0]);
+    if (modifierFn)
+      modifierFn(child, parameters);
     suites[0]._addSuite(child);
     child.file = suite.file;
     child.location = extractLocation(new Error());

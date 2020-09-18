@@ -17,7 +17,7 @@
 import debug from 'debug';
 import * as fs from 'fs';
 import { RunnerConfig } from './runnerConfig';
-import { Test } from './workerTest';
+import { WorkerTest } from './workerTest';
 import { raceAgainstTimeout, serializeError } from './util';
 import { TestResult } from './ipc';
 
@@ -33,7 +33,7 @@ type FixtureRegistration = {
 
 export type TestInfo = {
   config: RunnerConfig;
-  test: Test;
+  test: WorkerTest;
   result: TestResult;
 };
 

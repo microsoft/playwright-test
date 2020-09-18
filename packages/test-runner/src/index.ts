@@ -25,7 +25,6 @@ import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
 import { registerWorkerParameter } from './fixtures';
 import * as spec from './spec';
-import { Suite, Test } from './workerTest';
 
 const mkdirAsync = promisify(fs.mkdir);
 const mkdtempAsync = promisify(fs.mkdtemp);
@@ -33,12 +32,12 @@ const removeFolderAsync = promisify(rimraf);
 
 interface DescribeHelper<WorkerParameters> {
   describe(name: string, inner: () => void): void;
-  describe(name: string, modifier: (suite: Suite, parameters: WorkerParameters) => any, inner: () => void): void;
+  describe(name: string, modifierFn: (modifier: spec.Modifier, parameters: WorkerParameters) => any, inner: () => void): void;
 }
 type DescribeFunction<WorkerParameters> = DescribeHelper<WorkerParameters>['describe'];
 interface ItHelper<WorkerParameters, WorkerFixtures, TestFixtures> {
   it(name: string, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
-  it(name: string, modifier: (test: Test, parameters: WorkerParameters) => any, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
+  it(name: string, modifierFn: (modifier: spec.Modifier, parameters: WorkerParameters) => any, inner: (fixtures: WorkerParameters & WorkerFixtures & TestFixtures) => Promise<void> | void): void;
 }
 type ItFunction<WorkerParameters, WorkerFixtures, TestFixtures> = ItHelper<WorkerParameters, WorkerFixtures, TestFixtures>['it'];
 type It<WorkerParameters, WorkerFixtures, TestFixtures> = ItFunction<WorkerParameters, WorkerFixtures, TestFixtures> & {
@@ -121,7 +120,6 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
 }
 
 export interface Fixtures<P, W, T> extends FixturesImpl<P, W, T> {
-
 }
 
 export type DefaultWorkerParameters = {
