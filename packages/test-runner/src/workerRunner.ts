@@ -40,7 +40,7 @@ export class WorkerRunner extends EventEmitter {
   private _ids: Set<string>;
   private _remaining: Set<string>;
   private _trialRun: any;
-  private _parsedGeneratorConfiguration: any = {};
+  private _parsedParameters: any = {};
   private _config: RunnerConfig;
   private _timeout: number;
   private _testId: string | null;
@@ -49,22 +49,22 @@ export class WorkerRunner extends EventEmitter {
   private _testResult: TestResult | null = null;
   private _suite: WorkerSuite;
   private _loaded = false;
-  private _configurationString: string;
+  private _parametersString: string;
 
   constructor(entry: TestRunnerEntry, config: RunnerConfig, workerId: number) {
     super();
     this._suite = new WorkerSuite('');
     this._suite.file = entry.file;
-    this._configurationString = entry.configurationString;
+    this._parametersString = entry.parametersString;
     this._ids = new Set(entry.ids);
     this._remaining = new Set(entry.ids);
     this._trialRun = config.trialRun;
     this._timeout = config.timeout;
     this._config = config;
-    for (const {name, value} of entry.configuration)
-      this._parsedGeneratorConfiguration[name] = value;
-    this._parsedGeneratorConfiguration['config'] = config;
-    this._parsedGeneratorConfiguration['parallelIndex'] = workerId;
+    for (const {name, value} of entry.parameters)
+      this._parsedParameters[name] = value;
+    this._parsedParameters['config'] = config;
+    this._parsedParameters['parallelIndex'] = workerId;
     setCurrentTestFile(this._suite.file);
   }
 
@@ -104,7 +104,7 @@ export class WorkerRunner extends EventEmitter {
   }
 
   async run() {
-    assignParameters(this._parsedGeneratorConfiguration);
+    assignParameters(this._parsedParameters);
 
     const revertBabelRequire = workerSpec(this._suite, this._timeout, parameters);
 
@@ -115,8 +115,8 @@ export class WorkerRunner extends EventEmitter {
     revertBabelRequire();
     // Enumerate tests to assign ordinals.
     this._suite._renumber();
-    // Build ids from ordinals + configuration strings.
-    this._suite._assignIds(this._configurationString);
+    // Build ids from ordinals + parameters strings.
+    this._suite._assignIds(this._parametersString);
     this._loaded = true;
 
     rerunRegistrations(this._suite.file);

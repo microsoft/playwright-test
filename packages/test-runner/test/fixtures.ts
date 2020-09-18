@@ -80,8 +80,8 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
       return;
     for (const suite of suites) {
       for (const test of suite.tests) {
-        for (const run of test.runs)
-          results.push(...run.results);
+        for (const run of test.variants)
+          results.push(...run.runs);
       }
       visitSuites(suite.suites);
     }

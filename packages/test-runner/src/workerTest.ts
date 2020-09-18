@@ -185,9 +185,9 @@ export class WorkerSuite extends Runnable {
     });
   }
 
-  _assignIds(configurationString: string) {
+  _assignIds(parametersString: string) {
     this.findTest((test: WorkerTest) => {
-      test._id = `${test._ordinal}@${this.file}::[${configurationString}]`;
+      test._id = `${test._ordinal}@${this.file}::[${parametersString}]`;
     });
   }
 

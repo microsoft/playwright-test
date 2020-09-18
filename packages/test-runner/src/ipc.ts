@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export type Configuration = { name: string, value: string }[];
+export type Parameters = { name: string, value: string }[];
 
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
@@ -45,7 +45,7 @@ export type TestEndPayload = {
 export type TestRunnerEntry = {
   file: string;
   ids: string[];
-  configurationString: string;
-  configuration: Configuration;
+  parametersString: string;
+  parameters: Parameters;
   hash: string;
 };

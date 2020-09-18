@@ -40,7 +40,7 @@ it('should run with each configuration', async ({ runInlineFixturesTest }) => {
 
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(5);  // 6 total, one skipped
-  const configurations = result.report.suites[0].tests[0].runs.map(r => r.configuration);
+  const configurations = result.report.suites[0].tests[0].variants.map(r => r.parameters);
   const objects: any[] = configurations.map(c => {
     const object = {};
     for (const { name, value } of c)

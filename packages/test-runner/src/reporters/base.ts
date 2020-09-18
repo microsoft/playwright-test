@@ -20,7 +20,7 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import { Configuration, TestResult, TestStatus } from '../ipc';
+import { Parameters, TestResult, TestStatus } from '../ipc';
 import { Reporter, RunnerConfig } from '../runner';
 import { SuiteSpec, Test } from '../testSpec';
 
@@ -78,7 +78,7 @@ export class BaseReporter implements Reporter  {
     }
 
     if (result.status === test.expectedStatus) {
-      if (test.results.length === 1) {
+      if (test.runs.length === 1) {
         // as expected from the first attempt
         this.asExpected.push(test);
       } else {
@@ -90,7 +90,7 @@ export class BaseReporter implements Reporter  {
       }
       return;
     }
-    if (result.status === 'passed' || result.status === 'timedOut' || test.results.length === this.config.retries + 1) {
+    if (result.status === 'passed' || result.status === 'timedOut' || test.runs.length === this.config.retries + 1) {
       // We made as many retries as we could, still failing.
       this.unexpected.add(test);
     }
@@ -173,15 +173,15 @@ export class BaseReporter implements Reporter  {
     let relativePath = path.relative(this.config.testDir, spec.file) || path.basename(spec.file);
     if (spec.location.includes(spec.file))
       relativePath += spec.location.substring(spec.file.length);
-    const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
+    const passedUnexpectedlySuffix = test.runs[0].status === 'passed' ? ' -- passed unexpectedly' : '';
     const header = `  ${index ? index + ')' : ''} ${relativePath} › ${spec.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
 
-    // Print configuration.
-    if (test.configuration)
-      tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeConfiguration(test.configuration)));
+    // Print parameters.
+    if (test.parameters)
+      tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeParameters(test.parameters)));
 
-    for (const result of test.results) {
+    for (const result of test.runs) {
       if (result.status === 'passed')
         continue;
       if (result.status === 'timedOut') {
@@ -197,7 +197,7 @@ export class BaseReporter implements Reporter  {
   }
 
   hasResultWithStatus(test: Test, status: TestStatus): boolean {
-    return !!test.results.find(r => r.status === status);
+    return !!test.runs.find(r => r.status === status);
   }
 }
 
@@ -243,9 +243,9 @@ function positionInFile(stack: string, file: string): { column: number; line: nu
   return null;
 }
 
-function serializeConfiguration(configuration: Configuration): string {
+function serializeParameters(parameters: Parameters): string {
   const tokens = [];
-  for (const { name, value } of configuration)
+  for (const { name, value } of parameters)
     tokens.push(`${name}=${value}`);
   return tokens.join(', ');
 }

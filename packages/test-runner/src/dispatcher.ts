@@ -18,7 +18,7 @@ import child_process from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
-import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestResult, Configuration } from './ipc';
+import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestResult, Parameters } from './ipc';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
 import assert from 'assert';
@@ -44,7 +44,7 @@ export class Dispatcher {
     this._suite._assignIds();
     for (const suite of this._suite.suites) {
       for (const test of suite._allTests()) {
-        for (const testRun of test.runs)
+        for (const testRun of test.variants)
           this._testById.set(testRun._id, { testRun, result: testRun._appendResult() });
       }
     }
@@ -62,17 +62,17 @@ export class Dispatcher {
     for (const suite of this._suite.suites) {
       const testsByWorkerHash = new Map<string, {
         testRuns: Test[],
-        configuration: Configuration,
-        configurationString: string
+        parameters: Parameters,
+        parametersString: string
       }>();
       for (const test of suite._allTests()) {
-        for (const testRun of test.runs) {
+        for (const testRun of test.variants) {
           let entry = testsByWorkerHash.get(testRun._workerHash);
           if (!entry) {
             entry = {
               testRuns: [],
-              configuration: testRun.configuration,
-              configurationString: testRun._configurationString
+              parameters: testRun.parameters,
+              parametersString: testRun._parametersString
             };
             testsByWorkerHash.set(testRun._workerHash, entry);
           }
@@ -85,8 +85,8 @@ export class Dispatcher {
         result.push({
           ids: entry.testRuns.map(testRun => testRun._id),
           file: suite.file,
-          configuration: entry.configuration,
-          configurationString: entry.configurationString,
+          parameters: entry.parameters,
+          parametersString: entry.parametersString,
           hash
         });  
       }
@@ -156,7 +156,7 @@ export class Dispatcher {
       // Only retry expected failures, not passes and only if the test failed.
       if (this._config.retries && params.failedTestId) {
         const pair = this._testById.get(params.failedTestId);
-        if (pair.testRun.expectedStatus === 'passed' && pair.testRun.results.length < this._config.retries + 1) {
+        if (pair.testRun.expectedStatus === 'passed' && pair.testRun.runs.length < this._config.retries + 1) {
           pair.result = pair.testRun._appendResult();
           remaining.unshift(pair.testRun._id);
         }

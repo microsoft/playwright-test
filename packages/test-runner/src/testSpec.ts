@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Configuration, TestResult, TestStatus } from "./ipc";
+import { Parameters, TestResult, TestStatus } from "./ipc";
 
 export class Spec {
   title: string;
@@ -47,7 +47,7 @@ export class Spec {
 
 export class TestSpec extends Spec {
   fn: Function;
-  runs: Test[] = [];
+  variants: Test[] = [];
 
   constructor(title: string, fn: Function, suite: SuiteSpec) {
     super(title, suite);
@@ -57,7 +57,7 @@ export class TestSpec extends Spec {
   }
 
   _ok(): boolean {
-    return !this.runs.find(r => !r.ok());
+    return !this.variants.find(r => !r.ok());
   }
 }
 
@@ -135,8 +135,8 @@ export class SuiteSpec extends Spec {
 
   _assignIds() {
     this.findTest((test: TestSpec) => {
-      for (const run of test.runs)
-        run._id = `${test._ordinal}@${run.spec.file}::[${run._configurationString}]`;
+      for (const run of test.variants)
+        run._id = `${test._ordinal}@${run.spec.file}::[${run._parametersString}]`;
     });
   }
 }
@@ -152,10 +152,10 @@ export class Test {
   workerId: number;
   annotations: any[];
 
-  configuration: Configuration;
-  results: TestResult[] = [];
+  parameters: Parameters;
+  runs: TestResult[] = [];
 
-  _configurationString: string;
+  _parametersString: string;
   _workerHash: string;
   _id: string;
 
@@ -170,19 +170,19 @@ export class Test {
       stderr: [],
       data: {}
     };
-    this.results.push(result);
+    this.runs.push(result);
     return result;
   }
 
   ok(): boolean {
     if (this.skipped)
       return true;
-    const hasFailedResults = !!this.results.find(r => r.status !== this.expectedStatus);
+    const hasFailedResults = !!this.runs.find(r => r.status !== this.expectedStatus);
     if (!hasFailedResults)
       return true;
     if (!this.flaky)
       return false;
-    const hasPassedResults = !!this.results.find(r => r.status === this.expectedStatus);
+    const hasPassedResults = !!this.runs.find(r => r.status === this.expectedStatus);
     return hasPassedResults;
   }
 }

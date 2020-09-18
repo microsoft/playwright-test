@@ -24,7 +24,7 @@ import { TestResult } from '../ipc';
 export interface SerializedSuite {
   title: string;
   file: string;
-  tests: ReturnType<JSONReporter['_serializeTest']>[];
+  tests: ReturnType<JSONReporter['_serializeTestSpec']>[];
   suites?: SerializedSuite[];
 }
 
@@ -79,29 +79,29 @@ class JSONReporter implements Reporter {
     return {
       title: suite.title,
       file: suite.file,
-      tests: suite.tests.map(test => this._serializeTest(test)),
+      tests: suite.tests.map(test => this._serializeTestSpec(test)),
       suites: suites.length ? suites : undefined,
     };
   }
 
-  private _serializeTest(test: TestSpec) {
+  private _serializeTestSpec(testSpec: TestSpec) {
     return {
-      title: test.title,
-      file: test.file,
-      runs: test.runs.map(r => this._serializeTestRun(r))
+      title: testSpec.title,
+      file: testSpec.file,
+      variants: testSpec.variants.map(r => this._serializeTest(r))
     };
   }
 
-  private _serializeTestRun(test: Test) {
+  private _serializeTest(test: Test) {
     return {
       workerId: test.workerId,
-      configuration: test.configuration,
+      parameters: test.parameters,
       only: test.only,
       slow: test.slow,
       timeout: test.timeout,
       annotations: test.annotations,
       expectedStatus: test.expectedStatus,
-      results: test.results.map(r => this._serializeTestResult(r))
+      runs: test.runs.map(r => this._serializeTestResult(r))
     };
   }
 

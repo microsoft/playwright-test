@@ -16,7 +16,7 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Configuration } from './ipc';
+import { Parameters } from './ipc';
 import { RunnerConfig } from './runnerConfig';
 import { SuiteSpec, TestSpec, Test } from './testSpec';
 
@@ -51,7 +51,7 @@ export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteS
       // they are compatible.
       const registrationsHash = computeWorkerRegistrationHash(fixtures);
 
-      const generatorConfigurations: Configuration[] = [];
+      const generatorConfigurations: Parameters[] = [];
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
       for (const name of fixtures) {
@@ -72,13 +72,13 @@ export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteS
 
       for (const configuration of generatorConfigurations) {
         for (let i = 0; i < config.repeatEach; ++i) {
-          const configurationString = serializeConfiguration(configuration) +  `#repeat-${i}#`;
-          const workerHash = registrationsHash + '@' + configurationString;
+          const parametersString = serializeParameters(configuration) +  `#repeat-${i}#`;
+          const workerHash = registrationsHash + '@' + parametersString;
           const testRun = new Test(test);
-          testRun.configuration = configuration;
-          testRun._configurationString = configurationString;
+          testRun.parameters = configuration;
+          testRun._parametersString = parametersString;
           testRun._workerHash = workerHash;
-          test.runs.push(testRun);
+          test.variants.push(testRun);
         }
       }
     }
@@ -111,9 +111,9 @@ function computeWorkerRegistrationHash(fixtures: string[]): string {
   return hash.digest('hex');
 }
 
-function serializeConfiguration(configuration: Configuration): string {
+function serializeParameters(parameters: Parameters): string {
   const tokens = [];
-  for (const { name, value } of configuration)
+  for (const { name, value } of parameters)
     tokens.push(`${name}=${value}`);
   return tokens.join(', ');
 }

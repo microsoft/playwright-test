@@ -30,7 +30,7 @@ it('should access error in fixture', async ({ runTest, outputDir }) => {
 it('should access data in fixture', async ({ runTest }) => {
   const { exitCode, report } = await runTest('test-data-visible-in-fixture.ts');
   expect(exitCode).toBe(0);
-  const testResult = report.suites[0].tests[0].runs[0].results[0];
+  const testResult = report.suites[0].tests[0].variants[0].runs[0];
   expect(testResult.data).toEqual({ 'myname': 'myvalue' });
   expect(testResult.stdout).toEqual([{ text: 'console.log\n' }]);
   expect(testResult.stderr).toEqual([{ text: 'console.error\n' }]);
