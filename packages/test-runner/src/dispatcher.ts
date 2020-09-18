@@ -50,9 +50,14 @@ export class Dispatcher {
     }
 
     if (process.stdout.isTTY) {
+      const workers = new Set<string>();
+      suite.findTest(test => {
+        for (const variant of test.variants)
+          workers.add(test.file + variant._workerHash);
+      });
       const total = suite.total();
       console.log();
-      const jobs = Math.min(config.jobs, suite.suites.length);
+      const jobs = Math.min(config.jobs, workers.size);
       console.log(`Running ${total} test${total > 1 ? 's' : ''} using ${jobs} worker${jobs > 1 ? 's' : ''}`);
     }
   }

@@ -74,8 +74,8 @@ export class SuiteSpec extends Spec {
 
   total(): number {
     let count = 0;
-    this.findTest(fn => {
-      ++count;
+    this.findTest(test => {
+      count += test.variants.length;
     });
     return count;
   }
