@@ -25,7 +25,7 @@ import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout, serializeError } from './util';
-import { Suite } from './runnerTest';
+import { RunnerSuite } from './runnerTest';
 import { runnerSpec } from './runnerSpec';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
@@ -39,9 +39,9 @@ export class Runner {
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
-  private _rootSuite: Suite;
+  private _rootSuite: RunnerSuite;
   private _hasBadFiles = false;
-  private _suites: Suite[] = [];
+  private _suites: RunnerSuite[] = [];
 
   constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
@@ -59,7 +59,7 @@ export class Runner {
   loadFiles(files: string[]) {
     // First traverse tests.
     for (const file of files) {
-      const suite = new Suite('');
+      const suite = new RunnerSuite('');
       suite.file = file;
       const revertBabelRequire = runnerSpec(suite);
       try {
@@ -106,7 +106,7 @@ export class Runner {
     return result;
   }
 
-  private async _runTests(suite: Suite): Promise<RunResult> {
+  private async _runTests(suite: RunnerSuite): Promise<RunResult> {
     // Trial run does not need many workers, use one.
     const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
     const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);

@@ -17,8 +17,8 @@
 import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { BaseReporter } from './base';
-import { Suite, TestVariant } from '../runnerTest';
 import { TestResult } from '../ipc';
+import { TestVariant, Suite } from '../test';
 
 class LineReporter extends BaseReporter {
   private _total: number;

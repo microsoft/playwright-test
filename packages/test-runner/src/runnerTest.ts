@@ -14,174 +14,33 @@
  * limitations under the License.
  */
 
-import { Parameters, TestResult, TestStatus } from "./ipc";
+import { Test, Suite, TestVariant } from "./test";
 
-export class Spec {
-  title: string;
-  file: string;
-  location: string;
-  parent?: Suite;
-
-  _only = false;
-  _skipped = false;
-
-  _ordinal: number;
-
-  constructor(title: string, parent?: Suite) {
-    this.title = title;
-    this.parent = parent;
-  }
-
-  titlePath(): string[] {
-    if (!this.parent)
-      return [];
-    if (!this.title)
-      return this.parent.titlePath();
-    return [...this.parent.titlePath(), this.title];
-  }
-
-  fullTitle(): string {
-    return this.titlePath().join(' ');
+export class RunnerTest extends Test {
+  constructor(title: string, fn: Function, suite: RunnerSuite) {
+    super(title, fn, suite);
   }
 }
 
-export class Test extends Spec {
-  fn: Function;
-  variants: TestVariant[] = [];
-
-  constructor(title: string, fn: Function, suite: Suite) {
-    super(title, suite);
-    this.fn = fn;
-    suite._addTest(this);
-  }
-
-  _ok(): boolean {
-    return !this.variants.find(r => !r.ok());
-  }
-}
-
-export class Suite extends Spec {
-  suites: Suite[] = [];
-  tests: Test[] = [];
-  _entries: (Suite | Test)[] = [];
-
-  constructor(title: string, parent?: Suite) {
+export class RunnerSuite extends Suite {
+  constructor(title: string, parent?: RunnerSuite) {
     super(title, parent);
-    if (parent)
-      parent._addSuite(this);
-  }
-
-  total(): number {
-    let count = 0;
-    this.findTest(test => {
-      count += test.variants.length;
-    });
-    return count;
-  }
-
-  _addTest(test: Test) {
-    test.parent = this;
-    this.tests.push(test);
-    this._entries.push(test);
-  }
-
-  _addSuite(suite: Suite) {
-    suite.parent = this;
-    this.suites.push(suite);
-    this._entries.push(suite);
-  }
-
-  findTest(fn: (test: Test) => boolean | void): boolean {
-    for (const suite of this.suites) {
-      if (suite.findTest(fn))
-        return true;
-    }
-    for (const test of this.tests) {
-      if (fn(test))
-        return true;
-    }
-    return false;
-  }
-
-  findSuite(fn: (suite: Suite) => boolean | void): boolean {
-    if (fn(this))
-      return true;
-    for (const suite of this.suites) {
-      if (suite.findSuite(fn))
-        return true;
-    }
-    return false;
-  }
-
-  _allTests(): Test[] {
-    const result: Test[] = [];
-    this.findTest(test => { result.push(test); });
-    return result;
-  }
-
-  _renumber() {
-    // All tests and suites are identified with their ordinals.
-    let ordinal = 0;
-    this.findSuite((suite: Suite) => {
-      suite._ordinal = ordinal++;
-    });
-
-    ordinal = 0;
-    this.findTest((test: Test) => {
-      test._ordinal = ordinal++;
-    });
   }
 
   _assignIds() {
-    this.findTest((test: Test) => {
-      for (const run of test.variants)
+    this.findTest((test: RunnerTest) => {
+      for (const run of test.variants as RunnerTestVariant[])
         run._id = `${test._ordinal}@${run.spec.file}::[${run._parametersString}]`;
     });
   }
 }
 
-export class TestVariant {
-  spec: Test;
-  skipped: boolean;
-  flaky: boolean;
-  only: boolean;
-  slow: boolean;
-  expectedStatus: TestStatus;
-  timeout: number;
-  workerId: number;
-  annotations: any[];
-
-  parameters: Parameters;
-  runs: TestResult[] = [];
-
+export class RunnerTestVariant extends TestVariant {
   _parametersString: string;
   _workerHash: string;
   _id: string;
 
-  constructor(spec: Test) {
-    this.spec = spec;
-  }
-
-  _appendResult(): TestResult {
-    const result: TestResult = {
-      duration: 0,
-      stdout: [],
-      stderr: [],
-      data: {}
-    };
-    this.runs.push(result);
-    return result;
-  }
-
-  ok(): boolean {
-    if (this.skipped)
-      return true;
-    const hasFailedResults = !!this.runs.find(r => r.status !== this.expectedStatus);
-    if (!hasFailedResults)
-      return true;
-    if (!this.flaky)
-      return false;
-    const hasPassedResults = !!this.runs.find(r => r.status === this.expectedStatus);
-    return hasPassedResults;
+  constructor(spec: RunnerTest) {
+    super(spec);
   }
 }

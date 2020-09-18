@@ -18,6 +18,7 @@ import { WorkerTest, WorkerSuite } from './workerTest';
 import { installTransform } from './transform';
 import { extractLocation } from './util';
 import { setImplementation } from './spec';
+import { TestModifier } from './testModifier';
 
 let currentRunSuites: WorkerSuite[];
 
@@ -25,41 +26,35 @@ export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any)
   const suites = [suite];
   currentRunSuites = suites;
 
-  const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: (test: WorkerTest, parameters: any) => void | Function, fn?: Function) => {
+  const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: (modifier: TestModifier, parameters: any) => void | Function, fn?: Function) => {
     const suite = suites[0];
     if (typeof fn !== 'function') {
       fn = modifierFn;
       modifierFn = null;
     }
-    const test = new WorkerTest(title, fn);
+    const test = new WorkerTest(title, fn, suite);
     if (modifierFn)
-      modifierFn(test, parameters);
+      modifierFn(test._modifier, parameters);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     test._timeout = timeout;
-    if (spec === 'only')
-      test._only = true;
     if (spec === 'skip')
-      test._skipped = true;
-    suite._addTest(test);
+      test._modifier.skip();
     return test;
   };
 
-  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (suite: WorkerSuite, parameters: any) => void | Function, fn?: Function) => {
+  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (modifier: TestModifier, parameters: any) => void | Function, fn?: Function) => {
     if (typeof fn !== 'function') {
       fn = modifierFn;
       modifierFn = null;
     }
     const child = new WorkerSuite(title, suites[0]);
     if (modifierFn)
-      modifierFn(child, parameters);
-    suites[0]._addSuite(child);
+      modifierFn(child._modifier, parameters);
     child.file = suite.file;
     child.location = extractLocation(new Error());
-    if (spec === 'only')
-      child._only = true;
     if (spec === 'skip')
-      child._skipped = true;
+      child._modifier.skip();
     suites.unshift(child);
     fn();
     suites.shift();

@@ -16,7 +16,7 @@
 
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { Suite, TestVariant } from '../runnerTest';
+import { Suite, TestVariant } from '../test';
 import { TestResult } from '../ipc';
 
 export class Multiplexer implements Reporter {

@@ -22,7 +22,7 @@ import path from 'path';
 import StackUtils from 'stack-utils';
 import { Parameters, TestResult, TestStatus } from '../ipc';
 import { Reporter, RunnerConfig } from '../runner';
-import { Suite, TestVariant } from '../runnerTest';
+import { TestVariant, Suite } from '../test';
 
 const stackUtils = new StackUtils();
 

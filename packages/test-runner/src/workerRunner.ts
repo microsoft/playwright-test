@@ -137,7 +137,7 @@ export class WorkerRunner extends EventEmitter {
       if (entry instanceof WorkerSuite)
         await this._runSuite(entry);
       else
-        await this._runTest(entry);
+        await this._runTest(entry as WorkerTest);
     }
     if (!this._trialRun) {
       try {
@@ -158,12 +158,7 @@ export class WorkerRunner extends EventEmitter {
 
     const id = test._id;
     this._testId = id;
-    // We only know resolved skipped/flaky value in the worker,
-    // send it to the runner.
-    test._skipped = test.isSkipped();
-    test._flaky = test.isFlaky();
-    test._slow = test.isSlow();
-    test._timeout = test.isSlow() ? this._timeout * 3 : this._timeout;
+    test._timeout = test._modifier.isSlow() ? this._timeout * 3 : this._timeout;
     const testBeginEvent: TestBeginPayload = {
       id,
       timeout: test._timeout,
@@ -180,7 +175,7 @@ export class WorkerRunner extends EventEmitter {
     };
     this._testResult = result;
 
-    if (test._skipped) {
+    if (test._modifier.isSkipped()) {
       result.status = 'skipped';
       const testEndEvent: TestEndPayload = { id, result };
       this.emit('testEnd', testEndEvent);
@@ -189,13 +184,18 @@ export class WorkerRunner extends EventEmitter {
 
     const startTime = Date.now();
     try {
-      const testInfo = { config: this._config, test, result };
+      const testInfo: TestInfo = {
+        config: this._config,
+        test,
+        modifier: test._modifier,
+        result
+      };
       if (!this._trialRun) {
-        await this._runHooks(test.parent, 'beforeEach', 'before', testInfo);
+        await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
         await fixturePool.runTestWithFixturesAndTimeout(test.fn, test._timeout, testInfo);
-        await this._runHooks(test.parent, 'afterEach', 'after', testInfo);
+        await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
       } else {
-        result.status = test.expectedStatus();
+        result.status = test._modifier.expectedStatus();
       }
     } catch (error) {
       // Error in the test fixture teardown.
@@ -217,7 +217,7 @@ export class WorkerRunner extends EventEmitter {
     if (!suite._hasTestsToRun())
       return;
     const all = [];
-    for (let s = suite; s; s = s.parent) {
+    for (let s = suite; s; s = s.parent as WorkerSuite) {
       const funcs = s._hooks.filter(e => e.type === type).map(e => e.fn);
       all.push(...funcs.reverse());
     }
@@ -239,11 +239,11 @@ export class WorkerRunner extends EventEmitter {
 function testToPayload(test: WorkerTest): TestBeginPayload {
   return {
     id: test._id,
-    skipped: test.isSkipped(),
-    flaky: test.isFlaky(),
-    slow: test.isSlow(),
-    annotations: test._collectAnnotations(),
-    expectedStatus: test.expectedStatus(),
+    skipped: test._modifier.isSkipped(),
+    flaky: test._modifier.isFlaky(),
+    slow: test._modifier.isSlow(),
+    annotations: test._modifier._collectAnnotations(),
+    expectedStatus: test._modifier.expectedStatus(),
     timeout: test._timeout
   };
 }

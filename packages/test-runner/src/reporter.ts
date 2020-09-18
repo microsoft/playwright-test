@@ -16,7 +16,7 @@ import { TestResult } from './ipc';
  */
 
 import { RunnerConfig } from './runnerConfig';
-import { TestVariant, Suite } from './runnerTest';
+import { TestVariant, Suite } from './test';
 
 export interface Reporter {
   onBegin(config: RunnerConfig, suite: Suite): void;

@@ -14,175 +14,27 @@
  * limitations under the License.
  */
 
-import { TestResult, TestStatus } from './ipc';
-import { Modifier } from './spec';
+import { Test, Suite } from './test';
+import { TestModifier } from './testModifier';
 
-class Runnable implements Modifier {
-  title: string;
-  file: string;
-  location: string;
-  parent?: WorkerSuite;
-
-  _only = false;
-  _skipped = false;
-  _flaky = false;
-  _slow = false;
-  _expectedStatus?: TestStatus = 'passed';
-  // Annotations are those created by test.fail('Annotation')
-  _annotations: any[] = [];
-
+export class WorkerTest extends Test {
   _id: string;
-  _ordinal: number;
-
-  slow(arg?: boolean | string, description?: string) {
-    const processed = this._interpretCondition(arg, description);
-    if (processed.condition) {
-      this._slow = true;
-      this._annotations.push({
-        type: 'slow',
-        description: processed.description
-      });
-    }
-  }
-
-  skip(arg?: boolean | string, description?: string) {
-    const processed = this._interpretCondition(arg, description);
-    if (processed.condition) {
-      this._skipped = true;
-      this._annotations.push({
-        type: 'skip',
-        description: processed.description
-      });
-    }
-  }
-
-  fixme(arg?: boolean | string, description?: string) {
-    const processed = this._interpretCondition(arg, description);
-    if (processed.condition) {
-      this._skipped = true;
-      this._annotations.push({
-        type: 'fixme',
-        description: processed.description
-      });
-    }
-  }
-
-  flaky(arg?: boolean | string, description?: string) {
-    const processed = this._interpretCondition(arg, description);
-    if (processed.condition) {
-      this._flaky = true;
-      this._annotations.push({
-        type: 'flaky',
-        description: processed.description
-      });
-    }
-  }
-
-  fail(arg?: boolean | string, description?: string) {
-    const processed = this._interpretCondition(arg, description);
-    if (processed.condition) {
-      this._expectedStatus = 'failed';
-      this._annotations.push({
-        type: 'fail',
-        description: processed.description
-      });
-    }
-  }
-
-  private _interpretCondition(arg?: boolean | string, description?: string): { condition: boolean, description?: string } {
-    if (arg === undefined && description === undefined)
-      return { condition: true };
-    if (typeof arg === 'string')
-      return { condition: true, description: arg };
-    return { condition: !!arg, description };
-  }
-
-  isSkipped(): boolean {
-    return this._skipped || (this.parent && this.parent.isSkipped());
-  }
-
-  isSlow(): boolean {
-    return this._slow || (this.parent && this.parent.isSlow());
-  }
-
-  isFlaky(): boolean {
-    return this._flaky || (this.parent && this.parent.isFlaky());
-  }
-й
-  expectedStatus(): TestStatus {
-    return this._expectedStatus || (this.parent && this.parent.expectedStatus()) || 'passed';
-  }
-
-  _collectAnnotations(): any[] {
-    if (!this.parent)
-      return this._annotations;
-    return [...this._annotations, ...this.parent._collectAnnotations()];
-  }
-}
-
-export class WorkerTest extends Runnable {
-  fn: Function;
-  results: TestResult[] = [];
   _timeout = 0;
+  _modifier: TestModifier;
 
-  constructor(title: string, fn: Function) {
-    super();
-    this.title = title;
-    this.fn = fn;
+  constructor(title: string, fn: Function, suite: WorkerSuite) {
+    super(title, fn, suite);
+    this._modifier = new TestModifier(suite._modifier);
   }
 }
 
-export class WorkerSuite extends Runnable {
-  suites: WorkerSuite[] = [];
-  tests: WorkerTest[] = [];
-
+export class WorkerSuite extends Suite {
   _hooks: { type: string, fn: Function } [] = [];
-  _entries: (WorkerSuite | WorkerTest)[] = [];
+  _modifier: TestModifier;
 
   constructor(title: string, parent?: WorkerSuite) {
-    super();
-    this.title = title;
-    this.parent = parent;
-  }
-
-  _addTest(test: WorkerTest) {
-    test.parent = this;
-    this.tests.push(test);
-    this._entries.push(test);
-  }
-
-  _addSuite(suite: WorkerSuite) {
-    suite.parent = this;
-    this.suites.push(suite);
-    this._entries.push(suite);
-  }
-
-  findTest(fn: (test: WorkerTest) => boolean | void): boolean {
-    for (const suite of this.suites) {
-      if (suite.findTest(fn))
-        return true;
-    }
-    for (const test of this.tests) {
-      if (fn(test))
-        return true;
-    }
-    return false;
-  }
-
-  _allTests(): WorkerTest[] {
-    const result: WorkerTest[] = [];
-    this.findTest(test => { result.push(test); });
-    return result;
-  }
-
-  _renumber() {
-    // All tests and suites are identified with their ordinals.
-    let ordinal = 0;
-
-    ordinal = 0;
-    this.findTest((test: WorkerTest) => {
-      test._ordinal = ordinal++;
-    });
+    super(title, parent);
+    this._modifier = new TestModifier(parent ? parent._modifier : undefined);
   }
 
   _assignIds(parametersString: string) {
@@ -196,13 +48,10 @@ export class WorkerSuite extends Runnable {
   }
 
   _hasTestsToRun(): boolean {
-    let found = false;
-    this.findTest(test => {
-      if (!test.isSkipped()) {
-        found = true;
+    return this.findTest((test: WorkerTest) => {
+      if (!test._modifier.isSkipped()) {
         return true;
       }
     });
-    return found;
   }
 }

@@ -18,8 +18,8 @@ import * as fs from 'fs';
 import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { Suite, TestVariant, Test } from '../runnerTest';
 import { TestResult } from '../ipc';
+import { TestVariant, Suite, Test } from '../test';
 
 export interface SerializedSuite {
   title: string;

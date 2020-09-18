@@ -17,9 +17,10 @@
 import debug from 'debug';
 import * as fs from 'fs';
 import { RunnerConfig } from './runnerConfig';
-import { WorkerTest } from './workerTest';
 import { raceAgainstTimeout, serializeError } from './util';
 import { TestResult } from './ipc';
+import { Test } from './test';
+import { TestModifier } from './testModifier';
 
 type Scope = 'test' | 'worker';
 
@@ -33,7 +34,8 @@ type FixtureRegistration = {
 
 export type TestInfo = {
   config: RunnerConfig;
-  test: WorkerTest;
+  test: Test;
+  modifier: TestModifier;
   result: TestResult;
 };
 
