@@ -17,7 +17,7 @@
 import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { BaseReporter } from './base';
-import { SuiteSpec, TestRun } from '../testSpec';
+import { SuiteSpec, Test } from '../testSpec';
 import { TestResult } from '../ipc';
 
 class LineReporter extends BaseReporter {
@@ -31,11 +31,11 @@ class LineReporter extends BaseReporter {
     console.log();
   }
 
-  onTestEnd(test: TestRun, result: TestResult) {
+  onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
-    const declaration = test.declaration;
-    const baseName = path.basename(declaration.file);
-    const title = `${baseName} - ${declaration.fullTitle()}`;
+    const spec = test.spec;
+    const baseName = path.basename(spec.file);
+    const title = `${baseName} - ${spec.fullTitle()}`;
     process.stdout.write(`\u001B[1A\u001B[2K[${++this._current}/${this._total}] ${title}\n`);
     if (!test.ok()) {
       process.stdout.write(`\u001B[1A\u001B[2K`);

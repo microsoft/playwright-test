@@ -16,11 +16,11 @@
 
 import colors from 'colors/safe';
 import { BaseReporter } from './base';
-import { TestRun } from '../testSpec';
+import { Test } from '../testSpec';
 import { TestResult } from '../ipc';
 
 class DotReporter extends BaseReporter {
-  onTestEnd(test: TestRun, result: TestResult) {
+  onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
     switch (result.status) {
       case 'skipped': process.stdout.write(colors.yellow('∘')); break;

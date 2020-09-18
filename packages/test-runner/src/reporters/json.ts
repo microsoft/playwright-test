@@ -18,7 +18,7 @@ import * as fs from 'fs';
 import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { SuiteSpec, TestRun, TestSpec } from '../testSpec';
+import { SuiteSpec, Test, TestSpec } from '../testSpec';
 import { TestResult } from '../ipc';
 
 export interface SerializedSuite {
@@ -48,16 +48,16 @@ class JSONReporter implements Reporter {
     this.onEnd();
   }
 
-  onTestStdOut(test: TestRun, chunk: string | Buffer) {
+  onTestStdOut(test: Test, chunk: string | Buffer) {
   }
 
-  onTestStdErr(test: TestRun, chunk: string | Buffer) {
+  onTestStdErr(test: Test, chunk: string | Buffer) {
   }
 
-  onTestBegin(test: TestRun): void {
+  onTestBegin(test: Test): void {
   }
 
-  onTestEnd(test: TestRun, result: TestResult): void {
+  onTestEnd(test: Test, result: TestResult): void {
   }
 
   onFileError(file: string, error: any): void {
@@ -92,7 +92,7 @@ class JSONReporter implements Reporter {
     };
   }
 
-  private _serializeTestRun(test: TestRun) {
+  private _serializeTestRun(test: Test) {
     return {
       workerId: test.workerId,
       configuration: test.configuration,

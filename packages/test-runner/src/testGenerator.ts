@@ -18,7 +18,7 @@ import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
 import { Configuration } from './ipc';
 import { RunnerConfig } from './runnerConfig';
-import { SuiteSpec, TestSpec, TestRun } from './testSpec';
+import { SuiteSpec, TestSpec, Test } from './testSpec';
 
 export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteSpec {
   const rootSuite = new SuiteSpec('');
@@ -74,7 +74,7 @@ export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteS
         for (let i = 0; i < config.repeatEach; ++i) {
           const configurationString = serializeConfiguration(configuration) +  `#repeat-${i}#`;
           const workerHash = registrationsHash + '@' + configurationString;
-          const testRun = new TestRun(test);
+          const testRun = new Test(test);
           testRun.configuration = configuration;
           testRun._configurationString = configurationString;
           testRun._workerHash = workerHash;

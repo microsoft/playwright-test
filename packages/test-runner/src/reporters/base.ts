@@ -22,16 +22,16 @@ import path from 'path';
 import StackUtils from 'stack-utils';
 import { Configuration, TestResult, TestStatus } from '../ipc';
 import { Reporter, RunnerConfig } from '../runner';
-import { SuiteSpec, TestRun } from '../testSpec';
+import { SuiteSpec, Test } from '../testSpec';
 
 const stackUtils = new StackUtils();
 
 export class BaseReporter implements Reporter  {
-  skipped: TestRun[] = [];
-  asExpected: TestRun[] = [];
-  unexpected = new Set<TestRun>();
-  expectedFlaky: TestRun[] = [];
-  unexpectedFlaky: TestRun[] = [];
+  skipped: Test[] = [];
+  asExpected: Test[] = [];
+  unexpected = new Set<Test>();
+  expectedFlaky: Test[] = [];
+  unexpectedFlaky: Test[] = [];
   duration = 0;
   startTime: number;
   config: RunnerConfig;
@@ -53,24 +53,24 @@ export class BaseReporter implements Reporter  {
     this.suite = suite;
   }
 
-  onTestBegin(test: TestRun) {
+  onTestBegin(test: Test) {
   }
 
-  onTestStdOut(test: TestRun, chunk: string | Buffer) {
+  onTestStdOut(test: Test, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stdout.write(chunk);
   }
 
-  onTestStdErr(test: TestRun, chunk: string | Buffer) {
+  onTestStdErr(test: Test, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stderr.write(chunk);
   }
 
-  onTestEnd(test: TestRun, result: TestResult) {
-    const declaration = test.declaration;
-    let duration = this.fileDurations.get(declaration.file) || 0;
+  onTestEnd(test: Test, result: TestResult) {
+    const spec = test.spec;
+    let duration = this.fileDurations.get(spec.file) || 0;
     duration += result.duration;
-    this.fileDurations.set(declaration.file, duration);
+    this.fileDurations.set(spec.file, duration);
 
     if (result.status === 'skipped') {
       this.skipped.push(test);
@@ -161,20 +161,20 @@ export class BaseReporter implements Reporter  {
     }
   }
 
-  private _printFailures(failures: TestRun[]) {
+  private _printFailures(failures: Test[]) {
     failures.forEach((test, index) => {
       console.log(this.formatFailure(test, index + 1));
     });
   }
 
-  formatFailure(test: TestRun, index?: number): string {
+  formatFailure(test: Test, index?: number): string {
     const tokens: string[] = [];
-    const declaration = test.declaration;
-    let relativePath = path.relative(this.config.testDir, declaration.file) || path.basename(declaration.file);
-    if (declaration.location.includes(declaration.file))
-      relativePath += declaration.location.substring(declaration.file.length);
+    const spec = test.spec;
+    let relativePath = path.relative(this.config.testDir, spec.file) || path.basename(spec.file);
+    if (spec.location.includes(spec.file))
+      relativePath += spec.location.substring(spec.file.length);
     const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
-    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${declaration.fullTitle()}${passedUnexpectedlySuffix}`;
+    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${spec.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
 
     // Print configuration.
@@ -188,7 +188,7 @@ export class BaseReporter implements Reporter  {
         tokens.push('');
         tokens.push(indent(colors.red(`Timeout of ${test.timeout}ms exceeded.`), '    '));
       } else {
-        tokens.push(indent(formatError(result.error, declaration.file), '    '));
+        tokens.push(indent(formatError(result.error, spec.file), '    '));
       }
       break;
     }
@@ -196,7 +196,7 @@ export class BaseReporter implements Reporter  {
     return tokens.join('\n');
   }
 
-  hasResultWithStatus(test: TestRun, status: TestStatus): boolean {
+  hasResultWithStatus(test: Test, status: TestStatus): boolean {
     return !!test.results.find(r => r.status === status);
   }
 }

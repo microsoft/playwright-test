@@ -18,39 +18,39 @@ import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { RunnerConfig } from '../runnerConfig';
-import { SuiteSpec, TestRun } from '../testSpec';
+import { SuiteSpec, Test } from '../testSpec';
 import { TestResult } from '../ipc';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
   private _lastRow = 0;
-  private _testRows = new Map<TestRun, number>();
+  private _testRows = new Map<Test, number>();
 
   onBegin(config: RunnerConfig, suite: SuiteSpec) {
     super.onBegin(config, suite);
     console.log();
   }
 
-  onTestBegin(test: TestRun) {
+  onTestBegin(test: Test) {
     super.onTestBegin(test);
-    process.stdout.write('    ' + colors.gray(test.declaration.fullTitle() + ': ') + '\n');
+    process.stdout.write('    ' + colors.gray(test.spec.fullTitle() + ': ') + '\n');
     this._testRows.set(test, this._lastRow++);
   }
 
-  onTestEnd(test: TestRun, result: TestResult) {
+  onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
-    const declaration = test.declaration;
+    const spec = test.spec;
 
     const duration = colors.dim(` (${milliseconds(result.duration)})`);
     let text = '';
     if (result.status === 'skipped') {
-      text = colors.green('  - ') + colors.cyan(declaration.fullTitle());
+      text = colors.green('  - ') + colors.cyan(spec.fullTitle());
     } else {
       const statusMark = result.status === 'passed' ? '  ✓ ' : '  x ';
       if (result.status === test.expectedStatus)
-        text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(declaration.fullTitle()) + duration;
+        text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(spec.fullTitle()) + duration;
       else
-        text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + declaration.fullTitle()) + duration;
+        text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + spec.fullTitle()) + duration;
     }
 
     const testRow = this._testRows.get(test);

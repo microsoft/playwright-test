@@ -47,7 +47,7 @@ export class Spec {
 
 export class TestSpec extends Spec {
   fn: Function;
-  runs: TestRun[] = [];
+  runs: Test[] = [];
 
   constructor(title: string, fn: Function, suite: SuiteSpec) {
     super(title, suite);
@@ -136,13 +136,13 @@ export class SuiteSpec extends Spec {
   _assignIds() {
     this.findTest((test: TestSpec) => {
       for (const run of test.runs)
-        run._id = `${test._ordinal}@${run.declaration.file}::[${run._configurationString}]`;
+        run._id = `${test._ordinal}@${run.spec.file}::[${run._configurationString}]`;
     });
   }
 }
 
-export class TestRun {
-  declaration: TestSpec;
+export class Test {
+  spec: TestSpec;
   skipped: boolean;
   flaky: boolean;
   only: boolean;
@@ -159,8 +159,8 @@ export class TestRun {
   _workerHash: string;
   _id: string;
 
-  constructor(declaration: TestSpec) {
-    this.declaration = declaration;
+  constructor(spec: TestSpec) {
+    this.spec = spec;
   }
 
   _appendResult(): TestResult {
