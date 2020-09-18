@@ -17,10 +17,9 @@
 import debug from 'debug';
 import * as fs from 'fs';
 import { RunnerConfig } from './runnerConfig';
-import { serializeError, Test } from './test';
-import { raceAgainstTimeout } from './util';
-import {parse} from '@babel/core';
-import { TestResult } from './testSpec';
+import { Test } from './workerTest';
+import { raceAgainstTimeout, serializeError } from './util';
+import { TestResult } from './ipc';
 
 type Scope = 'test' | 'worker';
 

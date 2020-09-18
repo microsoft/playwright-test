@@ -17,7 +17,7 @@
 const { fixtures } = require('../../');
 const { it, expect } = fixtures;
 
-if (new Error().stack.includes('testRunner'))
+if (new Error().stack.includes('workerRunner'))
   throw new Error('Suite error');
 
 it('passes',() => {

@@ -43,3 +43,27 @@ export async function raceAgainstTimeout<T>(promise: Promise<T>, timeout: number
   });
   return result;
 }
+
+export function serializeError(error: Error | any): any {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      stack: error.stack
+    };
+  }
+  return trimCycles(error);
+}
+
+function trimCycles(obj: any): any {
+  const cache = new Set();
+  return JSON.parse(
+      JSON.stringify(obj, function(key, value) {
+        if (typeof value === 'object' && value !== null) {
+          if (cache.has(value))
+            return '' + value;
+          cache.add(value);
+        }
+        return value;
+      })
+  );
+}

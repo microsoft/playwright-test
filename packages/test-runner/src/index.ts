@@ -25,7 +25,7 @@ import { RunnerConfig } from './runnerConfig';
 import { expect as expectFunction } from './expect';
 import { registerWorkerParameter } from './fixtures';
 import * as spec from './spec';
-import { Test, Suite } from './test';
+import { Suite, Test } from './workerTest';
 
 const mkdirAsync = promisify(fs.mkdir);
 const mkdtempAsync = promisify(fs.mkdtemp);

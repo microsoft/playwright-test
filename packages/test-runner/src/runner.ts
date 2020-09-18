@@ -24,13 +24,11 @@ import { matrix, ParameterRegistration, parameterRegistrations, setParameterValu
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
 import { declarationSpec } from './spec';
-import { serializeError } from './test';
 import { generateTests } from './testGenerator';
-import { raceAgainstTimeout } from './util';
+import { raceAgainstTimeout, serializeError } from './util';
 import { SuiteSpec } from './testSpec';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
-export { Suite, Test } from './test';
 
 const removeFolderAsync = promisify(rimraf);
 

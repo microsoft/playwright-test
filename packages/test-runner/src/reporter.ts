@@ -1,3 +1,4 @@
+import { TestResult } from './ipc';
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -15,7 +16,7 @@
  */
 
 import { RunnerConfig } from './runnerConfig';
-import { TestRun, SuiteSpec, TestResult } from './testSpec';
+import { TestRun, SuiteSpec } from './testSpec';
 
 export interface Reporter {
   onBegin(config: RunnerConfig, suite: SuiteSpec): void;

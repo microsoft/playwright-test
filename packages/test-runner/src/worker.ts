@@ -15,7 +15,7 @@
  */
 
 import { initializeImageMatcher } from './expect';
-import { TestRunner, fixturePool } from './testRunner';
+import { WorkerRunner, fixturePool } from './workerRunner';
 import { Console } from 'console';
 
 let closed = false;
@@ -47,7 +47,7 @@ process.on('SIGINT',() => {});
 process.on('SIGTERM',() => {});
 
 let workerId: number;
-let testRunner: TestRunner;
+let testRunner: WorkerRunner;
 
 process.on('unhandledRejection', (reason, promise) => {
   if (testRunner)
@@ -70,7 +70,7 @@ process.on('message', async message => {
     return;
   }
   if (message.method === 'run') {
-    testRunner = new TestRunner(message.params.entry, message.params.config, workerId);
+    testRunner = new WorkerRunner(message.params.entry, message.params.config, workerId);
     for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, sendMessageToParent.bind(null, event));
     await testRunner.run();

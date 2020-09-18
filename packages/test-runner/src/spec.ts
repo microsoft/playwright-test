@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Test, Suite } from './test';
+import { Test, Suite } from './workerTest';
 import { installTransform } from './transform';
 import { SuiteSpec, TestSpec } from './testSpec';
 

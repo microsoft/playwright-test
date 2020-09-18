@@ -20,8 +20,9 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
+import { Configuration, TestResult, TestStatus } from '../ipc';
 import { Reporter, RunnerConfig } from '../runner';
-import { Configuration, SuiteSpec, TestResult, TestRun, TestStatus } from '../testSpec';
+import { SuiteSpec, TestRun } from '../testSpec';
 
 const stackUtils = new StackUtils();
 

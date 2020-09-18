@@ -16,9 +16,9 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Test, Suite } from './test';
+import { Configuration } from './ipc';
 import { RunnerConfig } from './runnerConfig';
-import { SuiteSpec, TestSpec, TestRun, Configuration } from './testSpec';
+import { SuiteSpec, TestSpec, TestRun } from './testSpec';
 
 export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteSpec {
   const rootSuite = new SuiteSpec('');
@@ -97,39 +97,6 @@ function filterOnly(suite: SuiteSpec) {
     return true;
   }
   return false;
-}
-
-function createSuiteRun(suite: SuiteSpec, tests: Set<TestSpec>, parentSuite: Suite | null, grep: RegExp | null): Suite {
-  const result = new Suite(suite.title, parentSuite);
-  for (const entry of suite._entries) {
-    if (entry instanceof SuiteSpec) {
-      result._addSuite(createSuiteRun(entry, tests, result, grep));
-    } else {
-      const test = entry;
-      if (!tests.has(test))
-        continue;
-      if (grep && !grep.test(test.fullTitle()))
-        continue;
-      const testCopy = createTestRun(test);
-      result._addTest(testCopy);
-    }
-  }
-  result.location = suite.location;
-  result.file = suite.file;
-  result._ordinal = suite._ordinal;
-  result._only = suite._only;
-  result._skipped = suite._skipped;
-  return result;
-}
-
-function createTestRun(test: TestSpec): Test {
-  const result = new Test(test.title, test.fn);
-  result.location = test.location;
-  result.file = test.file;
-  result._ordinal = test._ordinal;
-  result._only = test._only;
-  result._skipped = test._skipped;
-  return result;
 }
 
 function computeWorkerRegistrationHash(fixtures: string[]): string {

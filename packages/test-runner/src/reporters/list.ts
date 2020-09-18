@@ -18,7 +18,8 @@ import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { RunnerConfig } from '../runnerConfig';
-import { SuiteSpec, TestResult, TestRun } from '../testSpec';
+import { SuiteSpec, TestRun } from '../testSpec';
+import { TestResult } from '../ipc';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;

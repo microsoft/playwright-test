@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-export type Configuration = { name: string, value: string }[];
-
-export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
-
-export type TestResult = {
-  duration: number;
-  status?: TestStatus;
-  error?: any;
-  stdout: (string | Buffer)[];
-  stderr: (string | Buffer)[];
-  data: any;
-}
+import { Configuration, TestResult, TestStatus } from "./ipc";
 
 export class Spec {
   title: string;

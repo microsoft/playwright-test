@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { TestResult, TestStatus } from "./testSpec";
+import { TestResult, TestStatus } from './ipc';
 
-export class Runnable {
+class Runnable {
   title: string;
   file: string;
   location: string;
@@ -127,7 +127,7 @@ export class Runnable {
   isFlaky(): boolean {
     return this._flaky || (this.parent && this.parent.isFlaky());
   }
-
+й
   expectedStatus(): TestStatus {
     return this._expectedStatus || (this.parent && this.parent.expectedStatus()) || 'passed';
   }
@@ -224,28 +224,4 @@ export class Suite extends Runnable {
     });
     return found;
   }
-}
-
-export function serializeError(error: Error | any): any {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      stack: error.stack
-    };
-  }
-  return trimCycles(error);
-}
-
-function trimCycles(obj: any): any {
-  const cache = new Set();
-  return JSON.parse(
-      JSON.stringify(obj, function(key, value) {
-        if (typeof value === 'object' && value !== null) {
-          if (cache.has(value))
-            return '' + value;
-          cache.add(value);
-        }
-        return value;
-      })
-  );
 }

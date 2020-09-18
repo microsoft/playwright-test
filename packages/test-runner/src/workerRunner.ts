@@ -17,41 +17,14 @@
 import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
-import { Test, Suite, serializeError, Runnable } from './test';
+import { Test, Suite } from './workerTest';
 import { runSpec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
-import { Configuration, TestResult, TestStatus } from './testSpec';
+import { serializeError } from './util';
+import { TestBeginPayload, TestEndPayload, TestResult, TestRunnerEntry } from './ipc';
 
 export const fixturePool = new FixturePool();
-
-export type RunnablePayload = {
-  id: string;
-  skipped: boolean;
-  flaky: boolean
-  slow: boolean;
-  expectedStatus: TestStatus;
-  annotations: any[];
-}
-
-export type SuiteBeginPayload = RunnablePayload;
-
-export type TestBeginPayload = RunnablePayload & {
-  timeout: number;
-};
-
-export type TestEndPayload = {
-  id: string;
-  result: TestResult;
-}
-
-export type TestRunnerEntry = {
-  file: string;
-  ids: string[];
-  configurationString: string;
-  configuration: Configuration;
-  hash: string;
-};
 
 function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: string } {
   if (chunk instanceof Buffer)
@@ -61,7 +34,7 @@ function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: strin
   return { text: chunk };
 }
 
-export class TestRunner extends EventEmitter {
+export class WorkerRunner extends EventEmitter {
   private _failedTestId: string | undefined;
   private _fatalError: any | undefined;
   private _ids: Set<string>;
@@ -194,7 +167,7 @@ export class TestRunner extends EventEmitter {
     const testBeginEvent: TestBeginPayload = {
       id,
       timeout: test._timeout,
-      ...runnableToPayload(test)
+      ...testToPayload(test)
     };
     this.emit('testBegin', testBeginEvent);
 
@@ -263,13 +236,14 @@ export class TestRunner extends EventEmitter {
   }
 }
 
-function runnableToPayload(runnable: Runnable): RunnablePayload {
+function testToPayload(test: Test): TestBeginPayload {
   return {
-    id: runnable._id,
-    skipped: runnable.isSkipped(),
-    flaky: runnable.isFlaky(),
-    slow: runnable.isSlow(),
-    annotations: runnable._collectAnnotations(),
-    expectedStatus: runnable.expectedStatus(),
+    id: test._id,
+    skipped: test.isSkipped(),
+    flaky: test.isFlaky(),
+    slow: test.isSlow(),
+    annotations: test._collectAnnotations(),
+    expectedStatus: test.expectedStatus(),
+    timeout: test._timeout
   };
 }
