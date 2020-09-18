@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-export type Configuration = { name: string, value: string }[];
-
-export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
+import { TestResult, TestStatus } from "./testSpec";
 
 export class Runnable {
   title: string;
@@ -151,15 +149,6 @@ export class Test extends Runnable {
     this.title = title;
     this.fn = fn;
   }
-}
-
-export type TestResult = {
-  duration: number;
-  status?: TestStatus;
-  error?: any;
-  stdout: (string | Buffer)[];
-  stderr: (string | Buffer)[];
-  data: any;
 }
 
 export class Suite extends Runnable {

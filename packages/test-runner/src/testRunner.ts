@@ -17,10 +17,11 @@
 import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters } from './fixtures';
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
-import { Test, Suite, Configuration, serializeError, TestResult, TestStatus, Runnable } from './test';
+import { Test, Suite, serializeError, Runnable } from './test';
 import { runSpec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
+import { Configuration, TestResult, TestStatus } from './testSpec';
 
 export const fixturePool = new FixturePool();
 

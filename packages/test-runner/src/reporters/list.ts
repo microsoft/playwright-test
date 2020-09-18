@@ -18,15 +18,14 @@ import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { RunnerConfig } from '../runnerConfig';
-import { Test, TestResult } from '../test';
-import { SuiteDeclaration, TestRun } from '../declarations';
+import { SuiteSpec, TestResult, TestRun } from '../testSpec';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
   private _lastRow = 0;
   private _testRows = new Map<TestRun, number>();
 
-  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
+  onBegin(config: RunnerConfig, suite: SuiteSpec) {
     super.onBegin(config, suite);
     console.log();
   }

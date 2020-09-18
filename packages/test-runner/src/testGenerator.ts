@@ -16,12 +16,12 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Test, Suite, Configuration } from './test';
+import { Test, Suite } from './test';
 import { RunnerConfig } from './runnerConfig';
-import { SuiteDeclaration, TestDeclaration, TestRun } from './declarations';
+import { SuiteSpec, TestSpec, TestRun, Configuration } from './testSpec';
 
-export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig): SuiteDeclaration {
-  const rootSuite = new SuiteDeclaration('');
+export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteSpec {
+  const rootSuite = new SuiteSpec('');
   let grep: RegExp = null;
   if (config.grep) {
     const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
@@ -88,9 +88,9 @@ export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig):
   return rootSuite;
 }
 
-function filterOnly(suite: SuiteDeclaration) {
-  const onlySuites = suite.suites.filter((child: SuiteDeclaration) => filterOnly(child) || child._only);
-  const onlyTests = suite.tests.filter((test: TestDeclaration) => test._only);
+function filterOnly(suite: SuiteSpec) {
+  const onlySuites = suite.suites.filter((child: SuiteSpec) => filterOnly(child) || child._only);
+  const onlyTests = suite.tests.filter((test: TestSpec) => test._only);
   if (onlySuites.length || onlyTests.length) {
     suite.suites = onlySuites;
     suite.tests = onlyTests;
@@ -99,10 +99,10 @@ function filterOnly(suite: SuiteDeclaration) {
   return false;
 }
 
-function createSuiteRun(suite: SuiteDeclaration, tests: Set<TestDeclaration>, parentSuite: Suite | null, grep: RegExp | null): Suite {
+function createSuiteRun(suite: SuiteSpec, tests: Set<TestSpec>, parentSuite: Suite | null, grep: RegExp | null): Suite {
   const result = new Suite(suite.title, parentSuite);
   for (const entry of suite._entries) {
-    if (entry instanceof SuiteDeclaration) {
+    if (entry instanceof SuiteSpec) {
       result._addSuite(createSuiteRun(entry, tests, result, grep));
     } else {
       const test = entry;
@@ -122,7 +122,7 @@ function createSuiteRun(suite: SuiteDeclaration, tests: Set<TestDeclaration>, pa
   return result;
 }
 
-function createTestRun(test: TestDeclaration): Test {
+function createTestRun(test: TestSpec): Test {
   const result = new Test(test.title, test.fn);
   result.location = test.location;
   result.file = test.file;

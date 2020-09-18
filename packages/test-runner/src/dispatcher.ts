@@ -18,12 +18,11 @@ import child_process from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
-import { TestResult, Configuration } from './test';
-import { TestRunnerEntry, TestBeginPayload, TestEndPayload, SuiteBeginPayload, TestRunner } from './testRunner';
+import { TestRunnerEntry, TestBeginPayload, TestEndPayload } from './testRunner';
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
 import assert from 'assert';
-import { SuiteDeclaration, TestRun } from './declarations';
+import { Configuration, SuiteSpec, TestResult, TestRun } from './testSpec';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
@@ -34,10 +33,10 @@ export class Dispatcher {
   private _queue: TestRunnerEntry[] = [];
   private _stopCallback: () => void;
   readonly _config: RunnerConfig;
-  private _suite: SuiteDeclaration;
+  private _suite: SuiteSpec;
   private _reporter: Reporter;
 
-  constructor(suite: SuiteDeclaration, config: RunnerConfig, reporter: Reporter) {
+  constructor(suite: SuiteSpec, config: RunnerConfig, reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
 

@@ -16,16 +16,15 @@
 
 import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
-import { Suite, Test, TestResult } from '../test';
 import { BaseReporter } from './base';
-import { SuiteDeclaration, TestRun } from '../declarations';
+import { SuiteSpec, TestResult, TestRun } from '../testSpec';
 
 class LineReporter extends BaseReporter {
   private _total: number;
   private _current = 0;
   private _failures = 0;
 
-  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
+  onBegin(config: RunnerConfig, suite: SuiteSpec) {
     super.onBegin(config, suite);
     this._total = suite.total();
     console.log();

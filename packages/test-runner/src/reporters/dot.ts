@@ -16,8 +16,7 @@
 
 import colors from 'colors/safe';
 import { BaseReporter } from './base';
-import { TestResult } from '../test';
-import { TestRun } from '../declarations';
+import { TestResult, TestRun } from '../testSpec';
 
 class DotReporter extends BaseReporter {
   onTestEnd(test: TestRun, result: TestResult) {

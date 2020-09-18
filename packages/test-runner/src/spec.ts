@@ -16,7 +16,7 @@
 
 import { Test, Suite } from './test';
 import { installTransform } from './transform';
-import { SuiteDeclaration, TestDeclaration } from './declarations';
+import { SuiteSpec, TestSpec } from './testSpec';
 
 Error.stackTraceLimit = 15;
 
@@ -93,13 +93,13 @@ export function runSpec(suite: Suite, timeout: number, parameters: any): () => v
 
 // Declare specs ------------------------------------------------------------------
 
-export function declarationSpec(suite: SuiteDeclaration): () => void {
+export function declarationSpec(suite: SuiteSpec): () => void {
   const suites = [suite];
 
   currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: any | Function, fn?: Function) => {
     const suite = suites[0];
     fn = fn || metaFn;
-    const test = new TestDeclaration(title, fn, suite);
+    const test = new TestSpec(title, fn, suite);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     if (spec === 'only')
@@ -109,9 +109,9 @@ export function declarationSpec(suite: SuiteDeclaration): () => void {
     return test;
   };
 
-  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteDeclaration, parameters: any) => void | Function, fn?: Function) => {
+  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteSpec, parameters: any) => void | Function, fn?: Function) => {
     fn = fn || metaFn;
-    const child = new SuiteDeclaration(title, suites[0]);
+    const child = new SuiteSpec(title, suites[0]);
     child.file = suite.file;
     child.location = extractLocation(new Error());
     if (spec === 'only')

@@ -27,10 +27,10 @@ import { declarationSpec } from './spec';
 import { serializeError } from './test';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
-import { SuiteDeclaration } from './declarations';
+import { SuiteSpec } from './testSpec';
 export { Reporter } from './reporter';
 export { RunnerConfig } from './runnerConfig';
-export { Configuration, Suite, Test, TestResult } from './test';
+export { Suite, Test } from './test';
 
 const removeFolderAsync = promisify(rimraf);
 
@@ -41,9 +41,9 @@ export class Runner {
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
-  private _rootSuite: SuiteDeclaration;
+  private _rootSuite: SuiteSpec;
   private _hasBadFiles = false;
-  private _suites: SuiteDeclaration[] = [];
+  private _suites: SuiteSpec[] = [];
 
   constructor(config: RunnerConfig, reporter: Reporter) {
     this._config = config;
@@ -61,7 +61,7 @@ export class Runner {
   loadFiles(files: string[]) {
     // First traverse tests.
     for (const file of files) {
-      const suite = new SuiteDeclaration('');
+      const suite = new SuiteSpec('');
       suite.file = file;
       const revertBabelRequire = declarationSpec(suite);
       try {
@@ -108,7 +108,7 @@ export class Runner {
     return result;
   }
 
-  private async _runTests(suite: SuiteDeclaration): Promise<RunResult> {
+  private async _runTests(suite: SuiteSpec): Promise<RunResult> {
     // Trial run does not need many workers, use one.
     const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
     const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);

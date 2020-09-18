@@ -15,9 +15,8 @@
  */
 
 import { RunnerConfig } from '../runnerConfig';
-import { TestResult } from '../test';
 import { Reporter } from '../reporter';
-import { SuiteDeclaration, TestRun } from '../declarations';
+import { SuiteSpec, TestResult, TestRun } from '../testSpec';
 
 export class Multiplexer implements Reporter {
   private _reporters: Reporter[];
@@ -26,7 +25,7 @@ export class Multiplexer implements Reporter {
     this._reporters = reporters;
   }
 
-  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
+  onBegin(config: RunnerConfig, suite: SuiteSpec) {
     for (const reporter of this._reporters)
       reporter.onBegin(config, suite);
   }

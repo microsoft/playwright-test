@@ -20,9 +20,8 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import { Reporter, RunnerConfig, Suite, Test, TestResult, Configuration } from '../runner';
-import { SuiteDeclaration, TestRun } from '../declarations';
-import { TestStatus } from '../test';
+import { Reporter, RunnerConfig } from '../runner';
+import { Configuration, SuiteSpec, TestResult, TestRun, TestStatus } from '../testSpec';
 
 const stackUtils = new StackUtils();
 
@@ -35,7 +34,7 @@ export class BaseReporter implements Reporter  {
   duration = 0;
   startTime: number;
   config: RunnerConfig;
-  suite: SuiteDeclaration;
+  suite: SuiteSpec;
   timeout: number;
   fileDurations = new Map<string, number>();
 
@@ -47,7 +46,7 @@ export class BaseReporter implements Reporter  {
     });
   }
 
-  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
+  onBegin(config: RunnerConfig, suite: SuiteSpec) {
     this.startTime = Date.now();
     this.config = config;
     this.suite = suite;

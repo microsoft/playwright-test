@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-import { TestResult } from '../test';
 import * as fs from 'fs';
 import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { SuiteDeclaration, TestRun, TestDeclaration } from '../declarations';
+import { SuiteSpec, TestResult, TestRun, TestSpec } from '../testSpec';
 
 export interface SerializedSuite {
   title: string;
@@ -36,10 +35,10 @@ export type ReportFormat = {
 
 class JSONReporter implements Reporter {
   config: RunnerConfig;
-  suite: SuiteDeclaration;
+  suite: SuiteSpec;
   private _fileErrors: { file: string, error: any }[] = [];
 
-  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
+  onBegin(config: RunnerConfig, suite: SuiteSpec) {
     this.config = config;
     this.suite = suite;
   }
@@ -72,7 +71,7 @@ class JSONReporter implements Reporter {
     });
   }
 
-  private _serializeSuite(suite: SuiteDeclaration): null | SerializedSuite {
+  private _serializeSuite(suite: SuiteSpec): null | SerializedSuite {
     if (!suite.findTest(test => true))
       return null;
     const suites = suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s);
@@ -84,7 +83,7 @@ class JSONReporter implements Reporter {
     };
   }
 
-  private _serializeTest(test: TestDeclaration) {
+  private _serializeTest(test: TestSpec) {
     return {
       title: test.title,
       file: test.file,

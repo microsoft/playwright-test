@@ -14,20 +14,31 @@
  * limitations under the License.
  */
 
-import { TestStatus, TestResult, Configuration } from "./test";
+export type Configuration = { name: string, value: string }[];
 
-export class Declaration {
+export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
+
+export type TestResult = {
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  stdout: (string | Buffer)[];
+  stderr: (string | Buffer)[];
+  data: any;
+}
+
+export class Spec {
   title: string;
   file: string;
   location: string;
-  parent?: SuiteDeclaration;
+  parent?: SuiteSpec;
 
   _only = false;
   _skipped = false;
 
   _ordinal: number;
 
-  constructor(title: string, parent?: SuiteDeclaration) {
+  constructor(title: string, parent?: SuiteSpec) {
     this.title = title;
     this.parent = parent;
   }
@@ -45,11 +56,11 @@ export class Declaration {
   }
 }
 
-export class TestDeclaration extends Declaration {
+export class TestSpec extends Spec {
   fn: Function;
   runs: TestRun[] = [];
 
-  constructor(title: string, fn: Function, suite: SuiteDeclaration) {
+  constructor(title: string, fn: Function, suite: SuiteSpec) {
     super(title, suite);
     this.title = title;
     this.fn = fn;
@@ -61,12 +72,12 @@ export class TestDeclaration extends Declaration {
   }
 }
 
-export class SuiteDeclaration extends Declaration {
-  suites: SuiteDeclaration[] = [];
-  tests: TestDeclaration[] = [];
-  _entries: (SuiteDeclaration | TestDeclaration)[] = [];
+export class SuiteSpec extends Spec {
+  suites: SuiteSpec[] = [];
+  tests: TestSpec[] = [];
+  _entries: (SuiteSpec | TestSpec)[] = [];
 
-  constructor(title: string, parent?: SuiteDeclaration) {
+  constructor(title: string, parent?: SuiteSpec) {
     super(title, parent);
     if (parent)
       parent._addSuite(this);
@@ -80,19 +91,19 @@ export class SuiteDeclaration extends Declaration {
     return count;
   }
 
-  _addTest(test: TestDeclaration) {
+  _addTest(test: TestSpec) {
     test.parent = this;
     this.tests.push(test);
     this._entries.push(test);
   }
 
-  _addSuite(suite: SuiteDeclaration) {
+  _addSuite(suite: SuiteSpec) {
     suite.parent = this;
     this.suites.push(suite);
     this._entries.push(suite);
   }
 
-  findTest(fn: (test: TestDeclaration) => boolean | void): boolean {
+  findTest(fn: (test: TestSpec) => boolean | void): boolean {
     for (const suite of this.suites) {
       if (suite.findTest(fn))
         return true;
@@ -104,7 +115,7 @@ export class SuiteDeclaration extends Declaration {
     return false;
   }
 
-  findSuite(fn: (suite: SuiteDeclaration) => boolean | void): boolean {
+  findSuite(fn: (suite: SuiteSpec) => boolean | void): boolean {
     if (fn(this))
       return true;
     for (const suite of this.suites) {
@@ -114,8 +125,8 @@ export class SuiteDeclaration extends Declaration {
     return false;
   }
 
-  _allTests(): TestDeclaration[] {
-    const result: TestDeclaration[] = [];
+  _allTests(): TestSpec[] {
+    const result: TestSpec[] = [];
     this.findTest(test => { result.push(test); });
     return result;
   }
@@ -123,18 +134,18 @@ export class SuiteDeclaration extends Declaration {
   _renumber() {
     // All tests and suites are identified with their ordinals.
     let ordinal = 0;
-    this.findSuite((suite: SuiteDeclaration) => {
+    this.findSuite((suite: SuiteSpec) => {
       suite._ordinal = ordinal++;
     });
 
     ordinal = 0;
-    this.findTest((test: TestDeclaration) => {
+    this.findTest((test: TestSpec) => {
       test._ordinal = ordinal++;
     });
   }
 
   _assignIds() {
-    this.findTest((test: TestDeclaration) => {
+    this.findTest((test: TestSpec) => {
       for (const run of test.runs)
         run._id = `${test._ordinal}@${run.declaration.file}::[${run._configurationString}]`;
     });
@@ -142,7 +153,7 @@ export class SuiteDeclaration extends Declaration {
 }
 
 export class TestRun {
-  declaration: TestDeclaration;
+  declaration: TestSpec;
   skipped: boolean;
   flaky: boolean;
   only: boolean;
@@ -159,7 +170,7 @@ export class TestRun {
   _workerHash: string;
   _id: string;
 
-  constructor(declaration: TestDeclaration) {
+  constructor(declaration: TestSpec) {
     this.declaration = declaration;
   }
 
