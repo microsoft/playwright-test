@@ -25,7 +25,7 @@ export type TestResult = {
   stdout: (string | Buffer)[];
   stderr: (string | Buffer)[];
   data: any;
-}
+};
 
 export type TestBeginPayload = {
   id: string;
@@ -40,7 +40,7 @@ export type TestBeginPayload = {
 export type TestEndPayload = {
   id: string;
   result: TestResult;
-}
+};
 
 export type TestRunnerEntry = {
   file: string;

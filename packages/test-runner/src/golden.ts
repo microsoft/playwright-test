@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import c from 'colors/safe';
+
+import  colors from 'colors/safe';
 import fs from 'fs';
 import jpeg from 'jpeg-js';
 import path from 'path';
@@ -128,15 +129,15 @@ export function compare(actual: Buffer, name: string, config: RunnerConfig, test
     fs.writeFileSync(diffPath, result.diff);
 
   const output = [
-    c.red(`Image comparison failed:`),
+    colors.red(`Image comparison failed:`),
   ];
   if (result.errorMessage)
     output.push('    ' + result.errorMessage);
   output.push('');
-  output.push(`Expected: ${c.yellow(expectedPath)}`);
-  output.push(`Received: ${c.yellow(actualPath)}`);
+  output.push(`Expected: ${colors.yellow(expectedPath)}`);
+  output.push(`Received: ${colors.yellow(actualPath)}`);
   if (result.diff)
-    output.push(`    Diff: ${c.yellow(diffPath)}`);
+    output.push(`    Diff: ${colors.yellow(diffPath)}`);
 
   return {
     pass: false,

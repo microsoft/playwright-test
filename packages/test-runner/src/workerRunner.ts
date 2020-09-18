@@ -18,11 +18,11 @@ import { FixturePool, rerunRegistrations, assignParameters, TestInfo, parameters
 import { EventEmitter } from 'events';
 import { setCurrentTestFile } from './expect';
 import { Test, Suite } from './workerTest';
-import { runSpec } from './spec';
 import { RunnerConfig } from './runnerConfig';
 import * as util from 'util';
 import { serializeError } from './util';
 import { TestBeginPayload, TestEndPayload, TestResult, TestRunnerEntry } from './ipc';
+import { workerSpec } from './workerSpec';
 
 export const fixturePool = new FixturePool();
 
@@ -106,7 +106,7 @@ export class WorkerRunner extends EventEmitter {
   async run() {
     assignParameters(this._parsedGeneratorConfiguration);
 
-    const revertBabelRequire = runSpec(this._suite, this._timeout, parameters);
+    const revertBabelRequire = workerSpec(this._suite, this._timeout, parameters);
 
     // Trial mode runs everything in one worker, delete test from cache.
     delete require.cache[this._suite.file];

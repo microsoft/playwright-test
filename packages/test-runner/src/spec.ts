@@ -14,122 +14,36 @@
  * limitations under the License.
  */
 
-import { Test, Suite } from './workerTest';
-import { installTransform } from './transform';
-import { SuiteSpec, TestSpec } from './testSpec';
-
 Error.stackTraceLimit = 15;
 
-let currentItImpl;
-let currentDescribeImpl;
+export type Implementation = {
+  it: any;
+  describe: any;
+  beforeEach: (fn: Function) => void;
+  afterEach: (fn: Function) => void;
+  beforeAll: (fn: Function) => void;
+  afterAll: (fn: Function) => void;
+};
+
+let implementation: Implementation;
 
 export const it = (...args) => {
-  currentItImpl('default', ...args);
+  implementation.it('default', ...args);
 };
-it.skip = (...args) => currentItImpl('skip', ...args);
-it.only = (...args) => currentItImpl('only', ...args);
+it.skip = (...args) => implementation.it('skip', ...args);
+it.only = (...args) => implementation.it('only', ...args);
 
 export const describe = (...args) => {
-  currentDescribeImpl('default', ...args);
+  implementation.describe('default', ...args);
 };
-describe.skip = (...args) => currentDescribeImpl('skip', ...args);
-describe.only = (...args) => currentDescribeImpl('only', ...args);
+describe.skip = (...args) => implementation.describe('skip', ...args);
+describe.only = (...args) => implementation.describe('only', ...args);
 
-// Run specs ------------------------------------------------------------------
+export const beforeEach = fn => implementation.beforeEach(fn);
+export const afterEach = fn => implementation.afterEach(fn);
+export const beforeAll = fn => implementation.beforeAll(fn);
+export const afterAll = fn => implementation.afterAll(fn);
 
-let currentRunSuites: Suite[];
-
-export const beforeEach = fn => currentRunSuites ? currentRunSuites[0]._addHook('beforeEach', fn) : 0;
-export const afterEach = fn => currentRunSuites ? currentRunSuites[0]._addHook('afterEach', fn) : 0;
-export const beforeAll = fn => currentRunSuites ? currentRunSuites[0]._addHook('beforeAll', fn) : 0;
-export const afterAll = fn => currentRunSuites ? currentRunSuites[0]._addHook('afterAll', fn) : 0;
-
-export function runSpec(suite: Suite, timeout: number, parameters: any): () => void {
-  const suites = [suite];
-  currentRunSuites = suites;
-
-  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: (test: Test, parameters: any) => void | Function, fn?: Function) => {
-    const suite = suites[0];
-    if (typeof fn !== 'function') {
-      fn = metaFn;
-      metaFn = null;
-    }
-    const test = new Test(title, fn);
-    if (metaFn)
-      metaFn(test, parameters);
-    test.file = suite.file;
-    test.location = extractLocation(new Error());
-    test._timeout = timeout;
-    if (spec === 'only')
-      test._only = true;
-    if (spec === 'skip')
-      test._skipped = true;
-    suite._addTest(test);
-    return test;
-  };
-
-  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: Suite, parameters: any) => void | Function, fn?: Function) => {
-    if (typeof fn !== 'function') {
-      fn = metaFn;
-      metaFn = null;
-    }
-    const child = new Suite(title, suites[0]);
-    if (metaFn)
-      metaFn(child, parameters);
-    suites[0]._addSuite(child);
-    child.file = suite.file;
-    child.location = extractLocation(new Error());
-    if (spec === 'only')
-      child._only = true;
-    if (spec === 'skip')
-      child._skipped = true;
-    suites.unshift(child);
-    fn();
-    suites.shift();
-  };
-
-  return installTransform();
-}
-
-// Declare specs ------------------------------------------------------------------
-
-export function declarationSpec(suite: SuiteSpec): () => void {
-  const suites = [suite];
-
-  currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: any | Function, fn?: Function) => {
-    const suite = suites[0];
-    fn = fn || metaFn;
-    const test = new TestSpec(title, fn, suite);
-    test.file = suite.file;
-    test.location = extractLocation(new Error());
-    if (spec === 'only')
-      test._only = true;
-    if (spec === 'skip')
-      test._skipped = true;
-    return test;
-  };
-
-  currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteSpec, parameters: any) => void | Function, fn?: Function) => {
-    fn = fn || metaFn;
-    const child = new SuiteSpec(title, suites[0]);
-    child.file = suite.file;
-    child.location = extractLocation(new Error());
-    if (spec === 'only')
-      child._only = true;
-    if (spec === 'skip')
-      child._skipped = true;
-    suites.unshift(child);
-    fn();
-    suites.shift();
-  };
-
-  return installTransform();
-}
-
-function extractLocation(error: Error): string {
-  const location = error.stack.split('\n')[3];
-  const match = location.match(/Object.<anonymous> \((.*)\)/);
-  if (match)
-    return match[1];
-  return '';
+export function setImplementation(i: Implementation) {
+  implementation = i;
 }
