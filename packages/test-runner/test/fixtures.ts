@@ -127,7 +127,7 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
     result = await runTest(reportFile, outputDir, filePath, options);
     return result;
   });
-  if (testInfo.result.status !== testInfo.modifier.expectedStatus())
+  if (testInfo.testRun.status !== testInfo.testRun.expectedStatus)
     console.log(result.output);
 });
 
