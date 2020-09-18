@@ -52,12 +52,17 @@ it('should work with parameters', async ({ runInlineTest }) => {
   expect(result.passed).toBe(9);
   expect(result.failed).toBe(0);
   const suites = result.report.suites;
-  expect(suites.filter(s => s.file.includes('a.test.js')).length).toBe(3);
-  expect(suites.filter(s => s.file.includes('b.test.js')).length).toBe(3);
-  expect(suites.filter(s => s.file.includes('c.test.js')).length).toBe(3);
+  expect(suites[0].file).toContain('a.test.js');
+  expect(suites[0].tests[0].runs.length).toBe(3);
+  expect(suites[1].file).toContain('b.test.js');
+  expect(suites[1].tests[0].runs.length).toBe(3);
+  expect(suites[2].file).toContain('c.test.js');
+  expect(suites[2].tests[0].runs.length).toBe(3);
   const log = [];
-  for (const suite of suites)
-    log.push(suite.configuration.map(p => p.name + '=' + p.value));
+  for (let i = 0; i < 3; ++i) {
+    for (const testRun of suites[0].tests[0].runs)
+      log.push(testRun.configuration.map(p => p.name + '=' + p.value));
+  }
   expect(log.join('|')).toBe('worker=A|worker=B|worker=C|worker=A|worker=B|worker=C|worker=A|worker=B|worker=C');
 
   const log2 = [];
@@ -78,7 +83,7 @@ it('should emit test annotations', async ({ runInlineTest }) => {
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(1);
-  expect(result.report.suites[0].tests[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
+  expect(result.report.suites[0].tests[0].runs[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
 });
 
 it('should emit suite annotations', async ({ runInlineTest }) => {
@@ -95,7 +100,7 @@ it('should emit suite annotations', async ({ runInlineTest }) => {
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
   expect(result.skipped).toBe(1);
-  expect(result.report.suites[0].suites[0].tests[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
+  expect(result.report.suites[0].suites[0].tests[0].runs[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
 });
 
 it('should not restart worker', async ({ runInlineTest }) => {
@@ -115,6 +120,6 @@ it('should not restart worker', async ({ runInlineTest }) => {
     `
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
-  expect(result.report.suites[0].tests[0].workerId).toBe(0);
-  expect(result.report.suites[0].tests[1].workerId).toBe(0);
+  expect(result.report.suites[0].tests[0].runs[0].workerId).toBe(0);
+  expect(result.report.suites[0].tests[1].runs[0].workerId).toBe(0);
 });

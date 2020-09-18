@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-import { Configuration, Suite, Test, TestResult } from '../test';
+import { TestResult } from '../test';
 import * as fs from 'fs';
 import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
+import { SuiteDeclaration, TestRun, TestDeclaration } from '../declarations';
 
 export interface SerializedSuite {
   title: string;
   file: string;
-  configuration: Configuration;
-  annotations: any[];
   tests: ReturnType<JSONReporter['_serializeTest']>[];
   suites?: SerializedSuite[];
 }
@@ -37,10 +36,10 @@ export type ReportFormat = {
 
 class JSONReporter implements Reporter {
   config: RunnerConfig;
-  suite: Suite;
+  suite: SuiteDeclaration;
   private _fileErrors: { file: string, error: any }[] = [];
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
     this.config = config;
     this.suite = suite;
   }
@@ -49,16 +48,16 @@ class JSONReporter implements Reporter {
     this.onEnd();
   }
 
-  onTestStdOut(test: Test, chunk: string | Buffer) {
+  onTestStdOut(test: TestRun, chunk: string | Buffer) {
   }
 
-  onTestStdErr(test: Test, chunk: string | Buffer) {
+  onTestStdErr(test: TestRun, chunk: string | Buffer) {
   }
 
-  onTestBegin(test: Test): void {
+  onTestBegin(test: TestRun): void {
   }
 
-  onTestEnd(test: Test, result: TestResult): void {
+  onTestEnd(test: TestRun, result: TestResult): void {
   }
 
   onFileError(file: string, error: any): void {
@@ -73,30 +72,35 @@ class JSONReporter implements Reporter {
     });
   }
 
-  private _serializeSuite(suite: Suite): null | SerializedSuite {
+  private _serializeSuite(suite: SuiteDeclaration): null | SerializedSuite {
     if (!suite.findTest(test => true))
       return null;
     const suites = suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s);
     return {
       title: suite.title,
       file: suite.file,
-      configuration: suite.configuration,
-      annotations: suite.annotations(),
       tests: suite.tests.map(test => this._serializeTest(test)),
       suites: suites.length ? suites : undefined,
     };
   }
 
-  private _serializeTest(test: Test) {
+  private _serializeTest(test: TestDeclaration) {
     return {
       title: test.title,
       file: test.file,
-      workerId: test.workerId(),
-      only: test.isOnly(),
-      slow: test.isSlow(),
-      timeout: test.timeout(),
-      annotations: test.annotations(),
-      expectedStatus: test.expectedStatus(),
+      runs: test.runs.map(r => this._serializeTestRun(r))
+    };
+  }
+
+  private _serializeTestRun(test: TestRun) {
+    return {
+      workerId: test.workerId,
+      configuration: test.configuration,
+      only: test.only,
+      slow: test.slow,
+      timeout: test.timeout,
+      annotations: test.annotations,
+      expectedStatus: test.expectedStatus,
       results: test.results.map(r => this._serializeTestResult(r))
     };
   }

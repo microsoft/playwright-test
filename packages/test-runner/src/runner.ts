@@ -23,8 +23,8 @@ import './expect';
 import { matrix, ParameterRegistration, parameterRegistrations, setParameterValues } from './fixtures';
 import { Reporter } from './reporter';
 import { RunnerConfig } from './runnerConfig';
-import { runSpec, declarationSpec } from './spec';
-import { serializeError, Suite } from './test';
+import { declarationSpec } from './spec';
+import { serializeError } from './test';
 import { generateTests } from './testGenerator';
 import { raceAgainstTimeout } from './util';
 import { SuiteDeclaration } from './declarations';
@@ -41,7 +41,7 @@ export class Runner {
   private _reporter: Reporter;
   private _beforeFunctions: Function[] = [];
   private _afterFunctions: Function[] = [];
-  private _rootSuite: Suite;
+  private _rootSuite: SuiteDeclaration;
   private _hasBadFiles = false;
   private _suites: SuiteDeclaration[] = [];
 
@@ -92,7 +92,7 @@ export class Runner {
     this._rootSuite = generateTests(this._suites, this._config);
 
     if (this._config.forbidOnly) {
-      const hasOnly = this._rootSuite.findTest(t => t._only) || this._rootSuite.eachSuite(s => s._only);
+      const hasOnly = this._rootSuite.findTest(t => t._only) || this._rootSuite.findSuite(s => s._only);
       if (hasOnly)
         return 'forbid-only';
     }
@@ -108,7 +108,7 @@ export class Runner {
     return result;
   }
 
-  private async _runTests(suite: Suite): Promise<RunResult> {
+  private async _runTests(suite: SuiteDeclaration): Promise<RunResult> {
     // Trial run does not need many workers, use one.
     const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
     const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);
@@ -121,6 +121,6 @@ export class Runner {
       for (const f of this._afterFunctions)
         await f();
     }
-    return this._hasBadFiles || suite.findTest(test => !test.ok()) ? 'failed' : 'passed';
+    return this._hasBadFiles || suite.findTest(test => !test._ok()) ? 'failed' : 'passed';
   }
 }

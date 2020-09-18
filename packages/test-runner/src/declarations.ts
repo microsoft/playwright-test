@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Test } from "./test";
+import { TestStatus, TestResult, Configuration } from "./test";
 
 export class Declaration {
   title: string;
@@ -26,6 +26,11 @@ export class Declaration {
   _skipped = false;
 
   _ordinal: number;
+
+  constructor(title: string, parent?: SuiteDeclaration) {
+    this.title = title;
+    this.parent = parent;
+  }
 
   titlePath(): string[] {
     if (!this.parent)
@@ -42,12 +47,17 @@ export class Declaration {
 
 export class TestDeclaration extends Declaration {
   fn: Function;
-  runs: Test[] = [];
+  runs: TestRun[] = [];
 
-  constructor(title: string, fn: Function) {
-    super();
+  constructor(title: string, fn: Function, suite: SuiteDeclaration) {
+    super(title, suite);
     this.title = title;
     this.fn = fn;
+    suite._addTest(this);
+  }
+
+  _ok(): boolean {
+    return !this.runs.find(r => !r.ok());
   }
 }
 
@@ -57,9 +67,9 @@ export class SuiteDeclaration extends Declaration {
   _entries: (SuiteDeclaration | TestDeclaration)[] = [];
 
   constructor(title: string, parent?: SuiteDeclaration) {
-    super();
-    this.title = title;
-    this.parent = parent;
+    super(title, parent);
+    if (parent)
+      parent._addSuite(this);
   }
 
   total(): number {
@@ -80,14 +90,6 @@ export class SuiteDeclaration extends Declaration {
     suite.parent = this;
     this.suites.push(suite);
     this._entries.push(suite);
-  }
-
-  eachSuite(fn: (suite: SuiteDeclaration) => boolean | void): boolean {
-    for (const suite of this.suites) {
-      if (suite.eachSuite(fn))
-        return true;
-    }
-    return false;
   }
 
   findTest(fn: (test: TestDeclaration) => boolean | void): boolean {
@@ -129,5 +131,58 @@ export class SuiteDeclaration extends Declaration {
     this.findTest((test: TestDeclaration) => {
       test._ordinal = ordinal++;
     });
+  }
+
+  _assignIds() {
+    this.findTest((test: TestDeclaration) => {
+      for (const run of test.runs)
+        run._id = `${test._ordinal}@${run.declaration.file}::[${run._configurationString}]`;
+    });
+  }
+}
+
+export class TestRun {
+  declaration: TestDeclaration;
+  skipped: boolean;
+  flaky: boolean;
+  only: boolean;
+  slow: boolean;
+  expectedStatus: TestStatus;
+  timeout: number;
+  workerId: number;
+  annotations: any[];
+
+  configuration: Configuration;
+  results: TestResult[] = [];
+
+  _configurationString: string;
+  _workerHash: string;
+  _id: string;
+
+  constructor(declaration: TestDeclaration) {
+    this.declaration = declaration;
+  }
+
+  _appendResult(): TestResult {
+    const result: TestResult = {
+      duration: 0,
+      stdout: [],
+      stderr: [],
+      data: {}
+    };
+    this.results.push(result);
+    return result;
+  }
+
+  ok(): boolean {
+    if (this.skipped)
+      return true;
+    const hasFailedResults = !!this.results.find(r => r.status !== this.expectedStatus);
+    if (!hasFailedResults)
+      return true;
+    if (!this.flaky)
+      return false;
+    const hasPassedResults = !!this.results.find(r => r.status === this.expectedStatus);
+    return hasPassedResults;
   }
 }

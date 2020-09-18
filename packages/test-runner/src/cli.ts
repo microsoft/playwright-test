@@ -24,7 +24,6 @@ import JSONReporter from './reporters/json';
 import LineReporter from './reporters/line';
 import ListReporter from './reporters/list';
 import { Multiplexer } from './reporters/multiplexer';
-import PytestReporter from './reporters/pytest';
 import { Runner, RunnerConfig } from './runner';
 
 export const reporters = {
@@ -32,7 +31,6 @@ export const reporters = {
   'json': JSONReporter,
   'line': LineReporter,
   'list': ListReporter,
-  'pytest': PytestReporter,
 };
 
 const availableReporters = Object.keys(reporters).map(r => `"${r}"`).join();

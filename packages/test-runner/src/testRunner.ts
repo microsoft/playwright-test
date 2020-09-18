@@ -75,12 +75,13 @@ export class TestRunner extends EventEmitter {
   private _testResult: TestResult | null = null;
   private _suite: Suite;
   private _loaded = false;
+  private _configurationString: string;
 
   constructor(entry: TestRunnerEntry, config: RunnerConfig, workerId: number) {
     super();
     this._suite = new Suite('');
     this._suite.file = entry.file;
-    this._suite._configurationString = entry.configurationString;
+    this._configurationString = entry.configurationString;
     this._ids = new Set(entry.ids);
     this._remaining = new Set(entry.ids);
     this._trialRun = config.trialRun;
@@ -141,7 +142,7 @@ export class TestRunner extends EventEmitter {
     // Enumerate tests to assign ordinals.
     this._suite._renumber();
     // Build ids from ordinals + configuration strings.
-    this._suite._assignIds();
+    this._suite._assignIds(this._configurationString);
     this._loaded = true;
 
     rerunRegistrations(this._suite.file);
@@ -187,8 +188,8 @@ export class TestRunner extends EventEmitter {
     // send it to the runner.
     test._skipped = test.isSkipped();
     test._flaky = test.isFlaky();
-    test._slow = test._isSlow();
-    test._timeout = test._isSlow() ? this._timeout * 3 : this._timeout;
+    test._slow = test.isSlow();
+    test._timeout = test.isSlow() ? this._timeout * 3 : this._timeout;
     const testBeginEvent: TestBeginPayload = {
       id,
       timeout: test._timeout,
@@ -267,7 +268,7 @@ function runnableToPayload(runnable: Runnable): RunnablePayload {
     skipped: runnable.isSkipped(),
     flaky: runnable.isFlaky(),
     slow: runnable.isSlow(),
-    annotations: runnable.annotations(),
+    annotations: runnable._collectAnnotations(),
     expectedStatus: runnable.expectedStatus(),
   };
 }

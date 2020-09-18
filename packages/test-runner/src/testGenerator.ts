@@ -16,12 +16,12 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Test, Suite, serializeConfiguration, Configuration } from './test';
+import { Test, Suite, Configuration } from './test';
 import { RunnerConfig } from './runnerConfig';
-import { SuiteDeclaration, TestDeclaration } from './declarations';
+import { SuiteDeclaration, TestDeclaration, TestRun } from './declarations';
 
-export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig): Suite {
-  const rootSuite = new Suite('');
+export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig): SuiteDeclaration {
+  const rootSuite = new SuiteDeclaration('');
   let grep: RegExp = null;
   if (config.grep) {
     const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
@@ -32,17 +32,14 @@ export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig):
     // Rerun registrations so that only fixtures for this file
     // are registered.
     rerunRegistrations(suite.file);
-    const workerGeneratorConfigurations = new Map<string, {
-      configuration: Configuration,
-      configurationString: string,
-      tests: Set<TestDeclaration>
-    }>();
 
     // Name each test.
     suite._renumber();
 
     for (const test of suite._allTests()) {
-      // Get all the fixtures that the test needs.
+      if (grep && !grep.test(test.fullTitle()))
+        continue;
+    // Get all the fixtures that the test needs.
       let fixtures: string[] = [];
       try {
         fixtures = fixturesForCallback(test.fn);
@@ -74,37 +71,26 @@ export function generateTests(suites: SuiteDeclaration[], config: RunnerConfig):
         generatorConfigurations.push([]);
 
       for (const configuration of generatorConfigurations) {
-        // Serialize configuration as readable string, we will use it as a hash.
-        const configurationString = serializeConfiguration(configuration);
-        const workerHash = registrationsHash + '@' + configurationString;
-        // Allocate worker for this configuration, add test into it.
-        if (!workerGeneratorConfigurations.has(workerHash))
-          workerGeneratorConfigurations.set(workerHash, { configuration, configurationString, tests: new Set() });
-        workerGeneratorConfigurations.get(workerHash).tests.add(test);
+        for (let i = 0; i < config.repeatEach; ++i) {
+          const configurationString = serializeConfiguration(configuration) +  `#repeat-${i}#`;
+          const workerHash = registrationsHash + '@' + configurationString;
+          const testRun = new TestRun(test);
+          testRun.configuration = configuration;
+          testRun._configurationString = configurationString;
+          testRun._workerHash = workerHash;
+          test.runs.push(testRun);
+        }
       }
     }
-
-    // Clone the suite as many times as we have repeat each.
-    for (let i = 0; i < config.repeatEach; ++i) {
-      // Clone the suite as many times as there are worker hashes.
-      // Only include the tests that requested these generations.
-      for (const [workerHash, {configuration, configurationString, tests}] of workerGeneratorConfigurations.entries()) {
-        const suiteRun = createSuiteRun(suite, tests, null, grep);
-        rootSuite._addSuite(suiteRun);
-        suiteRun.configuration = configuration;
-        suiteRun._configurationString = configurationString + `#repeat-${i}#`;
-        suiteRun._workerHash = workerHash;
-        suiteRun._assignIds();
-      }
-    }
+    rootSuite._addSuite(suite);
   }
   filterOnly(rootSuite);
   return rootSuite;
 }
 
-function filterOnly(suite: Suite) {
-  const onlySuites = suite.suites.filter((child: Suite) => filterOnly(child) || child._only);
-  const onlyTests = suite.tests.filter((test: Test) => test._only);
+function filterOnly(suite: SuiteDeclaration) {
+  const onlySuites = suite.suites.filter((child: SuiteDeclaration) => filterOnly(child) || child._only);
+  const onlyTests = suite.tests.filter((test: TestDeclaration) => test._only);
   if (onlySuites.length || onlyTests.length) {
     suite.suites = onlySuites;
     suite.tests = onlyTests;
@@ -156,4 +142,11 @@ function computeWorkerRegistrationHash(fixtures: string[]): string {
     hash.update(registration.location);
   }
   return hash.digest('hex');
+}
+
+function serializeConfiguration(configuration: Configuration): string {
+  const tokens = [];
+  for (const { name, value } of configuration)
+    tokens.push(`${name}=${value}`);
+  return tokens.join(', ');
 }

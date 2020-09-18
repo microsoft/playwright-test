@@ -99,21 +99,19 @@ export function declarationSpec(suite: SuiteDeclaration): () => void {
   currentItImpl = (spec: 'default' | 'skip' | 'only', title: string, metaFn: any | Function, fn?: Function) => {
     const suite = suites[0];
     fn = fn || metaFn;
-    const test = new TestDeclaration(title, fn);
+    const test = new TestDeclaration(title, fn, suite);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     if (spec === 'only')
       test._only = true;
     if (spec === 'skip')
       test._skipped = true;
-    suite._addTest(test);
     return test;
   };
 
   currentDescribeImpl = (spec: 'describe' | 'skip' | 'only', title: string, metaFn: (suite: SuiteDeclaration, parameters: any) => void | Function, fn?: Function) => {
     fn = fn || metaFn;
     const child = new SuiteDeclaration(title, suites[0]);
-    suites[0]._addSuite(child);
     child.file = suite.file;
     child.location = extractLocation(new Error());
     if (spec === 'only')

@@ -35,14 +35,6 @@ export class Runnable {
   _id: string;
   _ordinal: number;
 
-  isOnly(): boolean {
-    return this._only;
-  }
-
-  isSlow(): boolean {
-    return this._slow;
-  }
-
   slow(): void;
   slow(condition: boolean): void;
   slow(description: string): void;
@@ -130,107 +122,34 @@ export class Runnable {
     return this._skipped || (this.parent && this.parent.isSkipped());
   }
 
-  _isSlow(): boolean {
-    return this._slow || (this.parent && this.parent._isSlow());
-  }
-
-  expectedStatus(): TestStatus {
-    return this._expectedStatus || (this.parent && this.parent.expectedStatus()) || 'passed';
+  isSlow(): boolean {
+    return this._slow || (this.parent && this.parent.isSlow());
   }
 
   isFlaky(): boolean {
     return this._flaky || (this.parent && this.parent.isFlaky());
   }
 
-  titlePath(): string[] {
-    if (!this.parent)
-      return [];
-    if (!this.title)
-      return this.parent.titlePath();
-    return [...this.parent.titlePath(), this.title];
+  expectedStatus(): TestStatus {
+    return this._expectedStatus || (this.parent && this.parent.expectedStatus()) || 'passed';
   }
 
-  fullTitle(): string {
-    return this.titlePath().join(' ');
-  }
-
-  annotations(): any[] {
+  _collectAnnotations(): any[] {
     if (!this.parent)
       return this._annotations;
-    return [...this._annotations, ...this.parent.annotations()];
-  }
-
-  _copyFrom(other: Runnable) {
-    this.file = other.file;
-    this.location = other.location;
-    this._only = other._only;
-    this._flaky = other._flaky;
-    this._skipped = other._skipped;
-    this._slow = other._slow;
-    this._ordinal = other._ordinal;
+    return [...this._annotations, ...this.parent._collectAnnotations()];
   }
 }
 
 export class Test extends Runnable {
   fn: Function;
   results: TestResult[] = [];
-  _overriddenFn: Function;
-  _startTime: number;
-  _endTime: number;
   _timeout = 0;
-  _workerId: number;
 
   constructor(title: string, fn: Function) {
     super();
     this.title = title;
     this.fn = fn;
-  }
-
-  _appendResult(): TestResult {
-    const result: TestResult = {
-      duration: 0,
-      stdout: [],
-      stderr: [],
-      data: {}
-    };
-    this.results.push(result);
-    return result;
-  }
-
-  timeout(): number {
-    return this._timeout;
-  }
-
-  startTime(): number {
-    return this._startTime;
-  }
-
-  endTime(): number {
-    return this._endTime;
-  }
-
-  duration(): number {
-    return (this._endTime - this._startTime) || 0;
-  }
-
-  workerId(): number {
-    return this._workerId;
-  }
-
-  ok(): boolean {
-    if (this.isSkipped())
-      return true;
-    const hasFailedResults = !!this.results.find(r => r.status !== this.expectedStatus());
-    if (!hasFailedResults)
-      return true;
-    if (!this.isFlaky())
-      return false;
-    const hasPassedResults = !!this.results.find(r => r.status === this.expectedStatus());
-    return hasPassedResults;
-  }
-
-  _hasResultWithStatus(status: TestStatus): boolean {
-    return !!this.results.find(r => r.status === status);
   }
 }
 
@@ -246,12 +165,6 @@ export type TestResult = {
 export class Suite extends Runnable {
   suites: Suite[] = [];
   tests: Test[] = [];
-  // Desired worker configuration.
-  configuration: Configuration;
-  // Configuration above, serialized in [name1=value1,name2=value2] form.
-  _configurationString: string;
-  // Worker hash that includes configuration and worker registration locations.
-  _workerHash: string;
 
   _hooks: { type: string, fn: Function } [] = [];
   _entries: (Suite | Test)[] = [];
@@ -260,14 +173,6 @@ export class Suite extends Runnable {
     super();
     this.title = title;
     this.parent = parent;
-  }
-
-  total(): number {
-    let count = 0;
-    this.findTest(fn => {
-      ++count;
-    });
-    return count;
   }
 
   _addTest(test: Test) {
@@ -282,14 +187,6 @@ export class Suite extends Runnable {
     this._entries.push(suite);
   }
 
-  eachSuite(fn: (suite: Suite) => boolean | void): boolean {
-    for (const suite of this.suites) {
-      if (suite.eachSuite(fn))
-        return true;
-    }
-    return false;
-  }
-
   findTest(fn: (test: Test) => boolean | void): boolean {
     for (const suite of this.suites) {
       if (suite.findTest(fn))
@@ -297,16 +194,6 @@ export class Suite extends Runnable {
     }
     for (const test of this.tests) {
       if (fn(test))
-        return true;
-    }
-    return false;
-  }
-
-  findSuite(fn: (suite: Suite) => boolean | void): boolean {
-    if (fn(this))
-      return true;
-    for (const suite of this.suites) {
-      if (suite.findSuite(fn))
         return true;
     }
     return false;
@@ -321,9 +208,6 @@ export class Suite extends Runnable {
   _renumber() {
     // All tests and suites are identified with their ordinals.
     let ordinal = 0;
-    this.findSuite((suite: Suite) => {
-      suite._ordinal = ordinal++;
-    });
 
     ordinal = 0;
     this.findTest((test: Test) => {
@@ -331,12 +215,9 @@ export class Suite extends Runnable {
     });
   }
 
-  _assignIds() {
-    this.findSuite((suite: Suite) => {
-      suite._id = `${suite._ordinal}@${this.file}::[${this._configurationString}]`;
-    });
+  _assignIds(configurationString: string) {
     this.findTest((test: Test) => {
-      test._id = `${test._ordinal}@${this.file}::[${this._configurationString}]`;
+      test._id = `${test._ordinal}@${this.file}::[${configurationString}]`;
     });
   }
 
@@ -354,13 +235,6 @@ export class Suite extends Runnable {
     });
     return found;
   }
-}
-
-export function serializeConfiguration(configuration: Configuration): string {
-  const tokens = [];
-  for (const { name, value } of configuration)
-    tokens.push(`${name}=${value}`);
-  return tokens.join(', ');
 }
 
 export function serializeError(error: Error | any): any {

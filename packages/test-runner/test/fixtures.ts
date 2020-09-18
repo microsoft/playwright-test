@@ -79,8 +79,10 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
     if (!suites)
       return;
     for (const suite of suites) {
-      for (const test of suite.tests)
-        results.push(...test.results);
+      for (const test of suite.tests) {
+        for (const run of test.runs)
+          results.push(...run.results);
+      }
       visitSuites(suite.suites);
     }
   }

@@ -15,14 +15,15 @@
  */
 
 import { RunnerConfig } from './runnerConfig';
-import { Suite, Test, TestResult } from './test';
+import { TestResult } from './test';
+import { TestRun, SuiteDeclaration } from './declarations';
 
 export interface Reporter {
-  onBegin(config: RunnerConfig, suite: Suite): void;
-  onTestBegin(test: Test): void;
-  onTestStdOut(test: Test, chunk: string | Buffer): void;
-  onTestStdErr(test: Test, chunk: string | Buffer): void;
-  onTestEnd(test: Test, result: TestResult): void;
+  onBegin(config: RunnerConfig, suite: SuiteDeclaration): void;
+  onTestBegin(test: TestRun): void;
+  onTestStdOut(test: TestRun, chunk: string | Buffer): void;
+  onTestStdErr(test: TestRun, chunk: string | Buffer): void;
+  onTestEnd(test: TestRun, result: TestResult): void;
   onTimeout(timeout: number): void;
   onFileError(file: string, error: any): void;
   onEnd(): void;

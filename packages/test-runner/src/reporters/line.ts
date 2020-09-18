@@ -18,22 +18,24 @@ import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Suite, Test, TestResult } from '../test';
 import { BaseReporter } from './base';
+import { SuiteDeclaration, TestRun } from '../declarations';
 
 class LineReporter extends BaseReporter {
   private _total: number;
   private _current = 0;
   private _failures = 0;
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
     super.onBegin(config, suite);
     this._total = suite.total();
     console.log();
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestRun, result: TestResult) {
     super.onTestEnd(test, result);
-    const baseName = path.basename(test.file);
-    const title = `${baseName} - ${test.fullTitle()}`;
+    const declaration = test.declaration;
+    const baseName = path.basename(declaration.file);
+    const title = `${baseName} - ${declaration.fullTitle()}`;
     process.stdout.write(`\u001B[1A\u001B[2K[${++this._current}/${this._total}] ${title}\n`);
     if (!test.ok()) {
       process.stdout.write(`\u001B[1A\u001B[2K`);

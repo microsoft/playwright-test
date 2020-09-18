@@ -21,19 +21,21 @@ import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
 import { Reporter, RunnerConfig, Suite, Test, TestResult, Configuration } from '../runner';
+import { SuiteDeclaration, TestRun } from '../declarations';
+import { TestStatus } from '../test';
 
 const stackUtils = new StackUtils();
 
 export class BaseReporter implements Reporter  {
-  skipped: Test[] = [];
-  asExpected: Test[] = [];
-  unexpected = new Set<Test>();
-  expectedFlaky: Test[] = [];
-  unexpectedFlaky: Test[] = [];
+  skipped: TestRun[] = [];
+  asExpected: TestRun[] = [];
+  unexpected = new Set<TestRun>();
+  expectedFlaky: TestRun[] = [];
+  unexpectedFlaky: TestRun[] = [];
   duration = 0;
   startTime: number;
   config: RunnerConfig;
-  suite: Suite;
+  suite: SuiteDeclaration;
   timeout: number;
   fileDurations = new Map<string, number>();
 
@@ -45,42 +47,43 @@ export class BaseReporter implements Reporter  {
     });
   }
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
     this.startTime = Date.now();
     this.config = config;
     this.suite = suite;
   }
 
-  onTestBegin(test: Test) {
+  onTestBegin(test: TestRun) {
   }
 
-  onTestStdOut(test: Test, chunk: string | Buffer) {
+  onTestStdOut(test: TestRun, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stdout.write(chunk);
   }
 
-  onTestStdErr(test: Test, chunk: string | Buffer) {
+  onTestStdErr(test: TestRun, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stderr.write(chunk);
   }
 
-  onTestEnd(test: Test, result: TestResult) {
-    let duration = this.fileDurations.get(test.file) || 0;
-    duration += test.duration();
-    this.fileDurations.set(test.file, duration);
+  onTestEnd(test: TestRun, result: TestResult) {
+    const declaration = test.declaration;
+    let duration = this.fileDurations.get(declaration.file) || 0;
+    duration += result.duration;
+    this.fileDurations.set(declaration.file, duration);
 
     if (result.status === 'skipped') {
       this.skipped.push(test);
       return;
     }
 
-    if (result.status === test.expectedStatus()) {
+    if (result.status === test.expectedStatus) {
       if (test.results.length === 1) {
         // as expected from the first attempt
         this.asExpected.push(test);
       } else {
         // as expected after unexpected -> flaky.
-        if (test.isFlaky())
+        if (test.flaky)
           this.expectedFlaky.push(test);
         else
           this.unexpectedFlaky.push(test);
@@ -127,7 +130,7 @@ export class BaseReporter implements Reporter  {
     if (this.skipped.length)
       console.log(colors.yellow(`  ${this.skipped.length} skipped`));
 
-    const filteredUnexpected = [...this.unexpected].filter(t => !t._hasResultWithStatus('timedOut'));
+    const filteredUnexpected = [...this.unexpected].filter(t => !this.hasResultWithStatus(t, 'timedOut'));
     if (filteredUnexpected.length) {
       console.log(colors.red(`  ${filteredUnexpected.length} failed`));
       console.log('');
@@ -145,7 +148,7 @@ export class BaseReporter implements Reporter  {
       }
     }
 
-    const timedOut = [...this.unexpected].filter(t => t._hasResultWithStatus('timedOut'));
+    const timedOut = [...this.unexpected].filter(t => this.hasResultWithStatus(t, 'timedOut'));
     if (timedOut.length) {
       console.log(colors.red(`  ${timedOut.length} timed out`));
       console.log('');
@@ -158,40 +161,43 @@ export class BaseReporter implements Reporter  {
     }
   }
 
-  private _printFailures(failures: Test[]) {
+  private _printFailures(failures: TestRun[]) {
     failures.forEach((test, index) => {
       console.log(this.formatFailure(test, index + 1));
     });
   }
 
-  formatFailure(test: Test, index?: number): string {
+  formatFailure(test: TestRun, index?: number): string {
     const tokens: string[] = [];
-    let relativePath = path.relative(this.config.testDir, test.file) || path.basename(test.file);
-    if (test.location.includes(test.file))
-      relativePath += test.location.substring(test.file.length);
+    const declaration = test.declaration;
+    let relativePath = path.relative(this.config.testDir, declaration.file) || path.basename(declaration.file);
+    if (declaration.location.includes(declaration.file))
+      relativePath += declaration.location.substring(declaration.file.length);
     const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
-    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${test.fullTitle()}${passedUnexpectedlySuffix}`;
+    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${declaration.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
 
     // Print configuration.
-    for (let suite = test.parent; suite; suite = suite.parent) {
-      if (suite.configuration)
-        tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeConfiguration(suite.configuration)));
-    }
+    if (test.configuration)
+      tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeConfiguration(test.configuration)));
 
     for (const result of test.results) {
       if (result.status === 'passed')
         continue;
       if (result.status === 'timedOut') {
         tokens.push('');
-        tokens.push(indent(colors.red(`Timeout of ${test._timeout}ms exceeded.`), '    '));
+        tokens.push(indent(colors.red(`Timeout of ${test.timeout}ms exceeded.`), '    '));
       } else {
-        tokens.push(indent(formatError(result.error, test.file), '    '));
+        tokens.push(indent(formatError(result.error, declaration.file), '    '));
       }
       break;
     }
     tokens.push('');
     return tokens.join('\n');
+  }
+
+  hasResultWithStatus(test: TestRun, status: TestStatus): boolean {
+    return !!test.results.find(r => r.status === status);
   }
 }
 

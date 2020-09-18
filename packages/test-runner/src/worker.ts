@@ -22,23 +22,25 @@ let closed = false;
 
 sendMessageToParent('ready');
 
-global.console = new Console({
-  stdout: process.stdout,
-  stderr: process.stderr,
-  colorMode: process.env.FORCE_COLOR === '1',
-});
-
-process.stdout.write = chunk => {
-  if (testRunner)
-    testRunner.stdout(chunk);
-  return true;
-};
-
-process.stderr.write = chunk => {
-  if (testRunner)
-    testRunner.stderr(chunk);
-  return true;
-};
+if (!process.env.PW_RUNNER_DEBUG) {
+  global.console = new Console({
+    stdout: process.stdout,
+    stderr: process.stderr,
+    colorMode: process.env.FORCE_COLOR === '1',
+  });
+  
+  process.stdout.write = chunk => {
+    if (testRunner)
+      testRunner.stdout(chunk);
+    return true;
+  };
+  
+  process.stderr.write = chunk => {
+    if (testRunner)
+      testRunner.stderr(chunk);
+    return true;
+  };  
+}
 
 process.on('disconnect', gracefullyCloseAndExit);
 process.on('SIGINT',() => {});

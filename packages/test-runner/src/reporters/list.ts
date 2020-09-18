@@ -18,37 +18,39 @@ import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { RunnerConfig } from '../runnerConfig';
-import { Suite, Test, TestResult } from '../test';
+import { Test, TestResult } from '../test';
+import { SuiteDeclaration, TestRun } from '../declarations';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
   private _lastRow = 0;
-  private _testRows = new Map<Test, number>();
+  private _testRows = new Map<TestRun, number>();
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: RunnerConfig, suite: SuiteDeclaration) {
     super.onBegin(config, suite);
     console.log();
   }
 
-  onTestBegin(test: Test) {
+  onTestBegin(test: TestRun) {
     super.onTestBegin(test);
-    process.stdout.write('    ' + colors.gray(test.fullTitle() + ': ') + '\n');
+    process.stdout.write('    ' + colors.gray(test.declaration.fullTitle() + ': ') + '\n');
     this._testRows.set(test, this._lastRow++);
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestRun, result: TestResult) {
     super.onTestEnd(test, result);
+    const declaration = test.declaration;
 
-    const duration = colors.dim(` (${milliseconds(test.duration())})`);
+    const duration = colors.dim(` (${milliseconds(result.duration)})`);
     let text = '';
     if (result.status === 'skipped') {
-      text = colors.green('  - ') + colors.cyan(test.fullTitle());
+      text = colors.green('  - ') + colors.cyan(declaration.fullTitle());
     } else {
       const statusMark = result.status === 'passed' ? '  ✓ ' : '  x ';
-      if (result.status === test.expectedStatus())
-        text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(test.fullTitle()) + duration;
+      if (result.status === test.expectedStatus)
+        text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(declaration.fullTitle()) + duration;
       else
-        text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + test.fullTitle()) + duration;
+        text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + declaration.fullTitle()) + duration;
     }
 
     const testRow = this._testRows.get(test);
