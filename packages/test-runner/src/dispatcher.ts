@@ -176,23 +176,6 @@ export class Dispatcher {
 
   _createWorker() {
     const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
-    worker.on('suiteBegin', (params: SuiteBeginPayload) => {
-      const suite = this._suiteById.get(params.id)!;
-      if (!suite) {
-        // That's ok, this suite was filtered out due to *.only.
-        return;
-      }
-      suite._skipped = params.skipped;
-      suite._flaky = params.flaky;
-      suite._slow = params.slow;
-      suite._expectedStatus = params.expectedStatus;
-      suite._annotations = params.annotations;
-      this._reporter.onSuiteBegin(suite);
-    });
-    worker.on('suiteEnd', (params: SuiteBeginPayload) => {
-      const suite = this._suiteById.get(params.id)!;
-      this._reporter.onSuiteEnd(suite);
-    });
     worker.on('testBegin', (params: TestBeginPayload) => {
       const { test } = this._testById.get(params.id);
       test._skipped = params.skipped;
@@ -337,7 +320,7 @@ class InProcessWorker extends Worker {
     delete require.cache[entry.file];
     const { TestRunner } = require('./testRunner');
     const testRunner = new TestRunner(entry, this.runner._config, 0);
-    for (const event of ['suiteBegin', 'suiteEnd', 'testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
+    for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, this.emit.bind(this, event));
     testRunner.run();
   }

@@ -150,7 +150,6 @@ export class TestRunner extends EventEmitter {
   }
 
   private async _runSuite(suite: Suite) {
-    this.emit('suiteBegin', runnableToPayload(suite));
     if (!this._trialRun) {
       try {
         await this._runHooks(suite, 'beforeAll', 'before');
@@ -173,7 +172,6 @@ export class TestRunner extends EventEmitter {
         this._reportDone();
       }
     }
-    this.emit('suiteEnd', runnableToPayload(suite));
   }
 
   private async _runTest(test: Test) {

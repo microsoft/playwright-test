@@ -155,7 +155,9 @@ export class Runnable {
   }
 
   annotations(): any[] {
-    return this._annotations;
+    if (!this.parent)
+      return this._annotations;
+    return [...this._annotations, ...this.parent.annotations()];
   }
 
   _copyFrom(other: Runnable) {

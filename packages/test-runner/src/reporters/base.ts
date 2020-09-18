@@ -51,12 +51,6 @@ export class BaseReporter implements Reporter  {
     this.suite = suite;
   }
 
-  onSuiteBegin(suite: Suite) {
-  }
-
-  onSuiteEnd(suite: Suite) {
-  }
-
   onTestBegin(test: Test) {
   }
 

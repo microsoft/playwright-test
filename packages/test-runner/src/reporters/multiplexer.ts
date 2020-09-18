@@ -30,16 +30,6 @@ export class Multiplexer implements Reporter {
       reporter.onBegin(config, suite);
   }
 
-  onSuiteBegin(suite: Suite) {
-    for (const reporter of this._reporters)
-      reporter.onSuiteBegin(suite);
-  }
-
-  onSuiteEnd(suite: Suite) {
-    for (const reporter of this._reporters)
-      reporter.onSuiteEnd(suite);
-  }
-
   onTestBegin(test: Test) {
     for (const reporter of this._reporters)
       reporter.onTestBegin(test);

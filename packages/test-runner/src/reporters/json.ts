@@ -45,12 +45,6 @@ class JSONReporter implements Reporter {
     this.suite = suite;
   }
 
-  onSuiteBegin(suite: Suite) {
-  }
-
-  onSuiteEnd(suite: Suite) {
-  }
-
   onTimeout(timeout) {
     this.onEnd();
   }
