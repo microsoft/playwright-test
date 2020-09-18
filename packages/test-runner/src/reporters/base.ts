@@ -22,20 +22,20 @@ import path from 'path';
 import StackUtils from 'stack-utils';
 import { Parameters, TestResult, TestStatus } from '../ipc';
 import { Reporter, RunnerConfig } from '../runner';
-import { SuiteSpec, Test } from '../testSpec';
+import { Suite, TestVariant } from '../runnerTest';
 
 const stackUtils = new StackUtils();
 
 export class BaseReporter implements Reporter  {
-  skipped: Test[] = [];
-  asExpected: Test[] = [];
-  unexpected = new Set<Test>();
-  expectedFlaky: Test[] = [];
-  unexpectedFlaky: Test[] = [];
+  skipped: TestVariant[] = [];
+  asExpected: TestVariant[] = [];
+  unexpected = new Set<TestVariant>();
+  expectedFlaky: TestVariant[] = [];
+  unexpectedFlaky: TestVariant[] = [];
   duration = 0;
   startTime: number;
   config: RunnerConfig;
-  suite: SuiteSpec;
+  suite: Suite;
   timeout: number;
   fileDurations = new Map<string, number>();
 
@@ -47,26 +47,26 @@ export class BaseReporter implements Reporter  {
     });
   }
 
-  onBegin(config: RunnerConfig, suite: SuiteSpec) {
+  onBegin(config: RunnerConfig, suite: Suite) {
     this.startTime = Date.now();
     this.config = config;
     this.suite = suite;
   }
 
-  onTestBegin(test: Test) {
+  onTestBegin(test: TestVariant) {
   }
 
-  onTestStdOut(test: Test, chunk: string | Buffer) {
+  onTestStdOut(test: TestVariant, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stdout.write(chunk);
   }
 
-  onTestStdErr(test: Test, chunk: string | Buffer) {
+  onTestStdErr(test: TestVariant, chunk: string | Buffer) {
     if (!this.config.quiet)
       process.stderr.write(chunk);
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestVariant, result: TestResult) {
     const spec = test.spec;
     let duration = this.fileDurations.get(spec.file) || 0;
     duration += result.duration;
@@ -161,13 +161,13 @@ export class BaseReporter implements Reporter  {
     }
   }
 
-  private _printFailures(failures: Test[]) {
+  private _printFailures(failures: TestVariant[]) {
     failures.forEach((test, index) => {
       console.log(this.formatFailure(test, index + 1));
     });
   }
 
-  formatFailure(test: Test, index?: number): string {
+  formatFailure(test: TestVariant, index?: number): string {
     const tokens: string[] = [];
     const spec = test.spec;
     let relativePath = path.relative(this.config.testDir, spec.file) || path.basename(spec.file);
@@ -196,7 +196,7 @@ export class BaseReporter implements Reporter  {
     return tokens.join('\n');
   }
 
-  hasResultWithStatus(test: Test, status: TestStatus): boolean {
+  hasResultWithStatus(test: TestVariant, status: TestStatus): boolean {
     return !!test.runs.find(r => r.status === status);
   }
 }

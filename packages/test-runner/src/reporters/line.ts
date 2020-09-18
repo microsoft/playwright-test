@@ -17,7 +17,7 @@
 import * as path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { BaseReporter } from './base';
-import { SuiteSpec, Test } from '../testSpec';
+import { Suite, TestVariant } from '../runnerTest';
 import { TestResult } from '../ipc';
 
 class LineReporter extends BaseReporter {
@@ -25,13 +25,13 @@ class LineReporter extends BaseReporter {
   private _current = 0;
   private _failures = 0;
 
-  onBegin(config: RunnerConfig, suite: SuiteSpec) {
+  onBegin(config: RunnerConfig, suite: Suite) {
     super.onBegin(config, suite);
     this._total = suite.total();
     console.log();
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestVariant, result: TestResult) {
     super.onTestEnd(test, result);
     const spec = test.spec;
     const baseName = path.basename(spec.file);

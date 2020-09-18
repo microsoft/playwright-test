@@ -15,17 +15,17 @@
  */
 
 import { installTransform } from './transform';
-import { SuiteSpec, TestSpec } from './testSpec';
+import { Suite, Test } from './runnerTest';
 import { extractLocation } from './util';
 import { setImplementation } from './spec';
 
-export function runnerSpec(suite: SuiteSpec): () => void {
+export function runnerSpec(suite: Suite): () => void {
   const suites = [suite];
 
   const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: any | Function, fn?: Function) => {
     const suite = suites[0];
     fn = fn || modifierFn;
-    const test = new TestSpec(title, fn, suite);
+    const test = new Test(title, fn, suite);
     test.file = suite.file;
     test.location = extractLocation(new Error());
     if (spec === 'only')
@@ -35,9 +35,9 @@ export function runnerSpec(suite: SuiteSpec): () => void {
     return test;
   };
 
-  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (suite: SuiteSpec, parameters: any) => void | Function, fn?: Function) => {
+  const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (suite: Suite, parameters: any) => void | Function, fn?: Function) => {
     fn = fn || modifierFn;
-    const child = new SuiteSpec(title, suites[0]);
+    const child = new Suite(title, suites[0]);
     child.file = suite.file;
     child.location = extractLocation(new Error());
     if (spec === 'only')

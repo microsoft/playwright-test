@@ -20,14 +20,14 @@ export class Spec {
   title: string;
   file: string;
   location: string;
-  parent?: SuiteSpec;
+  parent?: Suite;
 
   _only = false;
   _skipped = false;
 
   _ordinal: number;
 
-  constructor(title: string, parent?: SuiteSpec) {
+  constructor(title: string, parent?: Suite) {
     this.title = title;
     this.parent = parent;
   }
@@ -45,13 +45,12 @@ export class Spec {
   }
 }
 
-export class TestSpec extends Spec {
+export class Test extends Spec {
   fn: Function;
-  variants: Test[] = [];
+  variants: TestVariant[] = [];
 
-  constructor(title: string, fn: Function, suite: SuiteSpec) {
+  constructor(title: string, fn: Function, suite: Suite) {
     super(title, suite);
-    this.title = title;
     this.fn = fn;
     suite._addTest(this);
   }
@@ -61,12 +60,12 @@ export class TestSpec extends Spec {
   }
 }
 
-export class SuiteSpec extends Spec {
-  suites: SuiteSpec[] = [];
-  tests: TestSpec[] = [];
-  _entries: (SuiteSpec | TestSpec)[] = [];
+export class Suite extends Spec {
+  suites: Suite[] = [];
+  tests: Test[] = [];
+  _entries: (Suite | Test)[] = [];
 
-  constructor(title: string, parent?: SuiteSpec) {
+  constructor(title: string, parent?: Suite) {
     super(title, parent);
     if (parent)
       parent._addSuite(this);
@@ -80,19 +79,19 @@ export class SuiteSpec extends Spec {
     return count;
   }
 
-  _addTest(test: TestSpec) {
+  _addTest(test: Test) {
     test.parent = this;
     this.tests.push(test);
     this._entries.push(test);
   }
 
-  _addSuite(suite: SuiteSpec) {
+  _addSuite(suite: Suite) {
     suite.parent = this;
     this.suites.push(suite);
     this._entries.push(suite);
   }
 
-  findTest(fn: (test: TestSpec) => boolean | void): boolean {
+  findTest(fn: (test: Test) => boolean | void): boolean {
     for (const suite of this.suites) {
       if (suite.findTest(fn))
         return true;
@@ -104,7 +103,7 @@ export class SuiteSpec extends Spec {
     return false;
   }
 
-  findSuite(fn: (suite: SuiteSpec) => boolean | void): boolean {
+  findSuite(fn: (suite: Suite) => boolean | void): boolean {
     if (fn(this))
       return true;
     for (const suite of this.suites) {
@@ -114,8 +113,8 @@ export class SuiteSpec extends Spec {
     return false;
   }
 
-  _allTests(): TestSpec[] {
-    const result: TestSpec[] = [];
+  _allTests(): Test[] {
+    const result: Test[] = [];
     this.findTest(test => { result.push(test); });
     return result;
   }
@@ -123,26 +122,26 @@ export class SuiteSpec extends Spec {
   _renumber() {
     // All tests and suites are identified with their ordinals.
     let ordinal = 0;
-    this.findSuite((suite: SuiteSpec) => {
+    this.findSuite((suite: Suite) => {
       suite._ordinal = ordinal++;
     });
 
     ordinal = 0;
-    this.findTest((test: TestSpec) => {
+    this.findTest((test: Test) => {
       test._ordinal = ordinal++;
     });
   }
 
   _assignIds() {
-    this.findTest((test: TestSpec) => {
+    this.findTest((test: Test) => {
       for (const run of test.variants)
         run._id = `${test._ordinal}@${run.spec.file}::[${run._parametersString}]`;
     });
   }
 }
 
-export class Test {
-  spec: TestSpec;
+export class TestVariant {
+  spec: Test;
   skipped: boolean;
   flaky: boolean;
   only: boolean;
@@ -159,7 +158,7 @@ export class Test {
   _workerHash: string;
   _id: string;
 
-  constructor(spec: TestSpec) {
+  constructor(spec: Test) {
     this.spec = spec;
   }
 

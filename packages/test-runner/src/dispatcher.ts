@@ -22,21 +22,21 @@ import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestResult, Paramete
 import { RunnerConfig } from './runnerConfig';
 import { Reporter } from './reporter';
 import assert from 'assert';
-import { SuiteSpec, Test } from './testSpec';
+import { Suite, TestVariant } from './runnerTest';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
   private _freeWorkers: Worker[] = [];
   private _workerClaimers: (() => void)[] = [];
 
-  private _testById = new Map<string, { testRun: Test, result: TestResult }>();
+  private _testById = new Map<string, { testRun: TestVariant, result: TestResult }>();
   private _queue: TestRunnerEntry[] = [];
   private _stopCallback: () => void;
   readonly _config: RunnerConfig;
-  private _suite: SuiteSpec;
+  private _suite: Suite;
   private _reporter: Reporter;
 
-  constructor(suite: SuiteSpec, config: RunnerConfig, reporter: Reporter) {
+  constructor(suite: Suite, config: RunnerConfig, reporter: Reporter) {
     this._config = config;
     this._reporter = reporter;
 
@@ -66,7 +66,7 @@ export class Dispatcher {
     const result: TestRunnerEntry[] = [];
     for (const suite of this._suite.suites) {
       const testsByWorkerHash = new Map<string, {
-        testRuns: Test[],
+        testRuns: TestVariant[],
         parameters: Parameters,
         parametersString: string
       }>();

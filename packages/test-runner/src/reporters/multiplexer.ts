@@ -16,7 +16,7 @@
 
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { SuiteSpec, Test } from '../testSpec';
+import { Suite, TestVariant } from '../runnerTest';
 import { TestResult } from '../ipc';
 
 export class Multiplexer implements Reporter {
@@ -26,27 +26,27 @@ export class Multiplexer implements Reporter {
     this._reporters = reporters;
   }
 
-  onBegin(config: RunnerConfig, suite: SuiteSpec) {
+  onBegin(config: RunnerConfig, suite: Suite) {
     for (const reporter of this._reporters)
       reporter.onBegin(config, suite);
   }
 
-  onTestBegin(test: Test) {
+  onTestBegin(test: TestVariant) {
     for (const reporter of this._reporters)
       reporter.onTestBegin(test);
   }
 
-  onTestStdOut(test: Test, chunk: string | Buffer) {
+  onTestStdOut(test: TestVariant, chunk: string | Buffer) {
     for (const reporter of this._reporters)
       reporter.onTestStdOut(test, chunk);
   }
 
-  onTestStdErr(test: Test, chunk: string | Buffer) {
+  onTestStdErr(test: TestVariant, chunk: string | Buffer) {
     for (const reporter of this._reporters)
       reporter.onTestStdErr(test, chunk);
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestVariant, result: TestResult) {
     for (const reporter of this._reporters)
       reporter.onTestEnd(test, result);
   }

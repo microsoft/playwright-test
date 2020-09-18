@@ -18,26 +18,26 @@ import colors from 'colors/safe';
 import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { RunnerConfig } from '../runnerConfig';
-import { SuiteSpec, Test } from '../testSpec';
+import { Suite, TestVariant } from '../runnerTest';
 import { TestResult } from '../ipc';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
   private _lastRow = 0;
-  private _testRows = new Map<Test, number>();
+  private _testRows = new Map<TestVariant, number>();
 
-  onBegin(config: RunnerConfig, suite: SuiteSpec) {
+  onBegin(config: RunnerConfig, suite: Suite) {
     super.onBegin(config, suite);
     console.log();
   }
 
-  onTestBegin(test: Test) {
+  onTestBegin(test: TestVariant) {
     super.onTestBegin(test);
     process.stdout.write('    ' + colors.gray(test.spec.fullTitle() + ': ') + '\n');
     this._testRows.set(test, this._lastRow++);
   }
 
-  onTestEnd(test: Test, result: TestResult) {
+  onTestEnd(test: TestVariant, result: TestResult) {
     super.onTestEnd(test, result);
     const spec = test.spec;
 

@@ -18,10 +18,10 @@ import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
 import { Parameters } from './ipc';
 import { RunnerConfig } from './runnerConfig';
-import { SuiteSpec, TestSpec, Test } from './testSpec';
+import { Suite, Test, TestVariant } from './runnerTest';
 
-export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteSpec {
-  const rootSuite = new SuiteSpec('');
+export function generateTests(suites: Suite[], config: RunnerConfig): Suite {
+  const rootSuite = new Suite('');
   let grep: RegExp = null;
   if (config.grep) {
     const match = config.grep.match(/^\/(.*)\/(g|i|)$|.*/);
@@ -74,7 +74,7 @@ export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteS
         for (let i = 0; i < config.repeatEach; ++i) {
           const parametersString = serializeParameters(configuration) +  `#repeat-${i}#`;
           const workerHash = registrationsHash + '@' + parametersString;
-          const testRun = new Test(test);
+          const testRun = new TestVariant(test);
           testRun.parameters = configuration;
           testRun._parametersString = parametersString;
           testRun._workerHash = workerHash;
@@ -88,9 +88,9 @@ export function generateTests(suites: SuiteSpec[], config: RunnerConfig): SuiteS
   return rootSuite;
 }
 
-function filterOnly(suite: SuiteSpec) {
-  const onlySuites = suite.suites.filter((child: SuiteSpec) => filterOnly(child) || child._only);
-  const onlyTests = suite.tests.filter((test: TestSpec) => test._only);
+function filterOnly(suite: Suite) {
+  const onlySuites = suite.suites.filter((child: Suite) => filterOnly(child) || child._only);
+  const onlyTests = suite.tests.filter((test: Test) => test._only);
   if (onlySuites.length || onlyTests.length) {
     suite.suites = onlySuites;
     suite.tests = onlyTests;

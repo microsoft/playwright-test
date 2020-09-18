@@ -18,7 +18,7 @@ import * as fs from 'fs';
 import path from 'path';
 import { RunnerConfig } from '../runnerConfig';
 import { Reporter } from '../reporter';
-import { SuiteSpec, Test, TestSpec } from '../testSpec';
+import { Suite, TestVariant, Test } from '../runnerTest';
 import { TestResult } from '../ipc';
 
 export interface SerializedSuite {
@@ -36,10 +36,10 @@ export type ReportFormat = {
 
 class JSONReporter implements Reporter {
   config: RunnerConfig;
-  suite: SuiteSpec;
+  suite: Suite;
   private _fileErrors: { file: string, error: any }[] = [];
 
-  onBegin(config: RunnerConfig, suite: SuiteSpec) {
+  onBegin(config: RunnerConfig, suite: Suite) {
     this.config = config;
     this.suite = suite;
   }
@@ -48,16 +48,16 @@ class JSONReporter implements Reporter {
     this.onEnd();
   }
 
-  onTestStdOut(test: Test, chunk: string | Buffer) {
+  onTestStdOut(test: TestVariant, chunk: string | Buffer) {
   }
 
-  onTestStdErr(test: Test, chunk: string | Buffer) {
+  onTestStdErr(test: TestVariant, chunk: string | Buffer) {
   }
 
-  onTestBegin(test: Test): void {
+  onTestBegin(test: TestVariant): void {
   }
 
-  onTestEnd(test: Test, result: TestResult): void {
+  onTestEnd(test: TestVariant, result: TestResult): void {
   }
 
   onFileError(file: string, error: any): void {
@@ -72,7 +72,7 @@ class JSONReporter implements Reporter {
     });
   }
 
-  private _serializeSuite(suite: SuiteSpec): null | SerializedSuite {
+  private _serializeSuite(suite: Suite): null | SerializedSuite {
     if (!suite.findTest(test => true))
       return null;
     const suites = suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s);
@@ -84,7 +84,7 @@ class JSONReporter implements Reporter {
     };
   }
 
-  private _serializeTestSpec(testSpec: TestSpec) {
+  private _serializeTestSpec(testSpec: Test) {
     return {
       title: testSpec.title,
       file: testSpec.file,
@@ -92,7 +92,7 @@ class JSONReporter implements Reporter {
     };
   }
 
-  private _serializeTest(test: Test) {
+  private _serializeTest(test: TestVariant) {
     return {
       workerId: test.workerId,
       parameters: test.parameters,

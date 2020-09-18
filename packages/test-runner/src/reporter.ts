@@ -16,14 +16,14 @@ import { TestResult } from './ipc';
  */
 
 import { RunnerConfig } from './runnerConfig';
-import { Test, SuiteSpec } from './testSpec';
+import { TestVariant, Suite } from './runnerTest';
 
 export interface Reporter {
-  onBegin(config: RunnerConfig, suite: SuiteSpec): void;
-  onTestBegin(test: Test): void;
-  onTestStdOut(test: Test, chunk: string | Buffer): void;
-  onTestStdErr(test: Test, chunk: string | Buffer): void;
-  onTestEnd(test: Test, result: TestResult): void;
+  onBegin(config: RunnerConfig, suite: Suite): void;
+  onTestBegin(test: TestVariant): void;
+  onTestStdOut(test: TestVariant, chunk: string | Buffer): void;
+  onTestStdErr(test: TestVariant, chunk: string | Buffer): void;
+  onTestEnd(test: TestVariant, result: TestResult): void;
   onTimeout(timeout: number): void;
   onFileError(file: string, error: any): void;
   onEnd(): void;
