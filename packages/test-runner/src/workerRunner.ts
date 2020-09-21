@@ -45,7 +45,7 @@ export class WorkerRunner extends EventEmitter {
   private _testId: string | null;
   private _stdOutBuffer: (string | Buffer)[] = [];
   private _stdErrBuffer: (string | Buffer)[] = [];
-  private _testRun: TestRun | null = null;
+  private _testInfo: TestInfo | null = null;
   private _suite: WorkerSuite;
   private _loaded = false;
   private _parametersString: string;
@@ -73,15 +73,16 @@ export class WorkerRunner extends EventEmitter {
   }
 
   unhandledError(error: Error | any) {
-    if (this._testRun) {
-      this._testRun.status = 'failed';
-      this._testRun.error = serializeError(error);
+    if (this._testInfo) {
+      this._testInfo.status = 'failed';
+      this._testInfo.error = serializeError(error);
       this._failedTestId = this._testId;
-      this.emit('testEnd', {
+      const testEndPayload: TestEndPayload = {
         id: this._testId,
-        testRun: this._testRun
-      } as TestEndPayload);
-      this._testRun = null;
+        testRun: asTestRun(this._testInfo)
+      };
+      this.emit('testEnd', testEndPayload);
+      this._testInfo = null;
     } else if (!this._loaded) {
       // No current test - fatal error.
       this._fatalError = serializeError(error);
@@ -159,60 +160,60 @@ export class WorkerRunner extends EventEmitter {
     const id = test._id;
     this._testId = id;
 
-    const testRun: TestRun = {
+    const testInfo: TestInfo = {
+      title: test.title,
+      file: test.file,
+      location: test.location,
+      fn: test.fn,
+      config: this._config,
+      parameters,
+      workerId: this._workerId,
       skipped: test._modifier._isSkipped(),
       flaky: test._modifier._isFlaky(),
       slow: test._modifier._isSlow(),
-      annotations: test._modifier._collectAnnotations(),
       expectedStatus: test._modifier._computeExpectedStatus(),
       timeout: test._modifier._computeTimeout(),
-      workerId: this._workerId,
-    
+      annotations: test._modifier._collectAnnotations(),
       duration: 0,
       status: 'passed',
       stdout: [],
       stderr: [],
-      data: {}
+      data: {},
     };
-    this._testRun = testRun;
+    this._testInfo = testInfo;
 
-    const testBeginEvent: TestBeginPayload = { id, testRun };
+    const testBeginEvent: TestBeginPayload = { id, testRun: asTestRun(testInfo) };
     this.emit('testBegin', testBeginEvent);
 
     if (test._modifier._isSkipped()) {
-      testRun.status = 'skipped';
-      const testEndEvent: TestEndPayload = { id, testRun };
+      testInfo.status = 'skipped';
+      const testEndEvent: TestEndPayload = { id, testRun: asTestRun(testInfo) };
       this.emit('testEnd', testEndEvent);
       return;
     }
 
     const startTime = Date.now();
     try {
-      const testInfo: TestInfo = {
-        config: this._config,
-        spec: test,
-        testRun
-      };
       if (!this._trialRun) {
         await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
-        await fixturePool.runTestWithFixturesAndTimeout(test.fn, this._testRun.timeout, testInfo);
+        await fixturePool.runTestWithFixturesAndTimeout(test.fn, this._testInfo.timeout, testInfo);
         await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
       } else {
-        testRun.status = test._modifier._computeExpectedStatus();
+        testInfo.status = test._modifier._computeExpectedStatus();
       }
     } catch (error) {
       // Error in the test fixture teardown.
-      testRun.status = 'failed';
-      testRun.error = serializeError(error);
+      testInfo.status = 'failed';
+      testInfo.error = serializeError(error);
     }
-    testRun.duration = Date.now() - startTime;
-    if (this._testRun) {
+    testInfo.duration = Date.now() - startTime;
+    if (this._testInfo) {
       // We could have reported end due to an unhandled exception.
-      this.emit('testEnd', { id, testRun });
+      this.emit('testEnd', { id, testRun: asTestRun(testInfo) });
     }
-    if (!this._trialRun && testRun.status !== 'passed')
+    if (!this._trialRun && testInfo.status !== 'passed')
       this._failedTestId = this._testId;
-    this._testRun = null;
+    this._testInfo = null;
     this._testId = null;
   }
 
@@ -237,4 +238,22 @@ export class WorkerRunner extends EventEmitter {
       remaining: [...this._remaining],
     });
   }
+}
+
+function asTestRun(testInfo: TestInfo): TestRun {
+  return {
+    skipped: testInfo.skipped,
+    flaky: testInfo.flaky,
+    slow: testInfo.slow,
+    expectedStatus: testInfo.expectedStatus,
+    timeout: testInfo.timeout,
+    workerId: testInfo.workerId,
+    annotations: testInfo.annotations,
+    duration: testInfo.duration,
+    status: testInfo.status,
+    error: testInfo.error,
+    stdout: testInfo.stdout,
+    stderr: testInfo.stderr,
+    data: testInfo.data,
+  };
 }

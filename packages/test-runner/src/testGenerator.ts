@@ -39,7 +39,7 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
     for (const test of suite._allSpecs()) {
       if (grep && !grep.test(test.fullTitle()))
         continue;
-    // Get all the fixtures that the test needs.
+      // Get all the fixtures that the test needs.
       let fixtures: string[] = [];
       try {
         fixtures = fixturesForCallback(test.fn);

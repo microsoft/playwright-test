@@ -48,9 +48,9 @@ export class WorkerSuite extends Suite {
 
   _hasTestsToRun(): boolean {
     return this.findSpec((test: WorkerSpec) => {
-      if (!test._modifier._isSkipped()) {
+      if (!test._modifier._isSkipped())
         return true;
-      }
+
     });
   }
 }

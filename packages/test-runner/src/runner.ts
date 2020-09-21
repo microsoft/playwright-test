@@ -57,6 +57,8 @@ export class Runner {
   }
 
   loadFiles(files: string[]) {
+    // Resolve symlinks. TODO: do this asynchronously?
+    files = files.map(file => fs.realpathSync(file));
     // First traverse tests.
     for (const file of files) {
       const suite = new RunnerSuite('');

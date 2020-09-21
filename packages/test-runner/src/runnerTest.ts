@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Spec, Suite, Test } from "./test";
+import { Spec, Suite, Test } from './test';
 
 export class RunnerSpec extends Spec {
   constructor(title: string, fn: Function, suite: RunnerSuite) {

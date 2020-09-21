@@ -93,7 +93,7 @@ export class Dispatcher {
           parameters: entry.parameters,
           parametersString: entry.parametersString,
           hash
-        });  
+        });
       }
     }
     result.sort((a, b) => a.hash < b.hash ? -1 : (a.hash === b.hash ? 0 : 1));
