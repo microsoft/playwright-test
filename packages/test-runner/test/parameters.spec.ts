@@ -26,7 +26,7 @@ it('should run with each configuration', async ({ runInlineFixturesTest }) => {
       fixtures.generateParametrizedTests('foo', ['foo1', 'foo2', 'foo3']);
       fixtures.generateParametrizedTests('bar', ['bar1', 'bar2']);
 
-      const { it, expect } = fixtures;
+      const { it } = fixtures;
 
       it('runs 6 times', (test, parameters) => {
         test.skip(parameters.foo === 'foo1' && parameters.bar === 'bar1');

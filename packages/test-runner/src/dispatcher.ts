@@ -35,6 +35,7 @@ export class Dispatcher {
   readonly _config: Config;
   private _suite: RunnerSuite;
   private _reporter: Reporter;
+  private _hasWorkerErrors = false;
 
   constructor(suite: RunnerSuite, config: Config, reporter: Reporter) {
     this._config = config;
@@ -101,12 +102,10 @@ export class Dispatcher {
   }
 
   async run() {
-    this._reporter.onBegin(this._config, this._suite);
     this._queue = this._filesSortedByWorkerHash();
     // Loop in case job schedules more jobs
     while (this._queue.length)
       await this._dispatchQueue();
-    this._reporter.onEnd();
   }
 
   async _dispatchQueue() {
@@ -231,6 +230,10 @@ export class Dispatcher {
       result.stderr.push(chunk);
       this._reporter.onTestStdErr(variant, chunk);
     });
+    worker.on('teardownError', ({error}) => {
+      this._hasWorkerErrors = true;
+      this._reporter.onError(error);
+    });
     worker.on('exit', () => {
       this._workers.delete(worker);
       if (this._stopCallback && !this._workers.size)
@@ -254,19 +257,23 @@ export class Dispatcher {
       worker.stop();
     await result;
   }
+
+  hasWorkerErrors(): boolean {
+    return this._hasWorkerErrors;
+  }
 }
 
-let lastWorkerId = 0;
+let lastWorkerIndex = 0;
 
 class Worker extends EventEmitter {
   runner: Dispatcher;
   hash: string;
-  id: number;
+  index: number;
 
   constructor(runner) {
     super();
     this.runner = runner;
-    this.id = lastWorkerId++;
+    this.index = lastWorkerIndex++;
   }
 
   run(entry: TestRunnerEntry) {
@@ -302,7 +309,7 @@ class OopWorker extends Worker {
   }
 
   async init() {
-    this.process.send({ method: 'init', params: { workerId: this.id, ...this.runner._config } });
+    this.process.send({ method: 'init', params: { workerIndex: this.index, ...this.runner._config } });
     await new Promise(f => this.process.once('message', f));  // Ready ack
   }
 

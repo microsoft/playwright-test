@@ -142,7 +142,7 @@ export class Test {
       slow: false,
       expectedStatus: 'passed',
       timeout: 0,
-      workerId: 0,
+      workerIndex: 0,
       annotations: [],
 
       duration: 0,

@@ -30,14 +30,14 @@ export interface SerializedSuite {
 
 export type ReportFormat = {
   config: Config;
-  fileErrors?: { file: string, error: any }[];
+  errors?: { file: string, error: any }[];
   suites?: SerializedSuite[];
 };
 
 class JSONReporter implements Reporter {
   config: Config;
   suite: Suite;
-  private _fileErrors: { file: string, error: any }[] = [];
+  private _errors: { file: string, error: any }[] = [];
 
   onBegin(config: Config, suite: Suite) {
     this.config = config;
@@ -60,15 +60,15 @@ class JSONReporter implements Reporter {
   onTestEnd(test: Test, result: TestRun): void {
   }
 
-  onFileError(file: string, error: any): void {
-    this._fileErrors.push({ file, error });
+  onError(error: any, file?: string): void {
+    this._errors.push({ file, error });
   }
 
   onEnd() {
     outputReport({
       config: this.config,
       suites: this.suite.suites.map(suite => this._serializeSuite(suite)).filter(s => s),
-      fileErrors: this._fileErrors
+      errors: this._errors
     });
   }
 
@@ -101,7 +101,7 @@ class JSONReporter implements Reporter {
 
   private _serializeTestRun(result: TestRun) {
     return {
-      workerId: result.workerId,
+      workerIndex: result.workerIndex,
       slow: result.slow,
       timeout: result.timeout,
       annotations: result.annotations,

@@ -19,8 +19,8 @@ const { it, expect } = fixtures;
 import * as fs from 'fs';
 import * as path from 'path';
 
-it('succeeds', async ({ workerId }) => {
+it('succeeds', async ({ workerIndex }) => {
   // First test waits for the second to start to work around the race.
   fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'parallel-index.txt'), 'TRUE');
-  expect(workerId).toBe(1);
+  expect(workerIndex).toBe(1);
 });

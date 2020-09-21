@@ -17,6 +17,7 @@
 import { initializeImageMatcher } from './expect';
 import { WorkerRunner, fixturePool } from './workerRunner';
 import { Console } from 'console';
+import { serializeError } from './util';
 
 let closed = false;
 
@@ -46,7 +47,7 @@ process.on('disconnect', gracefullyCloseAndExit);
 process.on('SIGINT',() => {});
 process.on('SIGTERM',() => {});
 
-let workerId: number;
+let workerIndex: number;
 let testRunner: WorkerRunner;
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -61,7 +62,7 @@ process.on('uncaughtException', error => {
 
 process.on('message', async message => {
   if (message.method === 'init') {
-    workerId = message.params.workerId;
+    workerIndex = message.params.workerIndex;
     initializeImageMatcher(message.params);
     return;
   }
@@ -70,7 +71,7 @@ process.on('message', async message => {
     return;
   }
   if (message.method === 'run') {
-    testRunner = new WorkerRunner(message.params.entry, message.params.config, workerId);
+    testRunner = new WorkerRunner(message.params.entry, message.params.config, workerIndex);
     for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, sendMessageToParent.bind(null, event));
     await testRunner.run();
@@ -87,7 +88,11 @@ async function gracefullyCloseAndExit() {
   // Meanwhile, try to gracefully close all browsers.
   if (testRunner)
     testRunner.stop();
-  await fixturePool.teardownScope('worker');
+  try {
+    await fixturePool.teardownScope('worker');
+  } catch (e) {
+    process.send({ method: 'teardownError', params: { error: serializeError(e) } });
+  }
   process.exit(0);
 }
 

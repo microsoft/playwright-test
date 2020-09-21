@@ -128,7 +128,7 @@ export type DefaultWorkerParameters = {
 
 export type DefaultWorkerFixtures = {
   config: Config;
-  workerId: number;
+  workerIndex: number;
 };
 
 export type DefaultTestFixtures = {
@@ -144,7 +144,7 @@ fixtures.defineWorkerFixture('config', async ({}, test) => {
   await test(undefined as any);
 });
 
-fixtures.defineWorkerFixture('workerId', async ({}, test) => {
+fixtures.defineWorkerFixture('workerIndex', async ({}, test) => {
   // Worker injects the value for this one.
   await test(undefined as any);
 });

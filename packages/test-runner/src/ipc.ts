@@ -24,7 +24,7 @@ export type TestRun = {
   slow: boolean;
   expectedStatus: TestStatus;
   timeout: number;
-  workerId: number;
+  workerIndex: number;
   annotations: any[];
 
   duration: number;

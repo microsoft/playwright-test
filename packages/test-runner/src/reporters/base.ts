@@ -96,7 +96,7 @@ export class BaseReporter implements Reporter  {
     }
   }
 
-  onFileError(file: string, error: any) {
+  onError(error: any, file?: string) {
     console.log(formatError(error, file));
   }
 
@@ -201,7 +201,7 @@ export class BaseReporter implements Reporter  {
   }
 }
 
-function formatError(error: any, file: string) {
+function formatError(error: any, file?: string) {
   const stack = error.stack;
   const tokens = [];
   if (stack) {
@@ -209,7 +209,7 @@ function formatError(error: any, file: string) {
     const messageLocation = error.stack.indexOf(error.message);
     const preamble = error.stack.substring(0, messageLocation + error.message.length);
     tokens.push(preamble);
-    const position = positionInFile(stack, file);
+    const position = file ? positionInFile(stack, file) : null;
     if (position) {
       const source = fs.readFileSync(file, 'utf8');
       tokens.push('');

@@ -61,8 +61,8 @@ export class Multiplexer implements Reporter {
       reporter.onEnd();
   }
 
-  onFileError(file: string, error: any) {
+  onError(error: any, file?: string) {
     for (const reporter of this._reporters)
-      reporter.onFileError(file, error);
+      reporter.onError(error, file);
   }
 }

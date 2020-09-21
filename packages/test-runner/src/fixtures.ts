@@ -39,7 +39,7 @@ export type TestInfo = {
   // Parameters
   config: Config;
   parameters: any;  // TODO: make these typed.
-  workerId: number;
+  workerIndex: number;
 
   // Annotations
   skipped: boolean;
@@ -122,7 +122,13 @@ class Fixture {
       this.value = value;
       setupFenceFulfill();
       return await teardownFence;
-    }, param).catch((e: any) => setupFenceReject(e));
+    }, param).catch((e: any) => {
+      if (!this._setup)
+        setupFenceReject(e);
+      else {
+        throw e;
+      }
+    });
     await setupFence;
     this._setup = true;
   }

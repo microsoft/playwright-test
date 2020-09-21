@@ -120,6 +120,6 @@ it('should not restart worker', async ({ runInlineTest }) => {
     `
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
-  expect(result.report.suites[0].specs[0].tests[0].runs[0].workerId).toBe(0);
-  expect(result.report.suites[0].specs[1].tests[0].runs[0].workerId).toBe(0);
+  expect(result.report.suites[0].specs[0].tests[0].runs[0].workerIndex).toBe(0);
+  expect(result.report.suites[0].specs[1].tests[0].runs[0].workerIndex).toBe(0);
 });

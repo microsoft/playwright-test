@@ -25,6 +25,6 @@ export interface Reporter {
   onTestStdErr(test: Test, chunk: string | Buffer): void;
   onTestEnd(test: Test, result: TestRun): void;
   onTimeout(timeout: number): void;
-  onFileError(file: string, error: any): void;
+  onError(error: any, file?: string): void;
   onEnd(): void;
 }

@@ -68,7 +68,7 @@ export class Runner {
         require(file);
         this._suites.push(suite);
       } catch (error) {
-        this._reporter.onFileError(file, serializeError(error));
+        this._reporter.onError(serializeError(error), file);
         this._hasBadFiles = true;
       } finally {
         revertBabelRequire();
@@ -115,12 +115,14 @@ export class Runner {
     try {
       for (const f of this._beforeFunctions)
         await f();
+      this._reporter.onBegin(this._config, suite);
       await runner.run();
       await runner.stop();
+      this._reporter.onEnd();
     } finally {
       for (const f of this._afterFunctions)
         await f();
     }
-    return this._hasBadFiles || suite.findSpec(spec => !spec._ok()) ? 'failed' : 'passed';
+    return this._hasBadFiles || runner.hasWorkerErrors() || suite.findSpec(spec => !spec._ok()) ? 'failed' : 'passed';
   }
 }

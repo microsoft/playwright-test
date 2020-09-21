@@ -49,13 +49,13 @@ export class WorkerRunner extends EventEmitter {
   private _suite: WorkerSuite;
   private _loaded = false;
   private _parametersString: string;
-  private _workerId: number;
+  private _workerIndex: number;
 
-  constructor(entry: TestRunnerEntry, config: Config, workerId: number) {
+  constructor(entry: TestRunnerEntry, config: Config, workerIndex: number) {
     super();
     this._suite = new WorkerSuite('');
     this._suite.file = entry.file;
-    this._workerId = workerId;
+    this._workerIndex = workerIndex;
     this._parametersString = entry.parametersString;
     this._ids = new Set(entry.ids);
     this._remaining = new Set(entry.ids);
@@ -64,7 +64,7 @@ export class WorkerRunner extends EventEmitter {
     for (const {name, value} of entry.parameters)
       this._parsedParameters[name] = value;
     this._parsedParameters['config'] = config;
-    this._parsedParameters['workerId'] = workerId;
+    this._parsedParameters['workerIndex'] = workerIndex;
     setCurrentTestFile(this._suite.file);
   }
 
@@ -167,7 +167,7 @@ export class WorkerRunner extends EventEmitter {
       fn: test.fn,
       config: this._config,
       parameters,
-      workerId: this._workerId,
+      workerIndex: this._workerIndex,
       skipped: test._modifier._isSkipped(),
       flaky: test._modifier._isFlaky(),
       slow: test._modifier._isSlow(),
@@ -247,7 +247,7 @@ function asTestRun(testInfo: TestInfo): TestRun {
     slow: testInfo.slow,
     expectedStatus: testInfo.expectedStatus,
     timeout: testInfo.timeout,
-    workerId: testInfo.workerId,
+    workerIndex: testInfo.workerIndex,
     annotations: testInfo.annotations,
     duration: testInfo.duration,
     status: testInfo.status,
