@@ -114,8 +114,8 @@ declare global {
 
 export const fixtures = baseFixtures.declareTestFixtures<TestState>();
 
-fixtures.defineTestFixture('outputDir', async ({ parallelIndex }, testRun) => {
-  await testRun(path.join(__dirname, 'test-results', String(parallelIndex)));
+fixtures.defineTestFixture('outputDir', async ({ workerIndex }, testRun) => {
+  await testRun(path.join(__dirname, 'test-results', String(workerIndex)));
 });
 
 fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) => {
@@ -127,7 +127,7 @@ fixtures.defineTestFixture('runTest', async ({ outputDir }, testRun, testInfo) =
     result = await runTest(reportFile, outputDir, filePath, options);
     return result;
   });
-  if (testInfo.testRun.status !== testInfo.testRun.expectedStatus)
+  if (testInfo.status !== testInfo.expectedStatus)
     console.log(result.output);
 });
 
