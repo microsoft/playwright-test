@@ -29,7 +29,7 @@ type FixtureRegistration = {
   location: string;
 };
 
-export type TestInfo = {
+export type TestInfo<WorkerParameters> = {
   // Declaration
   title: string;
   file: string;
@@ -38,7 +38,7 @@ export type TestInfo = {
 
   // Parameters
   config: Config;
-  parameters: any;  // TODO: make these typed.
+  parameters: WorkerParameters;
   workerIndex: number;
 
   // Annotations
@@ -101,7 +101,7 @@ class Fixture {
     this.value = this.hasGeneratorValue ? parameters[name] : null;
   }
 
-  async setup(config: Config, info?: TestInfo) {
+  async setup(config: Config, info?: TestInfo<any>) {
     if (this.hasGeneratorValue)
       return;
     for (const name of this.deps) {
@@ -160,7 +160,7 @@ export class FixturePool {
     this.instances = new Map();
   }
 
-  async setupFixture(name: string, config: Config, info?: TestInfo) {
+  async setupFixture(name: string, config: Config, info?: TestInfo<any>) {
     let fixture = this.instances.get(name);
     if (fixture)
       return fixture;
@@ -181,7 +181,7 @@ export class FixturePool {
     }
   }
 
-  async resolveParametersAndRun(fn: Function, config: Config, info?: TestInfo) {
+  async resolveParametersAndRun(fn: Function, config: Config, info?: TestInfo<any>) {
     const names = fixtureParameterNames(fn);
     for (const name of names)
       await this.setupFixture(name, config, info);
@@ -191,14 +191,14 @@ export class FixturePool {
     return fn(params);
   }
 
-  async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo) {
+  async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo<any>) {
     const { timedOut } = await raceAgainstTimeout(this._runTestWithFixtures(fn, info), timeout);
     // Do not overwrite test failure upon timeout in fixture.
     if (timedOut && info.status === 'passed')
       info.status = 'timedOut';
   }
 
-  async _runTestWithFixtures(fn: Function, info: TestInfo) {
+  async _runTestWithFixtures(fn: Function, info: TestInfo<any>) {
     try {
       await this.resolveParametersAndRun(fn, info.config, info);
       info.status = 'passed';
@@ -285,7 +285,7 @@ function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: 
   registrationsByFile.get(file).push(registration);
 }
 
-export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, info: TestInfo) => Promise<void>) {
+export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, info: TestInfo<any>) => Promise<void>) {
   innerRegisterFixture(name, 'test', fn, registerFixture);
 }
 

@@ -46,7 +46,7 @@ export class WorkerRunner extends EventEmitter {
   private _testId: string | null;
   private _stdOutBuffer: (string | Buffer)[] = [];
   private _stdErrBuffer: (string | Buffer)[] = [];
-  private _testInfo: TestInfo | null = null;
+  private _testInfo: TestInfo<any> | null = null;
   private _suite: WorkerSuite;
   private _loaded = false;
   private _parametersString: string;
@@ -161,7 +161,7 @@ export class WorkerRunner extends EventEmitter {
     const id = test._id;
     this._testId = id;
 
-    const testInfo: TestInfo = {
+    const testInfo: TestInfo<any> = {
       title: test.title,
       file: test.file,
       location: test.location,
@@ -220,7 +220,7 @@ export class WorkerRunner extends EventEmitter {
     this._testId = null;
   }
 
-  private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
+  private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo<any>) {
     debugLog(`running hooks "${type}" for suite "${suite.fullTitle}"`);
     if (!suite._hasTestsToRun())
       return;
@@ -245,7 +245,7 @@ export class WorkerRunner extends EventEmitter {
   }
 }
 
-function asTestRun(testInfo: TestInfo): TestRun {
+function asTestRun(testInfo: TestInfo<any>): TestRun {
   return {
     skipped: testInfo.skipped,
     flaky: testInfo.flaky,
