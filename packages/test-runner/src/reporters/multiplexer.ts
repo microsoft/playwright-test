@@ -16,8 +16,7 @@
 
 import { Config } from '../config';
 import { Reporter } from '../reporter';
-import { Suite, Test } from '../test';
-import { TestRun } from '../ipc';
+import { Suite, Test, TestResult } from '../test';
 
 export class Multiplexer implements Reporter {
   private _reporters: Reporter[];
@@ -46,7 +45,7 @@ export class Multiplexer implements Reporter {
       reporter.onTestStdErr(test, chunk);
   }
 
-  onTestEnd(test: Test, result: TestRun) {
+  onTestEnd(test: Test, result: TestResult) {
     for (const reporter of this._reporters)
       reporter.onTestEnd(test, result);
   }

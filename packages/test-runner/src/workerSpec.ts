@@ -22,39 +22,23 @@ import { TestModifier } from './testModifier';
 
 let currentRunSuites: WorkerSuite[];
 
-export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any): () => void {
+export function workerSpec(suite: WorkerSuite): () => void {
   const suites = [suite];
   currentRunSuites = suites;
 
   const it = (spec: 'default' | 'skip' | 'only', title: string, modifierFn: (modifier: TestModifier, parameters: any) => void | Function, fn?: Function) => {
-    const suite = suites[0];
-    if (typeof fn !== 'function') {
-      fn = modifierFn;
-      modifierFn = null;
-    }
-    const test = new WorkerSpec(title, fn, suite);
-    test._modifier.setTimeout(timeout);
-    if (modifierFn)
-      modifierFn(test._modifier, parameters);
+    fn = fn || modifierFn;
+    const test = new WorkerSpec(title, fn, suites[0]);
     test.file = suite.file;
     test.location = extractLocation(new Error());
-    if (spec === 'skip')
-      test._modifier.skip();
     return test;
   };
 
   const describe = (spec: 'describe' | 'skip' | 'only', title: string, modifierFn: (modifier: TestModifier, parameters: any) => void | Function, fn?: Function) => {
-    if (typeof fn !== 'function') {
-      fn = modifierFn;
-      modifierFn = null;
-    }
+    fn = fn || modifierFn;
     const child = new WorkerSuite(title, suites[0]);
-    if (modifierFn)
-      modifierFn(child._modifier, parameters);
     child.file = suite.file;
     child.location = extractLocation(new Error());
-    if (spec === 'skip')
-      child._modifier.skip();
     suites.unshift(child);
     fn();
     suites.shift();

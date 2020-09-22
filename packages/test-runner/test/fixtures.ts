@@ -51,7 +51,6 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
       ...process.env,
       PW_OUTPUT_DIR: outputDir,
       PWRUNNER_JSON_REPORT: reportFile,
-      DEBUG: process.env.PW_RUNNER_DEBUG ? 'pwr:*' : undefined,
     }
   });
   let output = '';

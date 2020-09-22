@@ -1,4 +1,3 @@
-import { TestRun } from './ipc';
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -16,14 +15,14 @@ import { TestRun } from './ipc';
  */
 
 import { Config } from './config';
-import { Test, Suite } from './test';
+import { Test, Suite, TestResult } from './test';
 
 export interface Reporter {
   onBegin(config: Config, suite: Suite): void;
   onTestBegin(test: Test): void;
   onTestStdOut(test: Test, chunk: string | Buffer): void;
   onTestStdErr(test: Test, chunk: string | Buffer): void;
-  onTestEnd(test: Test, result: TestRun): void;
+  onTestEnd(test: Test, result: TestResult): void;
   onTimeout(timeout: number): void;
   onError(error: any, file?: string): void;
   onEnd(): void;

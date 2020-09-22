@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Parameters, TestRun } from './ipc';
+import { Parameters, TestStatus } from './ipc';
 
 class Base {
   title: string;
@@ -132,42 +132,51 @@ export class Suite extends Base {
 export class Test {
   spec: Spec;
   parameters: Parameters;
-  runs: TestRun[] = [];
+  results: TestResult[] = [];
+  skipped = false;
+  flaky = false;
+  slow = false;
+  expectedStatus: TestStatus = 'passed';
+  timeout = 0;
+  annotations: any[] = [];
 
   constructor(spec: Spec) {
     this.spec = spec;
   }
 
-  _appendTestRun(): TestRun {
-    const result: TestRun = {
-      skipped: false,
-      flaky: false,
-      slow: false,
-      expectedStatus: 'passed',
-      timeout: 0,
+  _appendTestRun(): TestResult {
+    const result: TestResult = {
       workerIndex: 0,
-      annotations: [],
-
       duration: 0,
       stdout: [],
       stderr: [],
       data: {}
     };
-    this.runs.push(result);
+    this.results.push(result);
     return result;
   }
 
   ok(): boolean {
     let hasPassedResults = false;
-    for (const result of this.runs) {
+    for (const result of this.results) {
       // Missing status is Ok when running in shards mode.
       if (result.status === 'skipped' || !result.status)
         return true;
-      if (!result.flaky && result.status !== result.expectedStatus)
+      if (!this.flaky && result.status !== this.expectedStatus)
         return false;
-      if (result.status === result.expectedStatus)
+      if (result.status === this.expectedStatus)
         hasPassedResults = true;
     }
     return hasPassedResults;
   }
 }
+
+export type TestResult = {
+  workerIndex: number,
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  stdout: (string | Buffer)[];
+  stderr: (string | Buffer)[];
+  data: any;
+};

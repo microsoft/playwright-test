@@ -18,37 +18,42 @@ export type Parameters = { name: string, value: string }[];
 
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
-export type TestRun = {
-  skipped: boolean;
-  flaky: boolean;
-  slow: boolean;
-  expectedStatus: TestStatus;
-  timeout: number;
-  workerIndex: number;
-  annotations: any[];
-
-  duration: number;
-  status?: TestStatus;
-  error?: any;
-  stdout: (string | Buffer)[];
-  stderr: (string | Buffer)[];
-  data: any;
-};
-
 export type TestBeginPayload = {
-  id: string;
-  testRun: TestRun;
+  testId: string;
+  workerIndex: number,
 };
 
 export type TestEndPayload = {
-  id: string;
-  testRun: TestRun;
+  testId: string;
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  data: any;
 };
 
-export type TestRunnerEntry = {
+export type TestEntry = {
+  testId: string;
+  timeout: number;
+  expectedStatus: TestStatus;
+  skipped: boolean;
+};
+
+export type RunPayload = {
   file: string;
-  ids: string[];
+  entries: TestEntry[];
   parametersString: string;
   parameters: Parameters;
   hash: string;
+};
+
+export type DonePayload = {
+  failedTestId?: string;
+  fatalError?: any;
+  remaining: TestEntry[];
+};
+
+export type TestOutputPayload = {
+  testId?: string;
+  text?: string;
+  buffer?: string;
 };
