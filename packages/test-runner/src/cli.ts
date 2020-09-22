@@ -49,6 +49,7 @@ program
     .option('--repeat-each <repeat-each>', 'Specify how many times to run the tests', '1')
     .option('--reporter <reporter>', `Specify reporter to use, comma-separated, can be ${availableReporters}`, 'line')
     .option('--retries <retries>', 'Specify retry count', '0')
+    .option('--shard <shard>', 'Shard tests and execute only selected shard, specify in the form "current/all", 1-based, for example "3/5"', '')
     .option('--test-ignore <pattern>', 'Pattern used to ignore test files', '**/node_modules/**')
     .option('--test-match <pattern>', 'Pattern used to find test files', '**/?(*.)+(spec|test).[jt]s')
     .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds), default: 10000', '10000')
@@ -70,6 +71,11 @@ async function runStage1(command) {
     filteredArguments.push(arg);
   }
 
+  let shard: { total: number, current: number } | undefined;
+  if (command.shard) {
+    const pair = command.shard.split('/').map((t: string) => parseInt(t, 10));
+    shard = { current: pair[0] - 1, total: pair[1] };
+  }
   const testDir = path.resolve(process.cwd(), filteredArguments[0] || '.');
   const config: Config = {
     debug: command.debug,
@@ -80,6 +86,7 @@ async function runStage1(command) {
     outputDir: command.output,
     repeatEach: parseInt(command.repeatEach, 10),
     retries: parseInt(command.retries, 10),
+    shard,
     snapshotDir: path.join(testDir, '__snapshots__'),
     testDir,
     timeout: parseInt(command.timeout, 10),

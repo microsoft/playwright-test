@@ -85,6 +85,8 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
     rootSuite._addSuite(suite);
   }
   filterOnly(rootSuite);
+  rootSuite._assignIds();
+  rootSuite._countTotal();
   return rootSuite;
 }
 

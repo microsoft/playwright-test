@@ -42,12 +42,34 @@ export class Dispatcher {
     this._reporter = reporter;
 
     this._suite = suite;
-    this._suite._assignIds();
     for (const suite of this._suite.suites) {
       for (const test of suite._allSpecs()) {
         for (const variant of test.tests as RunnerTest[])
           this._testById.set(variant._id, { test: variant, testRun: variant._appendTestRun() });
       }
+    }
+
+    this._queue = this._filesSortedByWorkerHash();
+
+    // Shard tests.
+    let total = this._suite.total;
+    let shardDetails = '';
+    if (this._config.shard) {
+      total = 0;
+      const shardSize = Math.ceil(this._suite.total / this._config.shard.total);
+      const from = shardSize * this._config.shard.current;
+      const to = shardSize * (this._config.shard.current + 1);
+      shardDetails = `, shard ${this._config.shard.current + 1} or ${this._config.shard.total}`
+      let current = 0;
+      const filteredQueue: TestRunnerEntry[] = [];
+      for (const entry of this._queue) {
+        if (current >= from && current < to) {
+          filteredQueue.push(entry);
+          total += entry.ids.length;
+        }
+        current += entry.ids.length;
+      }
+      this._queue = filteredQueue;
     }
 
     if (process.stdout.isTTY) {
@@ -56,10 +78,9 @@ export class Dispatcher {
         for (const variant of test.tests as RunnerTest[])
           workers.add(test.file + variant._workerHash);
       });
-      const total = suite.total();
       console.log();
       const jobs = Math.min(config.jobs, workers.size);
-      console.log(`Running ${total} test${total > 1 ? 's' : ''} using ${jobs} worker${jobs > 1 ? 's' : ''}`);
+      console.log(`Running ${total} test${total > 1 ? 's' : ''} using ${jobs} worker${jobs > 1 ? 's' : ''}${shardDetails}`);
     }
   }
 
@@ -102,7 +123,6 @@ export class Dispatcher {
   }
 
   async run() {
-    this._queue = this._filesSortedByWorkerHash();
     // Loop in case job schedules more jobs
     while (this._queue.length)
       await this._dispatchQueue();

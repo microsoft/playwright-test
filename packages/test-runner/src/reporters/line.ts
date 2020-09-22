@@ -27,7 +27,7 @@ class LineReporter extends BaseReporter {
 
   onBegin(config: Config, suite: Suite) {
     super.onBegin(config, suite);
-    this._total = suite.total();
+    this._total = suite.total;
     console.log();
   }
 

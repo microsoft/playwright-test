@@ -97,7 +97,7 @@ export class Runner {
         return 'forbid-only';
     }
 
-    const total = this._rootSuite.total();
+    const total = this._rootSuite.total;
     if (!total && !this._hasBadFiles)
       return 'no-tests';
     const { result, timedOut } = await raceAgainstTimeout(this._runTests(this._rootSuite), this._config.globalTimeout);

@@ -62,19 +62,12 @@ export class Suite extends Base {
   suites: Suite[] = [];
   specs: Spec[] = [];
   _entries: (Suite | Spec)[] = [];
+  total = 0;
 
   constructor(title: string, parent?: Suite) {
     super(title, parent);
     if (parent)
       parent._addSuite(this);
-  }
-
-  total(): number {
-    let count = 0;
-    this.findSpec(test => {
-      count += test.tests.length;
-    });
-    return count;
   }
 
   _addSpec(spec: Spec) {
@@ -124,6 +117,16 @@ export class Suite extends Base {
       test._ordinal = ordinal++;
     });
   }
+
+  _countTotal() {
+    this.total = 0;
+    for (const suite of this.suites) {
+      suite._countTotal();
+      this.total += suite.total;
+    }
+    for (const spec of this.specs)
+      this.total += spec.tests.length;
+  }
 }
 
 export class Test {
@@ -157,7 +160,8 @@ export class Test {
   ok(): boolean {
     let hasPassedResults = false;
     for (const result of this.runs) {
-      if (result.status === 'skipped')
+      // Missing status is Ok when running in shards mode.
+      if (result.status === 'skipped' || !result.status)
         return true;
       if (!result.flaky && result.status !== result.expectedStatus)
         return false;

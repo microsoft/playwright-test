@@ -24,6 +24,7 @@ export type Config = {
   quiet?: boolean;
   repeatEach: number;
   retries: number,
+  shard: { total: number, current: number } | undefined,
   snapshotDir: string;
   testDir: string;
   timeout: number;
