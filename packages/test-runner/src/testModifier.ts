@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TestStatus } from './ipc';
+import { TestAnnotations, TestStatus } from './ipc';
 
 export class TestModifier {
   private _skipped = false;
@@ -133,6 +133,15 @@ export class TestModifier {
     if (!this._parent)
       return this._annotations;
     return [...this._annotations, ...this._parent._collectAnnotations()];
+  }
+
+  _fillAnnotations(annotations: TestAnnotations) {
+    this._skipped = annotations.skipped;
+    this._slow = annotations.slow;
+    this._flaky = annotations.flaky;
+    this._expectedStatus = annotations.expectedStatus;
+    this._timeout = annotations.timeout;
+    this._annotations = annotations.annotations;
   }
 
   private _interpretCondition(arg?: boolean | string, description?: string): { condition: boolean, description?: string } {

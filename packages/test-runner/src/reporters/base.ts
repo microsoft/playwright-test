@@ -20,7 +20,7 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import { Parameters, TestRun, TestStatus } from '../ipc';
+import { Parameters, TestResult, TestStatus } from '../ipc';
 import { Reporter, Config } from '../runner';
 import { Test, Suite } from '../test';
 
@@ -66,7 +66,7 @@ export class BaseReporter implements Reporter  {
       process.stderr.write(chunk);
   }
 
-  onTestEnd(test: Test, result: TestRun) {
+  onTestEnd(test: Test, result: TestResult) {
     const spec = test.spec;
     let duration = this.fileDurations.get(spec.file) || 0;
     duration += result.duration;
@@ -77,20 +77,20 @@ export class BaseReporter implements Reporter  {
       return;
     }
 
-    if (result.status === result.expectedStatus) {
-      if (test.runs.length === 1) {
+    if (result.status === test.expectedStatus) {
+      if (test.results.length === 1) {
         // as expected from the first attempt
         this.asExpected.push(test);
       } else {
         // as expected after unexpected -> flaky.
-        if (result.flaky)
+        if (test.flaky)
           this.expectedFlaky.push(test);
         else
           this.unexpectedFlaky.push(test);
       }
       return;
     }
-    if (result.status === 'passed' || result.status === 'timedOut' || test.runs.length === this.config.retries + 1) {
+    if (result.status === 'passed' || result.status === 'timedOut' || test.results.length === this.config.retries + 1) {
       // We made as many retries as we could, still failing.
       this.unexpected.add(test);
     }
@@ -173,7 +173,7 @@ export class BaseReporter implements Reporter  {
     let relativePath = path.relative(this.config.testDir, spec.file) || path.basename(spec.file);
     if (spec.location.includes(spec.file))
       relativePath += spec.location.substring(spec.file.length);
-    const passedUnexpectedlySuffix = test.runs[0].status === 'passed' ? ' -- passed unexpectedly' : '';
+    const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
     const header = `  ${index ? index + ')' : ''} ${relativePath} › ${spec.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
 
@@ -181,12 +181,12 @@ export class BaseReporter implements Reporter  {
     if (test.parameters)
       tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeParameters(test.parameters)));
 
-    for (const result of test.runs) {
+    for (const result of test.results) {
       if (result.status === 'passed')
         continue;
       if (result.status === 'timedOut') {
         tokens.push('');
-        tokens.push(indent(colors.red(`Timeout of ${result.timeout}ms exceeded.`), '    '));
+        tokens.push(indent(colors.red(`Timeout of ${test.timeout}ms exceeded.`), '    '));
       } else {
         tokens.push(indent(formatError(result.error, spec.file), '    '));
       }
@@ -197,7 +197,7 @@ export class BaseReporter implements Reporter  {
   }
 
   hasResultWithStatus(test: Test, status: TestStatus): boolean {
-    return !!test.runs.find(r => r.status === status);
+    return !!test.results.find(r => r.status === status);
   }
 }
 

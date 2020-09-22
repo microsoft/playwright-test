@@ -17,7 +17,7 @@
 import * as path from 'path';
 import { Config } from '../config';
 import { BaseReporter } from './base';
-import { TestRun } from '../ipc';
+import { TestResult } from '../ipc';
 import { Test, Suite } from '../test';
 
 class LineReporter extends BaseReporter {
@@ -31,7 +31,7 @@ class LineReporter extends BaseReporter {
     console.log();
   }
 
-  onTestEnd(test: Test, result: TestRun) {
+  onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
     const spec = test.spec;
     const baseName = path.basename(spec.file);

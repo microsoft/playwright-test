@@ -50,11 +50,14 @@ export type TestInfo<WorkerParameters> = {
   annotations: any[];
 
   // Results
+  retryNumber: number;
   duration: number;
   status?: TestStatus;
   error?: any;
+  // TODO: do we need output here?
   stdout: (string | Buffer)[];
   stderr: (string | Buffer)[];
+  // TODO: type this as Object<string, any>.
   data: any;
 };
 

@@ -21,13 +21,14 @@ import { WorkerSpec, WorkerSuite } from './workerTest';
 import { Config } from './config';
 import * as util from 'util';
 import { serializeError } from './util';
-import { TestBeginPayload, TestEndPayload, TestRun, TestRunnerEntry } from './ipc';
+import { TestBeginPayload, TestEndPayload, RunPayload, DonePayload, TestOutputPayload, TestEntry, TestResult, TestAnnotations } from './ipc';
 import { workerSpec } from './workerSpec';
 import { debugLog } from './debug';
+import { assert } from 'console';
 
 export const fixturePool = new FixturePool();
 
-function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: string } {
+function chunkToParams(chunk: Buffer | string): TestOutputPayload {
   if (chunk instanceof Buffer)
     return { buffer: chunk.toString('base64') };
   if (typeof chunk !== 'string')
@@ -38,9 +39,10 @@ function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: strin
 export class WorkerRunner extends EventEmitter {
   private _failedTestId: string | undefined;
   private _fatalError: any | undefined;
-  private _ids: Set<string>;
-  private _remaining: Set<string>;
-  private _trialRun: any;
+  private _entries: Map<string, TestEntry>;
+  private _remaining: Map<string, TestEntry>;
+  private _trialRun: boolean;
+  private _isRetryRun: boolean;
   private _parsedParameters: any = {};
   private _config: Config;
   private _testId: string | null;
@@ -52,20 +54,28 @@ export class WorkerRunner extends EventEmitter {
   private _parametersString: string;
   private _workerIndex: number;
 
-  constructor(entry: TestRunnerEntry, config: Config, workerIndex: number) {
+  constructor(entry: RunPayload, config: Config, workerIndex: number) {
     super();
     this._suite = new WorkerSuite('');
     this._suite.file = entry.file;
     this._workerIndex = workerIndex;
     this._parametersString = entry.parametersString;
-    this._ids = new Set(entry.ids);
-    this._remaining = new Set(entry.ids);
+    this._entries = new Map(entry.entries.map(e => [ e.testId, e ]));
+    this._remaining = new Map(entry.entries.map(e => [ e.testId, e ]));
     this._trialRun = config.trialRun;
     this._config = config;
     for (const {name, value} of entry.parameters)
       this._parsedParameters[name] = value;
     this._parsedParameters['config'] = config;
     this._parsedParameters['workerIndex'] = workerIndex;
+    let isRetryRun: boolean | undefined;
+    for (const entry of this._entries.values()) {
+      if (isRetryRun === undefined)
+        isRetryRun = entry.retryNumber > 0;
+      else
+        assert(isRetryRun === (entry.retryNumber > 0));
+    }
+    this._isRetryRun = !!isRetryRun;
     setCurrentTestFile(this._suite.file);
   }
 
@@ -79,8 +89,8 @@ export class WorkerRunner extends EventEmitter {
       this._testInfo.error = serializeError(error);
       this._failedTestId = this._testId;
       const testEndPayload: TestEndPayload = {
-        id: this._testId,
-        testRun: asTestRun(this._testInfo)
+        testId: this._testId,
+        result: asTestResult(this._testInfo)
       };
       this.emit('testEnd', testEndPayload);
       this._testInfo = null;
@@ -93,22 +103,32 @@ export class WorkerRunner extends EventEmitter {
 
   stdout(chunk: string | Buffer) {
     this._stdOutBuffer.push(chunk);
-    for (const c of this._stdOutBuffer)
-      this.emit('testStdOut', { id: this._testId, ...chunkToParams(c) });
+    for (const c of this._stdOutBuffer) {
+      const payload: TestOutputPayload = {
+        testId: this._testId,
+        ...chunkToParams(c),
+      };
+      this.emit('testStdOut', payload);
+    }
     this._stdOutBuffer = [];
   }
 
   stderr(chunk: string | Buffer) {
     this._stdErrBuffer.push(chunk);
-    for (const c of this._stdErrBuffer)
-      this.emit('testStdErr', { id: this._testId, ...chunkToParams(c) });
+    for (const c of this._stdErrBuffer) {
+      const payload: TestOutputPayload = {
+        testId: this._testId,
+        ...chunkToParams(c),
+      };
+      this.emit('testStdErr', payload);
+    }
     this._stdErrBuffer = [];
   }
 
   async run() {
     assignParameters(this._parsedParameters);
 
-    const revertBabelRequire = workerSpec(this._suite, this._config.timeout, parameters);
+    const revertBabelRequire = workerSpec(this._suite, this._config.timeout, parameters, this._isRetryRun);
 
     // Trial mode runs everything in one worker, delete test from cache.
     delete require.cache[this._suite.file];
@@ -135,6 +155,17 @@ export class WorkerRunner extends EventEmitter {
         this._reportDone();
       }
     }
+    if (this._isRetryRun) {
+      // On retries, we do not run the modifier function.
+      // Instead, we fill annotations with whatever dispatcher sent us from the first run.
+      suite.findSpec((spec: WorkerSpec) => {
+        const entry = this._entries.get(spec._id);
+        if (entry) {
+          assert(entry.annotations);
+          spec._modifier._fillAnnotations(entry.annotations);
+        }
+      });
+    }
     for (const entry of suite._entries) {
       if (entry instanceof WorkerSuite)
         await this._runSuite(entry);
@@ -154,7 +185,8 @@ export class WorkerRunner extends EventEmitter {
   private async _runTest(test: WorkerSpec) {
     if (this._failedTestId)
       return false;
-    if (this._ids.size && !this._ids.has(test._id))
+    const entry = this._entries.get(test._id);
+    if (!entry)
       return;
     this._remaining.delete(test._id);
 
@@ -175,6 +207,7 @@ export class WorkerRunner extends EventEmitter {
       expectedStatus: test._modifier._computeExpectedStatus(),
       timeout: test._modifier._computeTimeout(),
       annotations: test._modifier._collectAnnotations(),
+      retryNumber: entry.retryNumber,
       duration: 0,
       status: 'passed',
       stdout: [],
@@ -183,12 +216,19 @@ export class WorkerRunner extends EventEmitter {
     };
     this._testInfo = testInfo;
 
-    const testBeginEvent: TestBeginPayload = { id, testRun: asTestRun(testInfo) };
+    const testBeginEvent: TestBeginPayload = {
+      testId: test._id,
+      retryNumber: entry.retryNumber,
+      annotations: this._isRetryRun ? undefined : asTestAnnotations(testInfo),
+    };
     this.emit('testBegin', testBeginEvent);
 
     if (test._modifier._isSkipped()) {
       testInfo.status = 'skipped';
-      const testEndEvent: TestEndPayload = { id, testRun: asTestRun(testInfo) };
+      const testEndEvent: TestEndPayload = {
+        testId: test._id,
+        result: asTestResult(testInfo),
+      };
       this.emit('testEnd', testEndEvent);
       return;
     }
@@ -212,7 +252,11 @@ export class WorkerRunner extends EventEmitter {
     testInfo.duration = Date.now() - startTime;
     if (this._testInfo) {
       // We could have reported end due to an unhandled exception.
-      this.emit('testEnd', { id, testRun: asTestRun(testInfo) });
+      const testEndPayload: TestEndPayload = {
+        testId: id,
+        result: asTestResult(testInfo),
+      };
+      this.emit('testEnd', testEndPayload);
     }
     if (!this._trialRun && testInfo.status !== 'passed')
       this._failedTestId = this._testId;
@@ -237,28 +281,37 @@ export class WorkerRunner extends EventEmitter {
   }
 
   private _reportDone() {
-    this.emit('done', {
+    const donePayload: DonePayload = {
       failedTestId: this._failedTestId,
       fatalError: this._fatalError,
-      remaining: [...this._remaining],
-    });
+      remaining: [...this._remaining.values()],
+    };
+    this.emit('done', donePayload);
   }
 }
 
-function asTestRun(testInfo: TestInfo<any>): TestRun {
+function asTestResult(testInfo: TestInfo<any>): TestResult {
+  return {
+    retryNumber: testInfo.retryNumber,
+    workerIndex: testInfo.workerIndex,
+    duration: testInfo.duration,
+    status: testInfo.status,
+    error: testInfo.error,
+    // Do not send output again, we already stream it with testStdOut/testStdErr messages.
+    // Dispatcher will accumulate the output and .
+    stdout: [],
+    stderr: [],
+    data: testInfo.data,
+  };
+}
+
+function asTestAnnotations(testInfo: TestInfo<any>): TestAnnotations {
   return {
     skipped: testInfo.skipped,
     flaky: testInfo.flaky,
     slow: testInfo.slow,
     expectedStatus: testInfo.expectedStatus,
     timeout: testInfo.timeout,
-    workerIndex: testInfo.workerIndex,
     annotations: testInfo.annotations,
-    duration: testInfo.duration,
-    status: testInfo.status,
-    error: testInfo.error,
-    stdout: testInfo.stdout,
-    stderr: testInfo.stderr,
-    data: testInfo.data,
   };
 }

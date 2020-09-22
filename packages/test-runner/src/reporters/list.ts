@@ -19,7 +19,7 @@ import milliseconds from 'ms';
 import { BaseReporter } from './base';
 import { Config } from '../config';
 import { Suite, Test } from '../test';
-import { TestRun } from '../ipc';
+import { TestResult } from '../ipc';
 
 class ListReporter extends BaseReporter {
   private _failure = 0;
@@ -37,7 +37,7 @@ class ListReporter extends BaseReporter {
     this._testRows.set(test, this._lastRow++);
   }
 
-  onTestEnd(test: Test, result: TestRun) {
+  onTestEnd(test: Test, result: TestResult) {
     super.onTestEnd(test, result);
     const spec = test.spec;
 
@@ -47,7 +47,7 @@ class ListReporter extends BaseReporter {
       text = colors.green('  - ') + colors.cyan(spec.fullTitle());
     } else {
       const statusMark = result.status === 'passed' ? '  ✓ ' : '  x ';
-      if (result.status === result.expectedStatus)
+      if (result.status === test.expectedStatus)
         text = '\u001b[2K\u001b[0G' + colors.green(statusMark) + colors.gray(spec.fullTitle()) + duration;
       else
         text = '\u001b[2K\u001b[0G' + colors.red(`  ${++this._failure}) ` + spec.fullTitle()) + duration;

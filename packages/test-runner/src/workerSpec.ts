@@ -22,7 +22,7 @@ import { TestModifier } from './testModifier';
 
 let currentRunSuites: WorkerSuite[];
 
-export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any): () => void {
+export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any, skipModifierFn: boolean): () => void {
   const suites = [suite];
   currentRunSuites = suites;
 
@@ -34,7 +34,7 @@ export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any)
     }
     const test = new WorkerSpec(title, fn, suite);
     test._modifier.setTimeout(timeout);
-    if (modifierFn)
+    if (modifierFn && !skipModifierFn)
       modifierFn(test._modifier, parameters);
     test.file = suite.file;
     test.location = extractLocation(new Error());
@@ -49,7 +49,7 @@ export function workerSpec(suite: WorkerSuite, timeout: number, parameters: any)
       modifierFn = null;
     }
     const child = new WorkerSuite(title, suites[0]);
-    if (modifierFn)
+    if (modifierFn && !skipModifierFn)
       modifierFn(child._modifier, parameters);
     child.file = suite.file;
     child.location = extractLocation(new Error());

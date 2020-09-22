@@ -18,11 +18,30 @@ import colors from 'colors/safe';
 import { fixtures } from './fixtures';
 const { it, expect } = fixtures;
 
+function countSubstring(output: string, str: string): number {
+  const index = output.indexOf(str);
+  if (index === -1)
+    return 0;
+  return 1 + countSubstring(output.substring(index + str.length), str);
+}
+
 it('should retry failures', async ({ runTest }) => {
-  const result = await runTest('retry-failures.js', { retries: 1 });
+  const result = await runTest('retry-failures.js', { retries: 10 });
   expect(result.exitCode).toBe(1);
   expect(result.expectedFlaky).toBe(0);
   expect(result.unexpectedFlaky).toBe(1);
+  // Just a single annotation.
+  expect(result.report.suites[0].specs[0].tests[0].annotations.length).toBe(1);
+  expect(result.report.suites[0].specs[0].tests[0].annotations[0].type).toBe('slow');
+  expect(result.report.suites[0].specs[0].tests[0].annotations[0].description).toContain('hey');
+  // Modifiers function should be run only once.
+  expect(countSubstring(result.output, 'modifiers!')).toBe(1);
+  // There should be two results, first failed, second passed.
+  expect(result.results.length).toBe(2);
+  expect(result.results[0].workerIndex).toBe(0);
+  expect(result.results[0].status).toBe('failed');
+  expect(result.results[1].workerIndex).toBe(1);
+  expect(result.results[1].status).toBe('passed');
 });
 
 it('should retry timeout', async ({ runTest }) => {

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { Parameters, TestRun } from './ipc';
+import { assert } from 'console';
+import { Parameters, TestAnnotations, TestResult, TestStatus } from './ipc';
 
 class Base {
   title: string;
@@ -132,40 +133,44 @@ export class Suite extends Base {
 export class Test {
   spec: Spec;
   parameters: Parameters;
-  runs: TestRun[] = [];
+  skipped: boolean;
+  flaky: boolean;
+  slow: boolean;
+  expectedStatus: TestStatus;
+  timeout: number;
+  annotations: any[];
+  results: TestResult[] = [];
+
+  _annotations?: TestAnnotations;
 
   constructor(spec: Spec) {
     this.spec = spec;
   }
 
-  _appendTestRun(): TestRun {
-    const result: TestRun = {
-      skipped: false,
-      flaky: false,
-      slow: false,
-      expectedStatus: 'passed',
-      timeout: 0,
-      workerIndex: 0,
-      annotations: [],
+  _appendResult(result: TestResult) {
+    assert(result.retryNumber === this.results.length);
+    this.results.push(result);
+  }
 
-      duration: 0,
-      stdout: [],
-      stderr: [],
-      data: {}
-    };
-    this.runs.push(result);
-    return result;
+  _setAnnotations(annotations: TestAnnotations) {
+    this._annotations = annotations;
+    this.skipped = annotations.skipped;
+    this.flaky = annotations.flaky;
+    this.slow = annotations.slow;
+    this.expectedStatus = annotations.expectedStatus;
+    this.timeout = annotations.timeout;
+    this.annotations = annotations.annotations;
   }
 
   ok(): boolean {
     let hasPassedResults = false;
-    for (const result of this.runs) {
+    for (const result of this.results) {
       // Missing status is Ok when running in shards mode.
       if (result.status === 'skipped' || !result.status)
         return true;
-      if (!result.flaky && result.status !== result.expectedStatus)
+      if (!this.flaky && result.status !== this.expectedStatus)
         return false;
-      if (result.status === result.expectedStatus)
+      if (result.status === this.expectedStatus)
         hasPassedResults = true;
     }
     return hasPassedResults;

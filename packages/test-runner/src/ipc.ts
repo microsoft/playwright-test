@@ -18,15 +18,9 @@ export type Parameters = { name: string, value: string }[];
 
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
-export type TestRun = {
-  skipped: boolean;
-  flaky: boolean;
-  slow: boolean;
-  expectedStatus: TestStatus;
-  timeout: number;
+export type TestResult = {
+  retryNumber: number;
   workerIndex: number;
-  annotations: any[];
-
   duration: number;
   status?: TestStatus;
   error?: any;
@@ -35,20 +29,50 @@ export type TestRun = {
   data: any;
 };
 
+export type TestAnnotations = {
+  skipped: boolean;
+  flaky: boolean;
+  slow: boolean;
+  expectedStatus: TestStatus;
+  timeout: number;
+  annotations: any[];
+};
+
 export type TestBeginPayload = {
-  id: string;
-  testRun: TestRun;
+  testId: string;
+  retryNumber: number;
+  // Collected annotations, present for first run only (zero retryNumber).
+  annotations?: TestAnnotations;
 };
 
 export type TestEndPayload = {
-  id: string;
-  testRun: TestRun;
+  testId: string;
+  result: TestResult;
 };
 
-export type TestRunnerEntry = {
+export type TestEntry = {
+  testId: string;
+  retryNumber: number;
+  // Annotations are present for retries only (non-zero retryNumber).
+  annotations?: TestAnnotations;
+};
+
+export type RunPayload = {
   file: string;
-  ids: string[];
   parametersString: string;
   parameters: Parameters;
   hash: string;
+  entries: TestEntry[];
+};
+
+export type DonePayload = {
+  failedTestId?: string;
+  fatalError?: any;
+  remaining: TestEntry[];
+};
+
+export type TestOutputPayload = {
+  testId?: string;
+  text?: string;
+  buffer?: string;
 };
