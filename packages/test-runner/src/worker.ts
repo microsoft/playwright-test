@@ -18,6 +18,7 @@ import { initializeImageMatcher } from './expect';
 import { WorkerRunner, fixturePool } from './workerRunner';
 import { Console } from 'console';
 import { serializeError } from './util';
+import { debugLog, setDebugWorkerIndex } from './debug';
 
 let closed = false;
 
@@ -63,14 +64,19 @@ process.on('uncaughtException', error => {
 process.on('message', async message => {
   if (message.method === 'init') {
     workerIndex = message.params.workerIndex;
+    setDebugWorkerIndex(workerIndex);
     initializeImageMatcher(message.params);
+    debugLog(`init`, message.params);
     return;
   }
   if (message.method === 'stop') {
+    debugLog(`stopping...`);
     await gracefullyCloseAndExit();
+    debugLog(`stopped`);
     return;
   }
   if (message.method === 'run') {
+    debugLog(`run`, message.params);
     testRunner = new WorkerRunner(message.params.entry, message.params.config, workerIndex);
     for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, sendMessageToParent.bind(null, event));
@@ -100,6 +106,8 @@ function sendMessageToParent(method, params = {}) {
   if (closed)
     return;
   try {
+    if (method !== 'ready')
+      debugLog(`send`, { method, params });
     process.send({ method, params });
   } catch (e) {
     // Can throw when closing.

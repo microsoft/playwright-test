@@ -27,6 +27,7 @@ import { generateTests } from './testGenerator';
 import { raceAgainstTimeout, serializeError } from './util';
 import { RunnerSuite } from './runnerTest';
 import { runnerSpec } from './runnerSpec';
+import { debugLog } from './debug';
 export { Reporter } from './reporter';
 export { Config } from './config';
 
@@ -59,6 +60,7 @@ export class Runner {
   loadFiles(files: string[]) {
     // Resolve symlinks. TODO: do this asynchronously?
     files = files.map(file => fs.realpathSync(file));
+    debugLog(`loadFiles`, files);
     // First traverse tests.
     for (const file of files) {
       const suite = new RunnerSuite('');

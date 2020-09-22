@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import debug from 'debug';
 import { Config } from './config';
 import { raceAgainstTimeout, serializeError } from './util';
 import { TestStatus } from './ipc';
+import { debugLog } from './debug';
 
 type Scope = 'test' | 'worker';
 
@@ -116,7 +116,7 @@ class Fixture {
     let setupFenceReject: { (arg0: any): any; (reason?: any): void; };
     const setupFence = new Promise((f, r) => { setupFenceFulfill = f; setupFenceReject = r; });
     const teardownFence = new Promise(f => this._teardownFenceCallback = f);
-    debug('pw:test:hook')(`setup "${this.name}"`);
+    debugLog(`setup fixture "${this.name}"`);
     const param = this.scope === 'worker' ? config : info;
     this._tearDownComplete = this.fn(params, async (value: any) => {
       this.value = value;
@@ -125,9 +125,9 @@ class Fixture {
     }, param).catch((e: any) => {
       if (!this._setup)
         setupFenceReject(e);
-      else {
+      else
         throw e;
-      }
+
     });
     await setupFence;
     this._setup = true;
@@ -146,7 +146,7 @@ class Fixture {
       await fixture.teardown();
     }
     if (this._setup) {
-      debug('pw:test:hook')(`teardown "${this.name}"`);
+      debugLog(`teardown fixture "${this.name}"`);
       this._teardownFenceCallback();
       await this._tearDownComplete;
     }

@@ -51,14 +51,19 @@ async function runTest(reportFile: string, outputDir: string, filePath: string, 
       ...process.env,
       PW_OUTPUT_DIR: outputDir,
       PWRUNNER_JSON_REPORT: reportFile,
+      DEBUG: process.env.PW_RUNNER_DEBUG ? 'pwr:*' : undefined,
     }
   });
   let output = '';
   testProcess.stderr.on('data', chunk => {
     output += String(chunk);
+    if (process.env.PW_RUNNER_DEBUG)
+      process.stderr.write(String(chunk));
   });
   testProcess.stdout.on('data', chunk => {
     output += String(chunk);
+    if (process.env.PW_RUNNER_DEBUG)
+      process.stdout.write(String(chunk));
   });
   const status = await new Promise<number>(x => testProcess.on('close', x));
   const passed = (/(\d+) passed/.exec(output.toString()) || [])[1];
