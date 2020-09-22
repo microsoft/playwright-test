@@ -23,6 +23,7 @@ import * as util from 'util';
 import { serializeError } from './util';
 import { TestBeginPayload, TestEndPayload, TestRun, TestRunnerEntry } from './ipc';
 import { workerSpec } from './workerSpec';
+import { debugLog } from './debug';
 
 export const fixturePool = new FixturePool();
 
@@ -196,7 +197,9 @@ export class WorkerRunner extends EventEmitter {
     try {
       if (!this._trialRun) {
         await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
+        debugLog(`running test "${test.fullTitle}"`);
         await fixturePool.runTestWithFixturesAndTimeout(test.fn, this._testInfo.timeout, testInfo);
+        debugLog(`done running test "${test.fullTitle}"`);
         await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
       } else {
         testInfo.status = test._modifier._computeExpectedStatus();
@@ -218,6 +221,7 @@ export class WorkerRunner extends EventEmitter {
   }
 
   private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
+    debugLog(`running hooks "${type}" for suite "${suite.fullTitle}"`);
     if (!suite._hasTestsToRun())
       return;
     const all = [];
@@ -229,6 +233,7 @@ export class WorkerRunner extends EventEmitter {
       all.reverse();
     for (const hook of all)
       await fixturePool.resolveParametersAndRun(hook, this._config, testInfo);
+    debugLog(`done running hooks "${type}" for suite "${suite.fullTitle}"`);
   }
 
   private _reportDone() {
