@@ -157,12 +157,11 @@ fixtures.defineTestFixture('tmpDir', async ({}, test) => {
 
 fixtures.defineTestFixture('outputFile', async ({}, runTest, info) => {
   const outputFile = async (suffix: string): Promise<string> => {
-    const {config, spec: test} = info;
-    const relativePath = path.relative(config.testDir, test.file)
+    const relativePath = path.relative(info.config.testDir, info.file)
         .replace(/\.spec\.[jt]s/, '')
         .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
-    const sanitizedTitle = test.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    const sanitizedTitle = info.title.replace(/[^\w\d]+/g, '_');
+    const assetPath = path.join(info.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
     await mkdirAsync(path.dirname(assetPath), {
       recursive: true
     });

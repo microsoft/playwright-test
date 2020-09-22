@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Parameters, TestRun } from "./ipc";
+import { Parameters, TestRun } from './ipc';
 
 class Base {
   title: string;
@@ -144,7 +144,7 @@ export class Test {
       timeout: 0,
       workerId: 0,
       annotations: [],
-    
+
       duration: 0,
       stdout: [],
       stderr: [],

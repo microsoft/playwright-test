@@ -21,7 +21,7 @@ const { it, expect, defineTestFixture, defineWorkerFixture } = fixtures
 
 defineTestFixture('postProcess', async ({}, runTest, info) => {
   await runTest('');
-  info.testRun.data['myname'] = 'myvalue';
+  info.data['myname'] = 'myvalue';
 });
 
 defineWorkerFixture('config', async ({}, runTest, config) => {

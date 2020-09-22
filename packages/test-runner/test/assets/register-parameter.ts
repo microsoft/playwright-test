@@ -21,13 +21,23 @@ type Parameters = {
   param2: string;
 };
 
-const fixtures = baseFixtures.declareParameters<Parameters>();
+const fixtures = baseFixtures.declareParameters<Parameters>().declareTestFixtures<{ fixture1: string, fixture2: string}>();
 fixtures.defineParameter('param1', 'Custom parameter 1');
 fixtures.defineParameter('param2', 'Custom parameter 2', 'value2');
+fixtures.defineTestFixture('fixture1', async ({}, runTest, info) => {
+  await runTest(info.parameters.param1);
+});
+fixtures.defineTestFixture('fixture2', async ({}, runTest, info) => {
+  await runTest(info.parameters.param2);
+});
 
 const { it } = fixtures;
 
-it('pass', async ({ param1, param2 }) => {
+it('pass', async ({ param1, param2, fixture1, fixture2 }) => {
+  // Available as fixtures.
   expect(param1).toBe('value1');
   expect(param2).toBe('value2');
+  // Available as parameters to fixtures.
+  expect(fixture1).toBe('value1');
+  expect(fixture2).toBe('value2');
 });

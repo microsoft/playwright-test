@@ -15,12 +15,9 @@
  */
 
 import debug from 'debug';
-import * as fs from 'fs';
 import { Config } from './config';
 import { raceAgainstTimeout, serializeError } from './util';
-import { TestRun } from './ipc';
-import { Spec } from './test';
-import { TestModifier } from './testModifier';
+import { TestStatus } from './ipc';
 
 type Scope = 'test' | 'worker';
 
@@ -33,9 +30,32 @@ type FixtureRegistration = {
 };
 
 export type TestInfo = {
+  // Declaration
+  title: string;
+  file: string;
+  location: string;
+  fn: Function;
+
+  // Parameters
   config: Config;
-  spec: Spec;
-  testRun: TestRun;
+  parameters: any;  // TODO: make these typed.
+  workerId: number;
+
+  // Annotations
+  skipped: boolean;
+  flaky: boolean;
+  slow: boolean;
+  expectedStatus: TestStatus;
+  timeout: number;
+  annotations: any[];
+
+  // Results
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  stdout: (string | Buffer)[];
+  stderr: (string | Buffer)[];
+  data: any;
 };
 
 export const registrations = new Map<string, FixtureRegistration>();
@@ -168,28 +188,28 @@ export class FixturePool {
   async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo) {
     const { timedOut } = await raceAgainstTimeout(this._runTestWithFixtures(fn, info), timeout);
     // Do not overwrite test failure upon timeout in fixture.
-    if (timedOut && info.testRun.status === 'passed')
-      info.testRun.status = 'timedOut';
+    if (timedOut && info.status === 'passed')
+      info.status = 'timedOut';
   }
 
   async _runTestWithFixtures(fn: Function, info: TestInfo) {
     try {
       await this.resolveParametersAndRun(fn, info.config, info);
-      info.testRun.status = 'passed';
+      info.status = 'passed';
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.testRun.status === 'passed') {
-        info.testRun.status = 'failed';
-        info.testRun.error = serializeError(error);
+      if (info.status === 'passed') {
+        info.status = 'failed';
+        info.error = serializeError(error);
       }
     }
     try {
       await this.teardownScope('test');
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.testRun.status === 'passed') {
-        info.testRun.status = 'failed';
-        info.testRun.error = serializeError(error);
+      if (info.status === 'passed') {
+        info.status = 'failed';
+        info.error = serializeError(error);
       }
     }
   }
@@ -306,8 +326,6 @@ function lookupRegistrations(file: string) {
 }
 
 export function rerunRegistrations(file: string) {
-  // Resolve symlinks.
-  file = fs.realpathSync(file);
   registrations.clear();
   // When we are running several tests in the same worker, we should re-run registrations before
   // each file. That way we erase potential fixture overrides from the previous test runs.
