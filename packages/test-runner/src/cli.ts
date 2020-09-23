@@ -40,7 +40,6 @@ let runAction: any = runStage1;
 
 program
     .version('Version ' + /** @type {any} */ (require)('../package.json').version)
-    .option('--debug', 'Run tests in-process for debugging', false)
     .option('--forbid-only', 'Fail if exclusive test(s) encountered', false)
     .option('-g, --grep <grep>', 'Only run tests matching this string or regexp', '.*')
     .option('--global-timeout <timeout>', 'Specify maximum time this test suite can run (in milliseconds), default: 0 for unlimited', '0')
@@ -80,7 +79,6 @@ async function runStage1(command) {
   }
   const testDir = path.resolve(process.cwd(), filteredArguments[0] || '.');
   const config: Config = {
-    debug: command.debug,
     forbidOnly: command.forbidOnly,
     quiet: command.quiet,
     grep: command.grep,

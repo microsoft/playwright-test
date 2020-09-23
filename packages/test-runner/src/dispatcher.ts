@@ -218,7 +218,7 @@ export class Dispatcher {
   }
 
   _createWorker() {
-    const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
+    const worker = new Worker(this);
     worker.on('testBegin', (params: TestBeginPayload) => {
       const { test, result: testRun  } = this._testById.get(params.testId);
       testRun.workerIndex = params.workerIndex;
@@ -287,29 +287,17 @@ export class Dispatcher {
 let lastWorkerIndex = 0;
 
 class Worker extends EventEmitter {
+  process: child_process.ChildProcess;
   runner: Dispatcher;
   hash: string;
   index: number;
+  stdout: any[];
+  stderr: any[];
 
-  constructor(runner) {
+  constructor(runner: Dispatcher) {
     super();
     this.runner = runner;
     this.index = lastWorkerIndex++;
-  }
-
-  run(entry: RunPayload) {
-  }
-
-  stop() {
-  }
-}
-
-class OopWorker extends Worker {
-  process: child_process.ChildProcess;
-  stdout: any[];
-  stderr: any[];
-  constructor(runner: Dispatcher) {
-    super(runner);
 
     this.process = child_process.fork(path.join(__dirname, 'worker.js'), {
       detached: false,
@@ -341,34 +329,6 @@ class OopWorker extends Worker {
 
   stop() {
     this.process.send({ method: 'stop' });
-  }
-}
-
-class InProcessWorker extends Worker {
-  fixturePool: FixturePool;
-
-  constructor(runner: Dispatcher) {
-    super(runner);
-    this.fixturePool = require('./testRunner').fixturePool as FixturePool;
-  }
-
-  async init() {
-    const { initializeImageMatcher } = require('./expect');
-    initializeImageMatcher(this.runner._config);
-  }
-
-  async run(entry: RunPayload) {
-    delete require.cache[entry.file];
-    const { TestRunner } = require('./testRunner');
-    const testRunner = new TestRunner(entry, this.runner._config, 0);
-    for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
-      testRunner.on(event, this.emit.bind(this, event));
-    testRunner.run();
-  }
-
-  async stop() {
-    await this.fixturePool.teardownScope('worker');
-    this.emit('exit');
   }
 }
 

@@ -15,7 +15,6 @@
  */
 
 export type Config = {
-  debug?: boolean;
   forbidOnly?: boolean;
   globalTimeout: number;
   grep?: string;
