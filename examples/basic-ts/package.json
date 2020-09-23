@@ -7,7 +7,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "playwright-runner": "^0.3.22"
+    "playwright-runner": "0.3.23"
   },
   "scripts": {
     "test": "test-runner"

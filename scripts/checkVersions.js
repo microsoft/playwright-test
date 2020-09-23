@@ -16,6 +16,7 @@
 const fs = require('fs');
 const packages = require('./packages');
 const names = new Set(packages.filter(({json}) => !json.private).map(({json}) => json.name));
+
 /**
  * @param {string=} version
  * @param {boolean=} write
@@ -23,7 +24,7 @@ const names = new Set(packages.filter(({json}) => !json.private).map(({json}) =>
 module.exports = function(version, write) {
   if (!version)
     version = packages.find(p => !p.json.private).json.version;
-  for (const {fileName, json} of packages) {
+  for (const { fileName, json } of packages) {
     const original = JSON.stringify(json, undefined, 2) + '\n';
     if (!json.private)
       json.version = version;
