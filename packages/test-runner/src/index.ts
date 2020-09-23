@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-import { registerFixture, registerWorkerFixture, TestInfo, setParameterValues } from './fixtures';
+import * as fs from 'fs';
+import * as path from 'path';
+import { promisify } from 'util';
 import { Config } from './config';
 import { expect as expectFunction } from './expect';
-import { registerWorkerParameter } from './fixtures';
+import { registerFixture, registerWorkerFixture, registerWorkerParameter, setParameterValues, TestInfo } from './fixtures';
 import * as spec from './spec';
 import { TestModifier } from './testModifier';
+
+const mkdirAsync = promisify(fs.mkdir);
 
 interface DescribeHelper<WorkerParameters> {
   describe(name: string, inner: () => void): void;
@@ -118,12 +122,17 @@ type BuiltinWorkerParameters = {
 };
 
 type BuiltinWorkerFixtures = {
+  // Test run config.
   testConfig: Config;
+  // Worker index that runs this test.
   testWorkerIndex: number;
 };
 
 type BuiltinTestFixtures = {
+  // Information about the test being run.
   testInfo: TestInfo;
+  // File name for an artifact this test intends to write.
+  testOutputFile: (suffix: string) => Promise<string>;
 };
 
 export const fixtures = new FixturesImpl<BuiltinWorkerParameters, BuiltinWorkerFixtures, BuiltinTestFixtures>();
@@ -142,4 +151,19 @@ fixtures.defineWorkerFixture('testWorkerIndex', async ({}, runTest) => {
 fixtures.defineTestFixture('testInfo', async ({}, runTest) => {
   // Worker injects the value for this one.
   await runTest(undefined as any);
+});
+
+fixtures.defineTestFixture('testOutputFile', async ({ testInfo }, runTest) => {
+  const outputFile = async (suffix: string): Promise<string> => {
+    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
+        .replace(/\.spec\.[jt]s/, '')
+        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
+    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
+    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    await mkdirAsync(path.dirname(assetPath), {
+      recursive: true
+    });
+    return assetPath;
+  };
+  await runTest(outputFile);
 });

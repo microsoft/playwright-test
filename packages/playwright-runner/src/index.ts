@@ -23,9 +23,9 @@ import { promisify } from 'util';
 import { fixtures as baseFixtures } from '@playwright/test-runner';
 import * as playwright from 'playwright';
 
-const mkdirAsync = promisify(fs.mkdir);
 const mkdtempAsync = promisify(fs.mkdtemp);
 const removeFolderAsync = promisify(rimraf);
+const mkdirAsync = promisify(fs.mkdir);
 
 // Parameter declarations ------------------------------------------------------
 
@@ -67,8 +67,6 @@ type PlaywrightTestFixtures = {
   page: playwright.Page;
   // Temporary directory for this test's artifacts.
   tmpDir: string;
-  // Points to where the test artifacts should be written.
-  outputFile: (suffix: string) => Promise<string>;
 };
 
 // Create the fixtures based on above ------------------------------------------
@@ -96,7 +94,7 @@ export const expect = fixtures.expect;
 // Parameter and matrix definitions --------------------------------------------
 
 fixtures.defineParameter('browserName', 'Browser type name', '');
-fixtures.defineParameter('headful', 'Whether to run tests headless or headful', false);
+fixtures.defineParameter('headful', 'Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
 fixtures.defineParameter('screenshotOnFailure', 'Generate screenshot on failure', false);
 
 // If browser is not specified, we are running tests against all three browsers.
@@ -112,10 +110,10 @@ fixtures.defineWorkerFixture('browserType', async ({ browserName }, test) => {
   await test(browserType);
 });
 
-fixtures.defineWorkerFixture('defaultBrowserOptions', async ({}, test) => {
+fixtures.defineWorkerFixture('defaultBrowserOptions', async ({ headful }, test) => {
   await test({
     handleSIGINT: false,
-    ...(process.env.HEADFUL ? { headless: false } : {})
+    ...{ headless: !headful }
   });
 });
 
@@ -143,7 +141,7 @@ fixtures.defineTestFixture('defaultContextOptions', async ({}, test) => {
   await test({});
 });
 
-fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOptions }, runTest) => {
+fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure, testOutputFile }, runTest) => {
   const contexts: playwright.BrowserContext[] = [];
   async function contextFactory(options: playwright.BrowserContextOptions = {}) {
     const context = await browser.newContext({ ...defaultContextOptions, ...options });
@@ -151,14 +149,24 @@ fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOpt
     return context;
   }
   await runTest(contextFactory);
+
+  if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
+    let ordinal = 0;
+    for (const context of contexts) {
+      for (const page of context.pages()) {
+        await page.screenshot({ timeout: 5000, path: await testOutputFile(`test-failed-${++ordinal}.png`) });
+      }
+    }
+  }
+
   for (const context of contexts)
     await context.close();
 });
 
-fixtures.defineTestFixture('context', async ({browser, defaultContextOptions}, test) => {
-  const context = await browser.newContext(defaultContextOptions);
+fixtures.defineTestFixture('context', async ({ contextFactory }, test) => {
+  const context = await contextFactory();
   await test(context);
-  await context.close();
+  // context factory is taking care of closing the context.
 });
 
 fixtures.defineTestFixture('page', async ({context}, runTest) => {
@@ -166,23 +174,23 @@ fixtures.defineTestFixture('page', async ({context}, runTest) => {
   await runTest(await context.newPage());
 });
 
-fixtures.defineTestFixture('outputFile', async ({ testInfo }, runTest) => {
+fixtures.defineTestFixture('tmpDir', async ({ }, test) => {
+  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
+  await test(tmpDir);
+  await removeFolderAsync(tmpDir).catch(e => { });
+});
+
+fixtures.overrideTestFixture('testOutputFile', async ({ testInfo, browserName }, runTest) => {
   const outputFile = async (suffix: string): Promise<string> => {
     const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
         .replace(/\.spec\.[jt]s/, '')
         .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
     const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    const assetPath = path.join(testInfo.config.outputDir, relativePath, browserName, `${sanitizedTitle}-${suffix}`);
     await mkdirAsync(path.dirname(assetPath), {
       recursive: true
     });
     return assetPath;
   };
   await runTest(outputFile);
-});
-
-fixtures.defineTestFixture('tmpDir', async ({ }, test) => {
-  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
-  await test(tmpDir);
-  await removeFolderAsync(tmpDir).catch(e => { });
 });

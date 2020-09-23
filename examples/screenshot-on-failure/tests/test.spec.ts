@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-import { it, expect, fixtures } from 'playwright-runner';
+import { it, expect } from 'playwright-runner';
 
-fixtures.overrideTestFixture('page', async ({ context, testInfo, outputFile }, runTest) => {
-  const page = await context.newPage();
-  await runTest(page);
-  if (testInfo.status === 'failed' || testInfo.status === 'timedOut') {
-    const assetPath = await outputFile('failed.png');
-    await page.screenshot({ path: assetPath });
-  }
-  await page.close();
-});
+// Run this test with the --screenshotOnFailure=true command line parameter.
 
-it('is a basic test with the page', async ({ page }) => {
+it('is a basic test with the page', async ({ page, browserName, testInfo }) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
-    The red background is real!
+    This test's title is ${testInfo.title}<br>
+    It is opening in ${browserName}!
   </div>`);
   expect(await page.innerText('body')).toBe('Nooo!');
 });
