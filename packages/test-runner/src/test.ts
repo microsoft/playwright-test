@@ -134,6 +134,7 @@ export class Test {
   spec: Spec;
   parameters: Parameters;
   results: TestResult[] = [];
+
   skipped = false;
   flaky = false;
   slow = false;

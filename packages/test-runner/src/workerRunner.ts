@@ -76,6 +76,7 @@ export class WorkerRunner extends EventEmitter {
       this._testInfo.status = 'failed';
       this._testInfo.error = serializeError(error);
       this._failedTestId = this._testId;
+      this._stopped = true;
       this.emit('testEnd', buildTestEndPayload(this._testId, this._testInfo));
       this._testInfo = null;
     } else if (!this._loaded) {
@@ -125,13 +126,11 @@ export class WorkerRunner extends EventEmitter {
   }
 
   private async _runSuite(suite: WorkerSuite) {
-    if (!this._stopped) {
-      try {
-        await this._runHooks(suite, 'beforeAll', 'before');
-      } catch (e) {
-        this._fatalError = serializeError(e);
-        this._reportDone();
-      }
+    try {
+      await this._runHooks(suite, 'beforeAll', 'before');
+    } catch (e) {
+      this._fatalError = serializeError(e);
+      this._reportDone();
     }
     for (const entry of suite._entries) {
       if (entry instanceof WorkerSuite)
@@ -139,19 +138,17 @@ export class WorkerRunner extends EventEmitter {
       else
         await this._runTest(entry as WorkerSpec);
     }
-    if (!this._stopped) {
-      try {
-        await this._runHooks(suite, 'afterAll', 'after');
-      } catch (e) {
-        this._fatalError = serializeError(e);
-        this._reportDone();
-      }
+    try {
+      await this._runHooks(suite, 'afterAll', 'after');
+    } catch (e) {
+      this._fatalError = serializeError(e);
+      this._reportDone();
     }
   }
 
   private async _runTest(test: WorkerSpec) {
-    if (this._failedTestId)
-      return false;
+    if (this._stopped)
+      return;
     if (this._entries.size && !this._entries.has(test._id))
       return;
     const { timeout, expectedStatus, skipped } = this._entries.get(test._id);
@@ -189,15 +186,13 @@ export class WorkerRunner extends EventEmitter {
 
     const startTime = Date.now();
     try {
-      if (!this._stopped) {
-        await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
-        debugLog(`running test "${test.fullTitle}"`);
-        await fixturePool.runTestWithFixturesAndTimeout(test.fn, timeout, testInfo);
-        debugLog(`done running test "${test.fullTitle}"`);
-        await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
-      } else {
-        testInfo.status = expectedStatus;
-      }
+      await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
+      debugLog(`running test "${test.fullTitle}"`);
+      if (this._stopped)
+        return;
+      await fixturePool.runTestWithFixturesAndTimeout(test.fn, timeout, testInfo);
+      debugLog(`done running test "${test.fullTitle}"`);
+      await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
     } catch (error) {
       // Error in the test fixture teardown.
       testInfo.status = 'failed';
@@ -208,13 +203,17 @@ export class WorkerRunner extends EventEmitter {
       // We could have reported end due to an unhandled exception.
       this.emit('testEnd', buildTestEndPayload(testId, testInfo));
     }
-    if (!this._stopped && testInfo.status !== 'passed')
+    if (!this._stopped && testInfo.status !== 'passed') {
       this._failedTestId = this._testId;
+      this._stopped = true;
+    }
     this._testInfo = null;
     this._testId = null;
   }
 
   private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
+    if (this._stopped)
+      return;
     debugLog(`running hooks "${type}" for suite "${suite.fullTitle}"`);
     if (!this._hasTestsToRun(suite))
       return;
