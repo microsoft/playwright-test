@@ -18,19 +18,20 @@ import child_process from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
-import { TestRunnerEntry, TestBeginPayload, TestEndPayload, TestRun, Parameters } from './ipc';
+import { RunPayload, TestBeginPayload, TestEndPayload, Parameters, DonePayload, TestOutputPayload } from './ipc';
 import { Config } from './config';
 import { Reporter } from './reporter';
 import assert from 'assert';
 import { RunnerSuite, RunnerTest } from './runnerTest';
+import { Test, TestResult } from './test';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();
   private _freeWorkers: Worker[] = [];
   private _workerClaimers: (() => void)[] = [];
 
-  private _testById = new Map<string, { test: RunnerTest, testRun: TestRun }>();
-  private _queue: TestRunnerEntry[] = [];
+  private _testById = new Map<string, { test: RunnerTest, result: TestResult }>();
+  private _queue: RunPayload[] = [];
   private _stopCallback: () => void;
   readonly _config: Config;
   private _suite: RunnerSuite;
@@ -43,9 +44,9 @@ export class Dispatcher {
 
     this._suite = suite;
     for (const suite of this._suite.suites) {
-      for (const test of suite._allSpecs()) {
-        for (const variant of test.tests as RunnerTest[])
-          this._testById.set(variant._id, { test: variant, testRun: variant._appendTestRun() });
+      for (const spec of suite._allSpecs()) {
+        for (const test of spec.tests as RunnerTest[])
+          this._testById.set(test._id, { test, result: test._appendTestRun() });
       }
     }
 
@@ -61,13 +62,13 @@ export class Dispatcher {
       const to = shardSize * (this._config.shard.current + 1);
       shardDetails = `, shard ${this._config.shard.current + 1} or ${this._config.shard.total}`;
       let current = 0;
-      const filteredQueue: TestRunnerEntry[] = [];
-      for (const entry of this._queue) {
+      const filteredQueue: RunPayload[] = [];
+      for (const runPayload of this._queue) {
         if (current >= from && current < to) {
-          filteredQueue.push(entry);
-          total += entry.ids.length;
+          filteredQueue.push(runPayload);
+          total += runPayload.entries.length;
         }
-        current += entry.ids.length;
+        current += runPayload.entries.length;
       }
       this._queue = filteredQueue;
     }
@@ -84,37 +85,38 @@ export class Dispatcher {
     }
   }
 
-  _filesSortedByWorkerHash(): TestRunnerEntry[] {
-    const result: TestRunnerEntry[] = [];
+  _filesSortedByWorkerHash(): RunPayload[] {
+    const result: RunPayload[] = [];
     for (const suite of this._suite.suites) {
       const testsByWorkerHash = new Map<string, {
         tests: RunnerTest[],
         parameters: Parameters,
         parametersString: string
       }>();
-      for (const test of suite._allSpecs()) {
-        for (const variant of test.tests as RunnerTest[]) {
-          let entry = testsByWorkerHash.get(variant._workerHash);
+      for (const spec of suite._allSpecs()) {
+        for (const test of spec.tests as RunnerTest[]) {
+          let entry = testsByWorkerHash.get(test._workerHash);
           if (!entry) {
             entry = {
               tests: [],
-              parameters: variant.parameters,
-              parametersString: variant._parametersString
+              parameters: test.parameters,
+              parametersString: test._parametersString
             };
-            testsByWorkerHash.set(variant._workerHash, entry);
+            testsByWorkerHash.set(test._workerHash, entry);
           }
-          entry.tests.push(variant);
+          entry.tests.push(test);
         }
       }
       if (!testsByWorkerHash.size)
         continue;
       for (const [hash, entry] of testsByWorkerHash) {
+        const entries = entry.tests.map(test => ({ testId: test._id, expectedStatus: test.expectedStatus, timeout: test.timeout, skipped: test.skipped }));
         result.push({
-          ids: entry.tests.map(testRun => testRun._id),
+          entries,
           file: suite.file,
           parameters: entry.parameters,
           parametersString: entry.parametersString,
-          hash
+          hash,
         });
       }
     }
@@ -131,23 +133,32 @@ export class Dispatcher {
   async _dispatchQueue() {
     const jobs = [];
     while (this._queue.length) {
-      const entry = this._queue.shift();
-      const requiredHash = entry.hash;
+      const file = this._queue.shift();
+      if (this._config.trialRun) {
+        for (const entry of file.entries) {
+          const { test, result: testRun } = this._testById.get(entry.testId)!;
+          this._reporter.onTestBegin(test);
+          testRun.status = test.skipped ? 'skipped' : test.expectedStatus;
+          this._reporter.onTestEnd(test, testRun);
+        }
+        continue;
+      }
+      const requiredHash = file.hash;
       let worker = await this._obtainWorker();
-      while (!this._config.trialRun && worker.hash && worker.hash !== requiredHash) {
+      while (worker.hash && worker.hash !== requiredHash) {
         this._restartWorker(worker);
         worker = await this._obtainWorker();
       }
-      jobs.push(this._runJob(worker, entry));
+      jobs.push(this._runJob(worker, file));
     }
     await Promise.all(jobs);
   }
 
-  async _runJob(worker: Worker, entry: TestRunnerEntry) {
-    worker.run(entry);
+  async _runJob(worker: Worker, runPayload: RunPayload) {
+    worker.run(runPayload);
     let doneCallback;
     const result = new Promise(f => doneCallback = f);
-    worker.once('done', params => {
+    worker.once('done', (params: DonePayload) => {
       // We won't file remaining if:
       // - there are no remaining
       // - we are here not because something failed
@@ -164,12 +175,12 @@ export class Dispatcher {
       // In case of fatal error, we are done with the entry.
       if (params.fatalError) {
         // Report all the tests are failing with this error.
-        for (const id of entry.ids) {
-          const { test: variant, testRun: result } = this._testById.get(id);
-          this._reporter.onTestBegin(variant);
+        for (const { testId } of runPayload.entries) {
+          const { test, result } = this._testById.get(testId);
+          this._reporter.onTestBegin(test);
           result.status = 'failed';
           result.error = params.fatalError;
-          this._reporter.onTestEnd(variant, result);
+          this._reporter.onTestEnd(test, result);
         }
         doneCallback();
         return;
@@ -180,14 +191,14 @@ export class Dispatcher {
       // Only retry expected failures, not passes and only if the test failed.
       if (this._config.retries && params.failedTestId) {
         const pair = this._testById.get(params.failedTestId);
-        if (pair.testRun.expectedStatus === 'passed' && pair.test.runs.length < this._config.retries + 1) {
-          pair.testRun = pair.test._appendTestRun();
-          remaining.unshift(pair.test._id);
+        if (pair.test.expectedStatus === 'passed' && pair.test.results.length < this._config.retries + 1) {
+          pair.result = pair.test._appendTestRun();
+          remaining.unshift({ testId: pair.test._id, expectedStatus: pair.test.expectedStatus, timeout: pair.test.timeout, skipped: pair.test.skipped });
         }
       }
 
       if (remaining.length)
-        this._queue.unshift({ ...entry, ids: remaining });
+        this._queue.unshift({ ...runPayload, entries: remaining });
 
       // This job is over, we just scheduled another one.
       doneCallback();
@@ -218,37 +229,37 @@ export class Dispatcher {
   _createWorker() {
     const worker = this._config.debug ? new InProcessWorker(this) : new OopWorker(this);
     worker.on('testBegin', (params: TestBeginPayload) => {
-      const { test: variant } = this._testById.get(params.id);
-      this._reporter.onTestBegin(variant);
+      const { test, result: testRun  } = this._testById.get(params.testId);
+      testRun.workerIndex = params.workerIndex;
+      this._reporter.onTestBegin(test);
     });
     worker.on('testEnd', (params: TestEndPayload) => {
-      const workerResult: TestRun = params.testRun;
-      // We were accumulating these below.
-      delete workerResult.stdout;
-      delete workerResult.stderr;
-      const { test: variant, testRun: result } = this._testById.get(params.id);
-      Object.assign(result, workerResult);
-      this._reporter.onTestEnd(variant, result);
+      const { test, result } = this._testById.get(params.testId);
+      result.data = params.data;
+      result.duration = params.duration;
+      result.error = params.error;
+      result.status = params.status;
+      this._reporter.onTestEnd(test, result);
     });
-    worker.on('testStdOut', params => {
+    worker.on('testStdOut', (params: TestOutputPayload) => {
       const chunk = chunkFromParams(params);
-      if (params.id === undefined) {
+      if (params.testId === undefined) {
         process.stdout.write(chunk);
         return;
       }
-      const { test: variant, testRun: result } = this._testById.get(params.id);
+      const { test, result } = this._testById.get(params.testId);
       result.stdout.push(chunk);
-      this._reporter.onTestStdOut(variant, chunk);
+      this._reporter.onTestStdOut(test, chunk);
     });
-    worker.on('testStdErr', params => {
+    worker.on('testStdErr', (params: TestOutputPayload) => {
       const chunk = chunkFromParams(params);
-      if (params.id === undefined) {
+      if (params.testId === undefined) {
         process.stderr.write(chunk);
         return;
       }
-      const { test: variant, testRun: result } = this._testById.get(params.id);
+      const { test, result } = this._testById.get(params.testId);
       result.stderr.push(chunk);
-      this._reporter.onTestStdErr(variant, chunk);
+      this._reporter.onTestStdErr(test, chunk);
     });
     worker.on('teardownError', ({error}) => {
       this._hasWorkerErrors = true;
@@ -296,7 +307,7 @@ class Worker extends EventEmitter {
     this.index = lastWorkerIndex++;
   }
 
-  run(entry: TestRunnerEntry) {
+  run(entry: RunPayload) {
   }
 
   stop() {
@@ -333,7 +344,7 @@ class OopWorker extends Worker {
     await new Promise(f => this.process.once('message', f));  // Ready ack
   }
 
-  run(entry: TestRunnerEntry) {
+  run(entry: RunPayload) {
     this.hash = entry.hash;
     this.process.send({ method: 'run', params: { entry, config: this.runner._config } });
   }
@@ -356,7 +367,7 @@ class InProcessWorker extends Worker {
     initializeImageMatcher(this.runner._config);
   }
 
-  async run(entry: TestRunnerEntry) {
+  async run(entry: RunPayload) {
     delete require.cache[entry.file];
     const { TestRunner } = require('./testRunner');
     const testRunner = new TestRunner(entry, this.runner._config, 0);
@@ -371,7 +382,7 @@ class InProcessWorker extends Worker {
   }
 }
 
-function chunkFromParams(params: { testId: string, buffer?: string, text?: string }): string | Buffer {
+function chunkFromParams(params: TestOutputPayload): string | Buffer {
   if (typeof params.text === 'string')
     return params.text;
   return Buffer.from(params.buffer, 'base64');

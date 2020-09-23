@@ -18,7 +18,8 @@ import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
 import { Parameters } from './ipc';
 import { Config } from './config';
-import { RunnerSuite, RunnerSpec, RunnerTest } from './runnerTest';
+import { RunnerSuite, RunnerSpec, RunnerTest, ModifierFn } from './runnerTest';
+import { TestModifier } from './testModifier';
 
 export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuite {
   const rootSuite = new RunnerSuite('');
@@ -36,13 +37,13 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
     // Name each test.
     suite._renumber();
 
-    for (const test of suite._allSpecs()) {
-      if (grep && !grep.test(test.fullTitle()))
+    for (const spec of suite._allSpecs() as RunnerSpec[]) {
+      if (grep && !grep.test(spec.fullTitle()))
         continue;
       // Get all the fixtures that the test needs.
       let fixtures: string[] = [];
       try {
-        fixtures = fixturesForCallback(test.fn);
+        fixtures = fixturesForCallback(spec.fn);
       } catch (error) {
         // It is totally fine if the test can't parse it's fixtures, worker will report
         // this test as failing, not need to quit on the suite.
@@ -74,11 +75,31 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
         for (let i = 0; i < config.repeatEach; ++i) {
           const parametersString = serializeParameters(configuration) +  `#repeat-${i}#`;
           const workerHash = registrationsHash + '@' + parametersString;
-          const testRun = new RunnerTest(test);
-          testRun.parameters = configuration;
-          testRun._parametersString = parametersString;
-          testRun._workerHash = workerHash;
-          test.tests.push(testRun);
+          const test = new RunnerTest(spec);
+          test.parameters = configuration;
+          const parameters = parametersObject(configuration);
+          const modifierFns: ModifierFn[] = [];
+          if (spec._modifierFn)
+            modifierFns.push(spec._modifierFn);
+          for (let parent = spec.parent as RunnerSuite; parent; parent = parent.parent as RunnerSuite) {
+            if (parent._modifierFn)
+              modifierFns.push(parent._modifierFn);
+          }
+          modifierFns.reverse();
+          const modifier = new TestModifier();
+          for (const modifierFn of modifierFns)
+            modifierFn(modifier, parameters);
+
+          test.skipped = modifier._skipped;
+          test.flaky = modifier._flaky;
+          test.slow = modifier._slow;
+          test.expectedStatus = modifier._expectedStatus;
+          test.timeout = modifier._timeout;
+          test.annotations = modifier._annotations;
+
+          test._parametersString = parametersString;
+          test._workerHash = workerHash;
+          spec.tests.push(test);
         }
       }
     }
@@ -118,4 +139,11 @@ function serializeParameters(parameters: Parameters): string {
   for (const { name, value } of parameters)
     tokens.push(`${name}=${value}`);
   return tokens.join(', ');
+}
+
+function parametersObject(parameters: Parameters): any {
+  const result = {};
+  for (const { name, value } of parameters)
+    result[name] = value;
+  return result;
 }

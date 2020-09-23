@@ -15,25 +15,20 @@
  */
 
 import { Spec, Suite } from './test';
-import { TestModifier } from './testModifier';
 
 export class WorkerSpec extends Spec {
   _id: string;
-  _modifier: TestModifier;
 
   constructor(title: string, fn: Function, suite: WorkerSuite) {
     super(title, fn, suite);
-    this._modifier = new TestModifier(suite._modifier);
   }
 }
 
 export class WorkerSuite extends Suite {
   _hooks: { type: string, fn: Function } [] = [];
-  _modifier: TestModifier;
 
   constructor(title: string, parent?: WorkerSuite) {
     super(title, parent);
-    this._modifier = new TestModifier(parent ? parent._modifier : undefined);
   }
 
   _assignIds(parametersString: string) {
@@ -44,13 +39,5 @@ export class WorkerSuite extends Suite {
 
   _addHook(type: string, fn: any) {
     this._hooks.push({ type, fn });
-  }
-
-  _hasTestsToRun(): boolean {
-    return this.findSpec((test: WorkerSpec) => {
-      if (!test._modifier._isSkipped())
-        return true;
-
-    });
   }
 }

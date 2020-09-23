@@ -83,7 +83,7 @@ it('should emit test annotations', async ({ runInlineTest }) => {
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(1);
-  expect(result.report.suites[0].specs[0].tests[0].runs[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
+  expect(result.report.suites[0].specs[0].tests[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
 });
 
 it('should emit suite annotations', async ({ runInlineTest }) => {
@@ -100,7 +100,7 @@ it('should emit suite annotations', async ({ runInlineTest }) => {
   }, { 'trial-run': true });
   expect(result.exitCode).toBe(0);
   expect(result.skipped).toBe(1);
-  expect(result.report.suites[0].suites[0].specs[0].tests[0].runs[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
+  expect(result.report.suites[0].suites[0].specs[0].tests[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
 });
 
 it('should not restart worker', async ({ runInlineTest }) => {

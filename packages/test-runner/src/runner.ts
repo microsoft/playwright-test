@@ -65,7 +65,7 @@ export class Runner {
     for (const file of files) {
       const suite = new RunnerSuite('');
       suite.file = file;
-      const revertBabelRequire = runnerSpec(suite);
+      const revertBabelRequire = runnerSpec(suite, this._config.timeout);
       try {
         require(file);
         this._suites.push(suite);
@@ -112,7 +112,7 @@ export class Runner {
 
   private async _runTests(suite: RunnerSuite): Promise<RunResult> {
     // Trial run does not need many workers, use one.
-    const jobs = (this._config.trialRun || this._config.debug) ? 1 : this._config.jobs;
+    const jobs = this._config.debug ? 1 : this._config.jobs;
     const runner = new Dispatcher(suite, { ...this._config, jobs }, this._reporter);
     try {
       for (const f of this._beforeFunctions)

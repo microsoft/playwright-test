@@ -41,13 +41,8 @@ export type TestInfo<WorkerParameters> = {
   parameters: WorkerParameters;
   workerIndex: number;
 
-  // Annotations
-  skipped: boolean;
-  flaky: boolean;
-  slow: boolean;
+  // Modifiers
   expectedStatus: TestStatus;
-  timeout: number;
-  annotations: any[];
 
   // Results
   duration: number;

@@ -21,7 +21,7 @@ import { WorkerSpec, WorkerSuite } from './workerTest';
 import { Config } from './config';
 import * as util from 'util';
 import { serializeError } from './util';
-import { TestBeginPayload, TestEndPayload, TestRun, TestRunnerEntry } from './ipc';
+import { TestBeginPayload, TestEndPayload, RunPayload, TestEntry, TestOutputPayload, DonePayload } from './ipc';
 import { workerSpec } from './workerSpec';
 import { debugLog } from './debug';
 
@@ -38,9 +38,9 @@ function chunkToParams(chunk: Buffer | string):  { text?: string, buffer?: strin
 export class WorkerRunner extends EventEmitter {
   private _failedTestId: string | undefined;
   private _fatalError: any | undefined;
-  private _ids: Set<string>;
-  private _remaining: Set<string>;
-  private _trialRun: any;
+  private _entries: Map<string, TestEntry>;
+  private _remaining: Map<string, TestEntry>;
+  private _stopped: any;
   private _parsedParameters: any = {};
   private _config: Config;
   private _testId: string | null;
@@ -52,17 +52,16 @@ export class WorkerRunner extends EventEmitter {
   private _parametersString: string;
   private _workerIndex: number;
 
-  constructor(entry: TestRunnerEntry, config: Config, workerIndex: number) {
+  constructor(runPayload: RunPayload, config: Config, workerIndex: number) {
     super();
     this._suite = new WorkerSuite('');
-    this._suite.file = entry.file;
+    this._suite.file = runPayload.file;
     this._workerIndex = workerIndex;
-    this._parametersString = entry.parametersString;
-    this._ids = new Set(entry.ids);
-    this._remaining = new Set(entry.ids);
-    this._trialRun = config.trialRun;
+    this._parametersString = runPayload.parametersString;
+    this._entries = new Map(runPayload.entries.map(e => [ e.testId, e ]));
+    this._remaining = new Map(runPayload.entries.map(e => [ e.testId, e ]));
     this._config = config;
-    for (const {name, value} of entry.parameters)
+    for (const {name, value} of runPayload.parameters)
       this._parsedParameters[name] = value;
     this._parsedParameters['config'] = config;
     this._parsedParameters['workerIndex'] = workerIndex;
@@ -70,7 +69,7 @@ export class WorkerRunner extends EventEmitter {
   }
 
   stop() {
-    this._trialRun = true;
+    this._stopped = true;
   }
 
   unhandledError(error: Error | any) {
@@ -78,11 +77,7 @@ export class WorkerRunner extends EventEmitter {
       this._testInfo.status = 'failed';
       this._testInfo.error = serializeError(error);
       this._failedTestId = this._testId;
-      const testEndPayload: TestEndPayload = {
-        id: this._testId,
-        testRun: asTestRun(this._testInfo)
-      };
-      this.emit('testEnd', testEndPayload);
+      this.emit('testEnd', buildTestEndPayload(this._testId, this._testInfo));
       this._testInfo = null;
     } else if (!this._loaded) {
       // No current test - fatal error.
@@ -93,22 +88,26 @@ export class WorkerRunner extends EventEmitter {
 
   stdout(chunk: string | Buffer) {
     this._stdOutBuffer.push(chunk);
-    for (const c of this._stdOutBuffer)
-      this.emit('testStdOut', { id: this._testId, ...chunkToParams(c) });
+    for (const c of this._stdOutBuffer) {
+      const outPayload: TestOutputPayload = { testId: this._testId, ...chunkToParams(c) };
+      this.emit('testStdOut', outPayload);
+    }
     this._stdOutBuffer = [];
   }
 
   stderr(chunk: string | Buffer) {
     this._stdErrBuffer.push(chunk);
-    for (const c of this._stdErrBuffer)
-      this.emit('testStdErr', { id: this._testId, ...chunkToParams(c) });
+    for (const c of this._stdErrBuffer) {
+      const outPayload: TestOutputPayload = { testId: this._testId, ...chunkToParams(c) };
+      this.emit('testStdErr', outPayload);
+    }
     this._stdErrBuffer = [];
   }
 
   async run() {
     assignParameters(this._parsedParameters);
 
-    const revertBabelRequire = workerSpec(this._suite, this._config.timeout, parameters);
+    const revertBabelRequire = workerSpec(this._suite);
 
     // Trial mode runs everything in one worker, delete test from cache.
     delete require.cache[this._suite.file];
@@ -127,7 +126,7 @@ export class WorkerRunner extends EventEmitter {
   }
 
   private async _runSuite(suite: WorkerSuite) {
-    if (!this._trialRun) {
+    if (!this._stopped) {
       try {
         await this._runHooks(suite, 'beforeAll', 'before');
       } catch (e) {
@@ -141,7 +140,7 @@ export class WorkerRunner extends EventEmitter {
       else
         await this._runTest(entry as WorkerSpec);
     }
-    if (!this._trialRun) {
+    if (!this._stopped) {
       try {
         await this._runHooks(suite, 'afterAll', 'after');
       } catch (e) {
@@ -154,12 +153,13 @@ export class WorkerRunner extends EventEmitter {
   private async _runTest(test: WorkerSpec) {
     if (this._failedTestId)
       return false;
-    if (this._ids.size && !this._ids.has(test._id))
+    if (this._entries.size && !this._entries.has(test._id))
       return;
+    const { timeout, expectedStatus, skipped } = this._entries.get(test._id);
     this._remaining.delete(test._id);
 
-    const id = test._id;
-    this._testId = id;
+    const testId = test._id;
+    this._testId = testId;
 
     const testInfo: TestInfo<any> = {
       title: test.title,
@@ -169,12 +169,7 @@ export class WorkerRunner extends EventEmitter {
       config: this._config,
       parameters,
       workerIndex: this._workerIndex,
-      skipped: test._modifier._isSkipped(),
-      flaky: test._modifier._isFlaky(),
-      slow: test._modifier._isSlow(),
-      expectedStatus: test._modifier._computeExpectedStatus(),
-      timeout: test._modifier._computeTimeout(),
-      annotations: test._modifier._collectAnnotations(),
+      expectedStatus: expectedStatus,
       duration: 0,
       status: 'passed',
       stdout: [],
@@ -183,26 +178,25 @@ export class WorkerRunner extends EventEmitter {
     };
     this._testInfo = testInfo;
 
-    const testBeginEvent: TestBeginPayload = { id, testRun: asTestRun(testInfo) };
-    this.emit('testBegin', testBeginEvent);
+    this.emit('testBegin', buildTestBeginPayload(testId, testInfo));
 
-    if (test._modifier._isSkipped()) {
+    if (skipped) {
+      // TODO: don't even send those to the worker.
       testInfo.status = 'skipped';
-      const testEndEvent: TestEndPayload = { id, testRun: asTestRun(testInfo) };
-      this.emit('testEnd', testEndEvent);
+      this.emit('testEnd', buildTestEndPayload(testId, testInfo));
       return;
     }
 
     const startTime = Date.now();
     try {
-      if (!this._trialRun) {
+      if (!this._stopped) {
         await this._runHooks(test.parent as WorkerSuite, 'beforeEach', 'before', testInfo);
         debugLog(`running test "${test.fullTitle}"`);
-        await fixturePool.runTestWithFixturesAndTimeout(test.fn, this._testInfo.timeout, testInfo);
+        await fixturePool.runTestWithFixturesAndTimeout(test.fn, timeout, testInfo);
         debugLog(`done running test "${test.fullTitle}"`);
         await this._runHooks(test.parent as WorkerSuite, 'afterEach', 'after', testInfo);
       } else {
-        testInfo.status = test._modifier._computeExpectedStatus();
+        testInfo.status = expectedStatus;
       }
     } catch (error) {
       // Error in the test fixture teardown.
@@ -212,9 +206,9 @@ export class WorkerRunner extends EventEmitter {
     testInfo.duration = Date.now() - startTime;
     if (this._testInfo) {
       // We could have reported end due to an unhandled exception.
-      this.emit('testEnd', { id, testRun: asTestRun(testInfo) });
+      this.emit('testEnd', buildTestEndPayload(testId, testInfo));
     }
-    if (!this._trialRun && testInfo.status !== 'passed')
+    if (!this._stopped && testInfo.status !== 'passed')
       this._failedTestId = this._testId;
     this._testInfo = null;
     this._testId = null;
@@ -222,7 +216,7 @@ export class WorkerRunner extends EventEmitter {
 
   private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo<any>) {
     debugLog(`running hooks "${type}" for suite "${suite.fullTitle}"`);
-    if (!suite._hasTestsToRun())
+    if (!this._hasTestsToRun(suite))
       return;
     const all = [];
     for (let s = suite; s; s = s.parent as WorkerSuite) {
@@ -237,28 +231,38 @@ export class WorkerRunner extends EventEmitter {
   }
 
   private _reportDone() {
-    this.emit('done', {
+    const donePayload: DonePayload = {
       failedTestId: this._failedTestId,
       fatalError: this._fatalError,
-      remaining: [...this._remaining],
+      remaining: [...this._remaining.values()],
+    };
+    this.emit('done', donePayload);
+  }
+
+  private _hasTestsToRun(suite: WorkerSuite): boolean {
+    return suite.findSpec((test: WorkerSpec) => {
+      const entry = this._entries.get(test._id);
+      if (!entry)
+        return;
+      const { skipped } = entry;
+      return !skipped;
     });
   }
 }
 
-function asTestRun(testInfo: TestInfo<any>): TestRun {
+function buildTestBeginPayload(testId: string, testInfo: TestInfo<any>): TestBeginPayload {
   return {
-    skipped: testInfo.skipped,
-    flaky: testInfo.flaky,
-    slow: testInfo.slow,
-    expectedStatus: testInfo.expectedStatus,
-    timeout: testInfo.timeout,
-    workerIndex: testInfo.workerIndex,
-    annotations: testInfo.annotations,
+    testId,
+    workerIndex: testInfo.workerIndex
+  };
+}
+
+function buildTestEndPayload(testId: string, testInfo: TestInfo<any>): TestEndPayload {
+  return {
+    testId,
     duration: testInfo.duration,
     status: testInfo.status,
     error: testInfo.error,
-    stdout: testInfo.stdout,
-    stderr: testInfo.stderr,
     data: testInfo.data,
   };
 }

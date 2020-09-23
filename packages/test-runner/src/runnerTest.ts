@@ -15,14 +15,21 @@
  */
 
 import { Spec, Suite, Test } from './test';
+import { TestModifier } from './testModifier';
+
+export type ModifierFn = (modifier: TestModifier, parameters: any) => void;
 
 export class RunnerSpec extends Spec {
+  _modifierFn: ModifierFn | null;
+
   constructor(title: string, fn: Function, suite: RunnerSuite) {
     super(title, fn, suite);
   }
 }
 
 export class RunnerSuite extends Suite {
+  _modifierFn: ModifierFn | null;
+
   constructor(title: string, parent?: RunnerSuite) {
     super(title, parent);
   }

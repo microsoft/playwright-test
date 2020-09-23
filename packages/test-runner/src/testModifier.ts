@@ -17,24 +17,18 @@
 import { TestStatus } from './ipc';
 
 export class TestModifier {
-  private _skipped = false;
-  private _flaky = false;
-  private _slow = false;
-  private _expectedStatus?: TestStatus = 'passed';
-  private _annotations: any[] = [];
-  private _parent?: TestModifier;
-  private _timeout = 0;
+  _skipped = false;
+  _flaky = false;
+  _slow = false;
+  _expectedStatus?: TestStatus = 'passed';
+  _annotations: any[] = [];
+  _timeout = 0;
 
-  constructor(parent?: TestModifier) {
-    this._parent = parent;
+  constructor() {
   }
 
   setTimeout(timeout: number) {
     this._timeout = timeout;
-  }
-
-  _computeTimeout(): number {
-    return this._timeout || (this._parent && this._parent._computeTimeout());
   }
 
   slow(): void;
@@ -111,28 +105,6 @@ export class TestModifier {
         description: processed.description
       });
     }
-  }
-
-  _isSkipped(): boolean {
-    return this._skipped || (this._parent && this._parent._isSkipped());
-  }
-
-  _isSlow(): boolean {
-    return this._slow || (this._parent && this._parent._isSlow());
-  }
-
-  _isFlaky(): boolean {
-    return this._flaky || (this._parent && this._parent._isFlaky());
-  }
-
-  _computeExpectedStatus(): TestStatus {
-    return this._expectedStatus || (this._parent && this._parent._computeExpectedStatus()) || 'passed';
-  }
-
-  _collectAnnotations(): any[] {
-    if (!this._parent)
-      return this._annotations;
-    return [...this._annotations, ...this._parent._collectAnnotations()];
   }
 
   private _interpretCondition(arg?: boolean | string, description?: string): { condition: boolean, description?: string } {
