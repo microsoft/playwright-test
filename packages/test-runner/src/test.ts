@@ -15,6 +15,7 @@
  */
 
 import { Parameters, TestStatus } from './ipc';
+export { Parameters, TestStatus } from './ipc';
 
 class Base {
   title: string;

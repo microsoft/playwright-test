@@ -16,7 +16,7 @@
 
 import crypto from 'crypto';
 import { registrations, fixturesForCallback, rerunRegistrations, matrix } from './fixtures';
-import { Parameters } from './ipc';
+import { Configuration } from './ipc';
 import { Config } from './config';
 import { RunnerSuite, RunnerSpec, RunnerTest, ModifierFn } from './runnerTest';
 import { TestModifier } from './testModifier';
@@ -52,7 +52,7 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
       // they are compatible.
       const registrationsHash = computeWorkerRegistrationHash(fixtures);
 
-      const generatorConfigurations: Parameters[] = [];
+      const generatorConfigurations: Configuration[] = [];
       // For generator fixtures, collect all variants of the fixture values
       // to build different workers for them.
       for (const name of fixtures) {
@@ -76,8 +76,8 @@ export function generateTests(suites: RunnerSuite[], config: Config): RunnerSuit
           const parametersString = serializeParameters(configuration) +  `#repeat-${i}#`;
           const workerHash = registrationsHash + '@' + parametersString;
           const test = new RunnerTest(spec);
-          test.parameters = configuration;
           const parameters = parametersObject(configuration);
+          test.parameters = parameters;
           const modifierFns: ModifierFn[] = [];
           if (spec._modifierFn)
             modifierFns.push(spec._modifierFn);
@@ -134,16 +134,16 @@ function computeWorkerRegistrationHash(fixtures: string[]): string {
   return hash.digest('hex');
 }
 
-function serializeParameters(parameters: Parameters): string {
+function serializeParameters(parameters: Configuration): string {
   const tokens = [];
   for (const { name, value } of parameters)
     tokens.push(`${name}=${value}`);
   return tokens.join(', ');
 }
 
-function parametersObject(parameters: Parameters): any {
+function parametersObject(configuration: Configuration): any {
   const result = {};
-  for (const { name, value } of parameters)
+  for (const { name, value } of configuration)
     result[name] = value;
   return result;
 }

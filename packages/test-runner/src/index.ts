@@ -139,14 +139,14 @@ export type DefaultTestFixtures = {
 export const fixtures = new FixturesImpl<DefaultWorkerParameters, DefaultWorkerFixtures, DefaultTestFixtures>();
 export const expect = expectFunction;
 
-fixtures.defineWorkerFixture('config', async ({}, test) => {
+fixtures.defineWorkerFixture('config', async ({}, runTest) => {
   // Worker injects the value for this one.
-  await test(undefined as any);
+  await runTest(undefined as any);
 });
 
-fixtures.defineWorkerFixture('workerIndex', async ({}, test) => {
+fixtures.defineWorkerFixture('workerIndex', async ({}, runTest) => {
   // Worker injects the value for this one.
-  await test(undefined as any);
+  await runTest(undefined as any);
 });
 
 fixtures.defineTestFixture('tmpDir', async ({}, test) => {

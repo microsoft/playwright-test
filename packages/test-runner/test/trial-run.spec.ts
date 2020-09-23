@@ -60,8 +60,11 @@ it('should work with parameters', async ({ runInlineTest }) => {
   expect(suites[2].specs[0].tests.length).toBe(3);
   const log = [];
   for (let i = 0; i < 3; ++i) {
-    for (const testRun of suites[0].specs[0].tests)
-      log.push(testRun.parameters.map(p => p.name + '=' + p.value));
+    for (const testRun of suites[0].specs[0].tests) {
+      for (const name of Object.keys(testRun.parameters))
+        log.push(name + '=' + testRun.parameters[name]);
+
+    }
   }
   expect(log.join('|')).toBe('worker=A|worker=B|worker=C|worker=A|worker=B|worker=C|worker=A|worker=B|worker=C');
 

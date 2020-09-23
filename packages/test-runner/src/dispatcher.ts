@@ -18,12 +18,12 @@ import child_process from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { FixturePool } from './fixtures';
-import { RunPayload, TestBeginPayload, TestEndPayload, Parameters, DonePayload, TestOutputPayload } from './ipc';
+import { RunPayload, TestBeginPayload, TestEndPayload, DonePayload, TestOutputPayload, Parameters } from './ipc';
 import { Config } from './config';
 import { Reporter } from './reporter';
 import assert from 'assert';
 import { RunnerSuite, RunnerTest } from './runnerTest';
-import { Test, TestResult } from './test';
+import { TestResult } from './test';
 
 export class Dispatcher {
   private _workers = new Set<Worker>();

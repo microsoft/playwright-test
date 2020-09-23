@@ -40,16 +40,10 @@ it('should run with each configuration', async ({ runInlineFixturesTest }) => {
 
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(5);  // 6 total, one skipped
-  const configurations = result.report.suites[0].specs[0].tests.map(r => r.parameters);
-  const objects: any[] = configurations.map(c => {
-    const object = {};
-    for (const { name, value } of c)
-      object[name] = value;
-    return object;
-  });
+  const parametersList = result.report.suites[0].specs[0].tests.map(r => r.parameters);
   for (const foo of ['foo1', 'foo2', 'foo3']) {
     for (const bar of ['bar1', 'bar2']) {
-      expect(objects.find(o => o.foo === foo && o.bar === bar)).toBeTruthy();
+      expect(parametersList.find(o => o.foo === foo && o.bar === bar)).toBeTruthy();
       if (foo !== 'foo1' && bar !== 'bar1')
         expect(result.output).toContain(`${foo}:${bar}`);
     }
