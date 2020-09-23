@@ -863,10 +863,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@playwright/test-runner@0.3.19":
-  version "0.3.19"
-  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.3.19.tgz#8b77f521a8f565e37eddeb3119b77e09d819fe41"
-  integrity sha512-vdrfFIzdhNlopiJU0KSi3h5EospoeYnaaVfFm/X0qyF13ygxZgGS9r+6KK9NZ36hj/axE69bgvCk++JijUDxDw==
+"@playwright/test-runner@0.3.20":
+  version "0.3.20"
+  resolved "https://registry.yarnpkg.com/@playwright/test-runner/-/test-runner-0.3.20.tgz#aef2e385f4231f370207c879d7dc9f93dfa004f1"
+  integrity sha512-G3gd5ELp2MesOq7xoFbhinnFARi5YyNiFdB3hnazAP3EjYpZUrzZBP7/BLLur6jzwiNmomq1NbEBn4SHiXUDiQ==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/core" "^7.11.4"
