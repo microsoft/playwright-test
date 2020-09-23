@@ -128,8 +128,10 @@ class Fixture {
   }
 
   async teardown() {
-    if (this.hasGeneratorValue)
+    if (this.hasGeneratorValue) {
+      this.pool.instances.delete(this.name);
       return;
+    }
     if (this._teardown)
       return;
     this._teardown = true;
