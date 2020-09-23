@@ -46,7 +46,7 @@ export class WorkerRunner extends EventEmitter {
   private _testId: string | null;
   private _stdOutBuffer: (string | Buffer)[] = [];
   private _stdErrBuffer: (string | Buffer)[] = [];
-  private _testInfo: TestInfo<any> | null = null;
+  private _testInfo: TestInfo | null = null;
   private _suite: WorkerSuite;
   private _loaded = false;
   private _parametersString: string;
@@ -160,7 +160,7 @@ export class WorkerRunner extends EventEmitter {
     const testId = test._id;
     this._testId = testId;
 
-    const testInfo: TestInfo<any> = {
+    const testInfo: TestInfo = {
       title: test.title,
       file: test.file,
       location: test.location,
@@ -176,6 +176,7 @@ export class WorkerRunner extends EventEmitter {
       data: {},
     };
     this._testInfo = testInfo;
+    assignParameters({ 'testInfo': testInfo });
 
     this.emit('testBegin', buildTestBeginPayload(testId, testInfo));
 
@@ -213,7 +214,7 @@ export class WorkerRunner extends EventEmitter {
     this._testId = null;
   }
 
-  private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo<any>) {
+  private async _runHooks(suite: WorkerSuite, type: string, dir: 'before' | 'after', testInfo?: TestInfo) {
     debugLog(`running hooks "${type}" for suite "${suite.fullTitle}"`);
     if (!this._hasTestsToRun(suite))
       return;
@@ -225,7 +226,7 @@ export class WorkerRunner extends EventEmitter {
     if (dir === 'before')
       all.reverse();
     for (const hook of all)
-      await fixturePool.resolveParametersAndRun(hook, this._config, testInfo);
+      await fixturePool.resolveParametersAndRun(hook);
     debugLog(`done running hooks "${type}" for suite "${suite.fullTitle}"`);
   }
 
@@ -249,14 +250,14 @@ export class WorkerRunner extends EventEmitter {
   }
 }
 
-function buildTestBeginPayload(testId: string, testInfo: TestInfo<any>): TestBeginPayload {
+function buildTestBeginPayload(testId: string, testInfo: TestInfo): TestBeginPayload {
   return {
     testId,
     workerIndex: testInfo.workerIndex
   };
 }
 
-function buildTestEndPayload(testId: string, testInfo: TestInfo<any>): TestEndPayload {
+function buildTestEndPayload(testId: string, testInfo: TestInfo): TestEndPayload {
   return {
     testId,
     duration: testInfo.duration,

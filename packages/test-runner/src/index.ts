@@ -82,12 +82,12 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     return this as any;
   }
 
-  defineTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo<WorkerParameters>) => Promise<void>) {
+  defineTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerFixture(name as string, fn);
   }
 
-  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>, info: TestInfo<WorkerParameters>) => Promise<void>) {
+  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerFixture(name as string, fn);
   }
@@ -96,12 +96,12 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     return this as any;
   }
 
-  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: Config) => Promise<void>) {
+  defineWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>) => Promise<void>) {
     // TODO: make this throw when overriding.
     registerWorkerFixture(name as string, fn);
   }
 
-  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>, config: Config) => Promise<void>) {
+  overrideWorkerFixture<T extends keyof WorkerFixtures>(name: T, fn: (params: WorkerFixtures, runTest: (arg: WorkerFixtures[T]) => Promise<void>) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerWorkerFixture(name as string, fn);
   }
@@ -132,6 +132,7 @@ export type DefaultWorkerFixtures = {
 };
 
 export type DefaultTestFixtures = {
+  testInfo: TestInfo;
   tmpDir: string;
   outputFile: (suffix: string) => Promise<string>;
 };
@@ -149,19 +150,24 @@ fixtures.defineWorkerFixture('workerIndex', async ({}, runTest) => {
   await runTest(undefined as any);
 });
 
+fixtures.defineTestFixture('testInfo', async ({}, runTest) => {
+  // Worker injects the value for this one.
+  await runTest(undefined as any);
+});
+
 fixtures.defineTestFixture('tmpDir', async ({}, test) => {
   const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
   await test(tmpDir);
   await removeFolderAsync(tmpDir).catch(e => {});
 });
 
-fixtures.defineTestFixture('outputFile', async ({}, runTest, info) => {
+fixtures.defineTestFixture('outputFile', async ({testInfo}, runTest) => {
   const outputFile = async (suffix: string): Promise<string> => {
-    const relativePath = path.relative(info.config.testDir, info.file)
+    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
         .replace(/\.spec\.[jt]s/, '')
         .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
-    const sanitizedTitle = info.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(info.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
+    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
     await mkdirAsync(path.dirname(assetPath), {
       recursive: true
     });

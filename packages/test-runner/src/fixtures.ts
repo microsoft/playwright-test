@@ -16,7 +16,7 @@
 
 import { Config } from './config';
 import { raceAgainstTimeout, serializeError } from './util';
-import { TestStatus } from './ipc';
+import { TestStatus, Parameters } from './test';
 import { debugLog } from './debug';
 
 type Scope = 'test' | 'worker';
@@ -29,7 +29,7 @@ type FixtureRegistration = {
   location: string;
 };
 
-export type TestInfo<WorkerParameters> = {
+export type TestInfo = {
   // Declaration
   title: string;
   file: string;
@@ -38,7 +38,7 @@ export type TestInfo<WorkerParameters> = {
 
   // Parameters
   config: Config;
-  parameters: WorkerParameters;
+  parameters: Parameters;
   workerIndex: number;
 
   // Modifiers
@@ -96,11 +96,11 @@ class Fixture {
     this.value = this.hasGeneratorValue ? parameters[name] : null;
   }
 
-  async setup(config: Config, info?: TestInfo<any>) {
+  async setup() {
     if (this.hasGeneratorValue)
       return;
     for (const name of this.deps) {
-      await this.pool.setupFixture(name, config, info);
+      await this.pool.setupFixture(name);
       this.pool.instances.get(name).usages.add(this.name);
     }
 
@@ -112,12 +112,11 @@ class Fixture {
     const setupFence = new Promise((f, r) => { setupFenceFulfill = f; setupFenceReject = r; });
     const teardownFence = new Promise(f => this._teardownFenceCallback = f);
     debugLog(`setup fixture "${this.name}"`);
-    const param = this.scope === 'worker' ? config : info;
     this._tearDownComplete = this.fn(params, async (value: any) => {
       this.value = value;
       setupFenceFulfill();
       return await teardownFence;
-    }, param).catch((e: any) => {
+    }).catch((e: any) => {
       if (!this._setup)
         setupFenceReject(e);
       else
@@ -155,7 +154,7 @@ export class FixturePool {
     this.instances = new Map();
   }
 
-  async setupFixture(name: string, config: Config, info?: TestInfo<any>) {
+  async setupFixture(name: string) {
     let fixture = this.instances.get(name);
     if (fixture)
       return fixture;
@@ -165,7 +164,7 @@ export class FixturePool {
     const { scope, fn } = registrations.get(name);
     fixture = new Fixture(this, name, scope, fn);
     this.instances.set(name, fixture);
-    await fixture.setup(config, info);
+    await fixture.setup();
     return fixture;
   }
 
@@ -176,26 +175,26 @@ export class FixturePool {
     }
   }
 
-  async resolveParametersAndRun(fn: Function, config: Config, info?: TestInfo<any>) {
+  async resolveParametersAndRun(fn: Function) {
     const names = fixtureParameterNames(fn);
     for (const name of names)
-      await this.setupFixture(name, config, info);
+      await this.setupFixture(name);
     const params = {};
     for (const n of names)
       params[n] = this.instances.get(n).value;
     return fn(params);
   }
 
-  async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo<any>) {
+  async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo) {
     const { timedOut } = await raceAgainstTimeout(this._runTestWithFixtures(fn, info), timeout);
     // Do not overwrite test failure upon timeout in fixture.
     if (timedOut && info.status === 'passed')
       info.status = 'timedOut';
   }
 
-  async _runTestWithFixtures(fn: Function, info: TestInfo<any>) {
+  async _runTestWithFixtures(fn: Function, info: TestInfo) {
     try {
-      await this.resolveParametersAndRun(fn, info.config, info);
+      await this.resolveParametersAndRun(fn);
       info.status = 'passed';
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
@@ -280,11 +279,11 @@ function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: 
   registrationsByFile.get(file).push(registration);
 }
 
-export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, info: TestInfo<any>) => Promise<void>) {
+export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>) => Promise<void>) {
   innerRegisterFixture(name, 'test', fn, registerFixture);
 }
 
-export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, config: Config) => Promise<void>) {
+export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>) => Promise<void>) {
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 

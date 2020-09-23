@@ -20,9 +20,9 @@ import { fixtures } from '../../';
 
 const { it, expect, defineTestFixture } = fixtures.declareTestFixtures<{ postProcess: string }>();
 
-defineTestFixture('postProcess', async ({}, runTest, info) => {
+defineTestFixture('postProcess', async ({testInfo}, runTest) => {
   await runTest('');
-  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'test-error-visible-in-fixture.txt'), JSON.stringify(info.error, undefined, 2));
+  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'test-error-visible-in-fixture.txt'), JSON.stringify(testInfo.error, undefined, 2));
 });
 
 it('ensure fixture handles test error', async ({ postProcess }) => {

@@ -24,11 +24,11 @@ type Parameters = {
 const fixtures = baseFixtures.declareParameters<Parameters>().declareTestFixtures<{ fixture1: string, fixture2: string}>();
 fixtures.defineParameter('param1', 'Custom parameter 1');
 fixtures.defineParameter('param2', 'Custom parameter 2', 'value2');
-fixtures.defineTestFixture('fixture1', async ({}, runTest, info) => {
-  await runTest(info.parameters.param1);
+fixtures.defineTestFixture('fixture1', async ({testInfo}, runTest) => {
+  await runTest(testInfo.parameters.param1 as string);
 });
-fixtures.defineTestFixture('fixture2', async ({}, runTest, info) => {
-  await runTest(info.parameters.param2);
+fixtures.defineTestFixture('fixture2', async ({testInfo}, runTest) => {
+  await runTest(testInfo.parameters.param2 as string);
 });
 
 const { it } = fixtures;
