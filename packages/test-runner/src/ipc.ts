@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-export type Configuration = { name: string, value: string | number | boolean }[];
-export type Parameters = { [key: string]: string | number | boolean };
+export type Configuration = { name: string, value: string | number | boolean | undefined }[];
+export type Parameters = { [key: string]: string | number | boolean | null | undefined };
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
 export type TestBeginPayload = {

@@ -149,7 +149,7 @@ export class WorkerRunner extends EventEmitter {
   private async _runTest(test: WorkerSpec) {
     if (this._stopped)
       return;
-    if (this._entries.size && !this._entries.has(test._id))
+    if (!this._entries.has(test._id))
       return;
     const { timeout, expectedStatus, skipped } = this._entries.get(test._id);
     this._remaining.delete(test._id);

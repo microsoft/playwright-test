@@ -14,26 +14,42 @@
  * limitations under the License.
  */
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import rimraf from 'rimraf';
+import { promisify } from 'util';
+
 import { fixtures as baseFixtures } from '@playwright/test-runner';
 import { LaunchOptions, BrowserType, Browser, BrowserContext, Page, chromium, firefox, webkit, BrowserContextOptions, devices } from 'playwright';
 
-export type TypeOnlyTestState = {
-  context: BrowserContext;
-  page: Page;
+const mkdirAsync = promisify(fs.mkdir);
+const mkdtempAsync = promisify(fs.mkdtemp);
+const removeFolderAsync = promisify(rimraf);
+
+type PlaywrightParameters = {
+  browserName: string;
+  device: string | null;
 };
 
-export type TypeOnlyWorkerState = {
+type PlaywrightTestFixtures = {
+  context: BrowserContext;
+  page: Page;
+  tmpDir: string;
+  outputFile: (suffix: string) => Promise<string>;
+};
+
+type PlaywrightWorkerFixtures = {
   browserType: BrowserType<Browser>;
   browser: Browser;
   defaultBrowserOptions: LaunchOptions;
   defaultContextOptions: BrowserContextOptions;
-  browserName: 'chromium' | 'firefox' | 'webkit';
-  device: null | string | BrowserContextOptions
 };
 
 export const fixtures = baseFixtures
-    .declareWorkerFixtures<TypeOnlyWorkerState>()
-    .declareTestFixtures<TypeOnlyTestState>();
+    .declareParameters<PlaywrightParameters>()
+    .declareWorkerFixtures<PlaywrightWorkerFixtures>()
+    .declareTestFixtures<PlaywrightTestFixtures>();
 
 export const it = fixtures.it;
 export const fit = fixtures.fit;
@@ -47,23 +63,18 @@ export const beforeAll = fixtures.beforeAll;
 export const afterAll = fixtures.afterAll;
 export const expect = fixtures.expect;
 
-fixtures.defineWorkerFixture('browserType', async ({browserName}, test) => {
-  const browserType = ({chromium, firefox, webkit})[browserName];
+fixtures.defineWorkerFixture('browserType', async ({ browserName }, test) => {
+  const browserType = ({chromium, firefox, webkit})[browserName as 'chromium' | 'firefox' | 'webkit'];
   await test(browserType);
 });
 
-fixtures.defineWorkerFixture('browserName', async ({}, test) => {
-  await test((process.env.BROWSER as any) || 'chromium');
-});
+fixtures.defineParameter('browserName', 'Browser name', 'chromium');
+fixtures.defineParameter('device', 'Device name', null);
 
 fixtures.defineWorkerFixture('browser', async ({browserType, defaultBrowserOptions}, test) => {
   const browser = await browserType.launch(defaultBrowserOptions);
   await test(browser);
   await browser.close();
-});
-
-fixtures.defineWorkerFixture('device', async ({}, test) => {
-  await test(null);
 });
 
 fixtures.defineWorkerFixture('defaultContextOptions', async ({device}, test) => {
@@ -94,4 +105,25 @@ fixtures.defineTestFixture('context', async ({browser, defaultContextOptions}, t
 
 fixtures.defineTestFixture('page', async ({context}, runTest) => {
   await runTest(await context.newPage());
+});
+
+fixtures.defineTestFixture('tmpDir', async ({ }, test) => {
+  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
+  await test(tmpDir);
+  await removeFolderAsync(tmpDir).catch(e => { });
+});
+
+fixtures.defineTestFixture('outputFile', async ({ testInfo }, runTest) => {
+  const outputFile = async (suffix: string): Promise<string> => {
+    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
+        .replace(/\.spec\.[jt]s/, '')
+        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
+    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
+    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
+    await mkdirAsync(path.dirname(assetPath), {
+      recursive: true
+    });
+    return assetPath;
+  };
+  await runTest(outputFile);
 });

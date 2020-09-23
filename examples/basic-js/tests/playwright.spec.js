@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-const {it, expect} = require('playwright-runner');
+const { it, expect } = require('playwright-runner');
 
-it('is a basic test with the page', async ({page}) => {
+it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
   expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
 });

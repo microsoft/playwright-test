@@ -15,21 +15,12 @@
  * limitations under the License.
  */
 
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import rimraf from 'rimraf';
-import { promisify } from 'util';
 import { registerFixture, registerWorkerFixture, TestInfo, setParameterValues } from './fixtures';
 import { Config } from './config';
 import { expect as expectFunction } from './expect';
 import { registerWorkerParameter } from './fixtures';
 import * as spec from './spec';
 import { TestModifier } from './testModifier';
-
-const mkdirAsync = promisify(fs.mkdir);
-const mkdtempAsync = promisify(fs.mkdtemp);
-const removeFolderAsync = promisify(rimraf);
 
 interface DescribeHelper<WorkerParameters> {
   describe(name: string, inner: () => void): void;
@@ -87,7 +78,7 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     registerFixture(name as string, fn);
   }
 
-  overrideFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>) => Promise<void>) {
+  overrideTestFixture<T extends keyof TestFixtures>(name: T, fn: (params: WorkerParameters & WorkerFixtures & TestFixtures, runTest: (arg: TestFixtures[T]) => Promise<void>) => Promise<void>) {
     // TODO: make this throw when not overriding.
     registerFixture(name as string, fn);
   }
@@ -133,8 +124,6 @@ export type DefaultWorkerFixtures = {
 
 export type DefaultTestFixtures = {
   testInfo: TestInfo;
-  tmpDir: string;
-  outputFile: (suffix: string) => Promise<string>;
 };
 
 export const fixtures = new FixturesImpl<DefaultWorkerParameters, DefaultWorkerFixtures, DefaultTestFixtures>();
@@ -153,25 +142,4 @@ fixtures.defineWorkerFixture('workerIndex', async ({}, runTest) => {
 fixtures.defineTestFixture('testInfo', async ({}, runTest) => {
   // Worker injects the value for this one.
   await runTest(undefined as any);
-});
-
-fixtures.defineTestFixture('tmpDir', async ({}, test) => {
-  const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
-  await test(tmpDir);
-  await removeFolderAsync(tmpDir).catch(e => {});
-});
-
-fixtures.defineTestFixture('outputFile', async ({testInfo}, runTest) => {
-  const outputFile = async (suffix: string): Promise<string> => {
-    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
-        .replace(/\.spec\.[jt]s/, '')
-        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
-    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
-    await mkdirAsync(path.dirname(assetPath), {
-      recursive: true
-    });
-    return assetPath;
-  };
-  await runTest(outputFile);
 });

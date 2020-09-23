@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-import { TypeOnlyTestState, TypeOnlyWorkerState } from 'playwright-runner';
-import { expect, fixtures as fixtureImported} from '@playwright/test-runner';
+import { it, expect, fixtures } from 'playwright-runner';
 
-const fixtures = fixtureImported
-    .declareWorkerFixtures<TypeOnlyWorkerState>()
-    .declareTestFixtures<TypeOnlyTestState>();
-
-fixtures.defineTestFixture('page', async ({context, outputFile}, runTest, info) => {
+fixtures.overrideTestFixture('page', async ({ context, testInfo, outputFile }, runTest) => {
   const page = await context.newPage();
   await runTest(page);
-  const {result} = info;
-  if (result.status === 'failed' || result.status === 'timedOut') {
+  if (testInfo.status === 'failed' || testInfo.status === 'timedOut') {
     const assetPath = await outputFile('failed.png');
-    await page.screenshot({path: assetPath});
+    await page.screenshot({ path: assetPath });
   }
   await page.close();
 });
 
-const it = fixtures.it;
-
-it('is a basic test with the page', async ({page}) => {
+it('is a basic test with the page', async ({ page }) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
     The red background is real!
   </div>`);

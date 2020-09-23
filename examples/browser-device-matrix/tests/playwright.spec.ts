@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-import {it, expect} from 'playwright-runner';
+import { it, expect, fixtures } from 'playwright-runner';
 
-it('is a basic test with the page', async ({page}) => {
+fixtures.generateParametrizedTests('browserName',
+    process.env.BROWSER ? [process.env.BROWSER] : ['chromium', 'webkit']);
+
+fixtures.generateParametrizedTests('device',
+    process.env.BROWSER ? [process.env.DEVICE] : ['iPhone 11 Pro Max', 'Pixel 2 XL']);
+
+it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
   expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
 });
