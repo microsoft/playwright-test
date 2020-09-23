@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-require('../../..');
+import { fixtures } from '../../..';
+const { it, expect } = fixtures;
+import * as fs from 'fs';
+import * as path from 'path';
 
-it('succeeds', async ({ parallelIndex }) => {
-  expect(parallelIndex).toBe(1);
+it('succeeds', async ({ workerIndex }) => {
+  // First test waits for the second to start to work around the race.
+  fs.writeFileSync(path.join(process.env.PW_OUTPUT_DIR, 'parallel-index.txt'), 'TRUE');
+  expect(workerIndex).toBe(1);
 });

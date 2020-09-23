@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import '@playwright/test-runner';
 import colors from 'colors/safe';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should retry failures', async ({ runTest }) => {
   const result = await runTest('retry-failures.js', { retries: 1 });

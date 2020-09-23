@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-import debug from 'debug';
-import {RunnerConfig} from './runnerConfig';
-import { serializeError, Test, TestResult } from './test';
-import { raceAgainstTimeout } from './util';
-
+import { Config } from './config';
+import { raceAgainstTimeout, serializeError } from './util';
+import { TestStatus, Parameters } from './test';
+import { debugLog } from './debug';
 
 type Scope = 'test' | 'worker';
 
@@ -26,23 +25,51 @@ type FixtureRegistration = {
   name: string;
   scope: Scope;
   fn: Function;
+  file: string;
+  location: string;
 };
 
 export type TestInfo = {
-  config: RunnerConfig;
-  test: Test;
-  result: TestResult;
+  // Declaration
+  title: string;
+  file: string;
+  location: string;
+  fn: Function;
+
+  // Parameters
+  config: Config;
+  parameters: Parameters;
+  workerIndex: number;
+
+  // Modifiers
+  expectedStatus: TestStatus;
+
+  // Results
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  stdout: (string | Buffer)[];
+  stderr: (string | Buffer)[];
+  data: any;
 };
 
-const registrations = new Map<string, FixtureRegistration>();
+export const registrations = new Map<string, FixtureRegistration>();
 const registrationsByFile = new Map<string, FixtureRegistration[]>();
 export let parameters: any = {};
 
-export function setParameters(params: any) {
+export type ParameterRegistration = {
+  name: string;
+  description: string;
+  defaultValue?: string;
+};
+
+export const parameterRegistrations = new Map<string, ParameterRegistration>();
+
+export function assignParameters(params: any) {
   parameters = Object.assign(parameters, params);
-  for (const name of Object.keys(params))
-    registerWorkerFixture(name, async ({}, test) => await test(parameters[name]));
 }
+
+export const matrix: any = {};
 
 class Fixture {
   pool: FixturePool;
@@ -69,11 +96,11 @@ class Fixture {
     this.value = this.hasGeneratorValue ? parameters[name] : null;
   }
 
-  async setup(config: RunnerConfig, info?: TestInfo) {
+  async setup() {
     if (this.hasGeneratorValue)
       return;
     for (const name of this.deps) {
-      await this.pool.setupFixture(name, config, info);
+      await this.pool.setupFixture(name);
       this.pool.instances.get(name).usages.add(this.name);
     }
 
@@ -84,13 +111,18 @@ class Fixture {
     let setupFenceReject: { (arg0: any): any; (reason?: any): void; };
     const setupFence = new Promise((f, r) => { setupFenceFulfill = f; setupFenceReject = r; });
     const teardownFence = new Promise(f => this._teardownFenceCallback = f);
-    debug('pw:test:hook')(`setup "${this.name}"`);
-    const param = info || config;
+    debugLog(`setup fixture "${this.name}"`);
     this._tearDownComplete = this.fn(params, async (value: any) => {
       this.value = value;
       setupFenceFulfill();
       return await teardownFence;
-    }, param).catch((e: any) => setupFenceReject(e));
+    }).catch((e: any) => {
+      if (!this._setup)
+        setupFenceReject(e);
+      else
+        throw e;
+
+    });
     await setupFence;
     this._setup = true;
   }
@@ -108,7 +140,7 @@ class Fixture {
       await fixture.teardown();
     }
     if (this._setup) {
-      debug('pw:test:hook')(`teardown "${this.name}"`);
+      debugLog(`teardown fixture "${this.name}"`);
       this._teardownFenceCallback();
       await this._tearDownComplete;
     }
@@ -122,7 +154,7 @@ export class FixturePool {
     this.instances = new Map();
   }
 
-  async setupFixture(name: string, config: RunnerConfig, info?: TestInfo) {
+  async setupFixture(name: string) {
     let fixture = this.instances.get(name);
     if (fixture)
       return fixture;
@@ -132,7 +164,7 @@ export class FixturePool {
     const { scope, fn } = registrations.get(name);
     fixture = new Fixture(this, name, scope, fn);
     this.instances.set(name, fixture);
-    await fixture.setup(config, info);
+    await fixture.setup();
     return fixture;
   }
 
@@ -143,10 +175,10 @@ export class FixturePool {
     }
   }
 
-  async resolveParametersAndRun(fn: Function, config: RunnerConfig, info?: TestInfo) {
+  async resolveParametersAndRun(fn: Function) {
     const names = fixtureParameterNames(fn);
     for (const name of names)
-      await this.setupFixture(name, config, info);
+      await this.setupFixture(name);
     const params = {};
     for (const n of names)
       params[n] = this.instances.get(n).value;
@@ -156,28 +188,28 @@ export class FixturePool {
   async runTestWithFixturesAndTimeout(fn: Function, timeout: number, info: TestInfo) {
     const { timedOut } = await raceAgainstTimeout(this._runTestWithFixtures(fn, info), timeout);
     // Do not overwrite test failure upon timeout in fixture.
-    if (timedOut && info.result.status === 'passed')
-      info.result.status = 'timedOut';
+    if (timedOut && info.status === 'passed')
+      info.status = 'timedOut';
   }
 
   async _runTestWithFixtures(fn: Function, info: TestInfo) {
     try {
-      await this.resolveParametersAndRun(fn, info.config, info);
-      info.result.status = 'passed';
+      await this.resolveParametersAndRun(fn);
+      info.status = 'passed';
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.result.status === 'passed') {
-        info.result.status = 'failed';
-        info.result.error = serializeError(error);
+      if (info.status === 'passed') {
+        info.status = 'failed';
+        info.error = serializeError(error);
       }
     }
     try {
       await this.teardownScope('test');
     } catch (error) {
       // Prefer original error to the fixture teardown error or timeout.
-      if (info.result.status === 'passed') {
-        info.result.status = 'failed';
-        info.result.error = serializeError(error);
+      if (info.status === 'passed') {
+        info.status = 'failed';
+        info.error = serializeError(error);
       }
     }
   }
@@ -203,18 +235,40 @@ export function fixturesForCallback(callback: Function): string[] {
   return result;
 }
 
+const signatureSymbol = Symbol('signature');
+
 function fixtureParameterNames(fn: Function): string[] {
+  if (!fn[signatureSymbol])
+    fn[signatureSymbol] = innerFixtureParameterNames(fn);
+  return fn[signatureSymbol];
+}
+
+function innerFixtureParameterNames(fn: Function): string[] {
   const text = fn.toString();
-  const match = text.match(/async(?:\s+function)?\s*\(\s*{\s*([^}]*)\s*}/);
-  if (!match || !match[1].trim())
+  const match = text.match(/(?:async)?(?:\s+function)?[^\(]*\(([^})]*)/);
+  if (!match)
     return [];
-  const signature = match[1];
-  return signature.split(',').map((t: string) => t.trim());
+  const trimmedParams = match[1].trim();
+  if (!trimmedParams)
+    return [];
+  if (trimmedParams && trimmedParams[0] !== '{')
+    throw new Error('First argument must use the object destructuring pattern.'  + trimmedParams);
+  const signature = trimmedParams.substring(1).trim();
+  if (!signature)
+    return [];
+  return signature.split(',').map((t: string) => t.trim().split(':')[0].trim());
 }
 
 function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: Function) {
   const obj = {stack: ''};
+  // disable source-map-support to match the locations seen in require.cache
+  const origPrepare = Error.prepareStackTrace;
+  Error.prepareStackTrace = null;
   Error.captureStackTrace(obj, caller);
+  // v8 doesn't actually prepare the stack trace until we access it
+  obj.stack;
+  Error.prepareStackTrace = origPrepare;
+
   const stackFrame = obj.stack.split('\n')[2];
   const location = stackFrame.replace(/.*at Object.<anonymous> \((.*)\)/, '$1');
   const file = location.replace(/^(.+):\d+:\d+$/, '$1');
@@ -225,12 +279,22 @@ function innerRegisterFixture(name: string, scope: Scope, fn: Function, caller: 
   registrationsByFile.get(file).push(registration);
 }
 
-export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, info: TestInfo) => Promise<void>) {
+export function registerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>) => Promise<void>) {
   innerRegisterFixture(name, 'test', fn, registerFixture);
 }
 
-export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>, config: RunnerConfig) => Promise<void>) {
+export function registerWorkerFixture(name: string, fn: (params: any, runTest: (arg: any) => Promise<void>) => Promise<void>) {
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
+}
+
+export function registerWorkerParameter(name: string, description: string, defaultValue?: any) {
+  parameterRegistrations.set(name, { name, description, defaultValue });
+}
+
+export function setParameterValues(name: string, values: any[]) {
+  if (!parameterRegistrations.has(name))
+    throw new Error(`Unregistered parameter '${name}' was set.`);
+  matrix[name] = values;
 }
 
 function collectRequires(file: string, result: Set<string>) {
@@ -245,7 +309,7 @@ function collectRequires(file: string, result: Set<string>) {
     collectRequires(dep, result);
 }
 
-export function lookupRegistrations(file: string, scope: Scope) {
+function lookupRegistrations(file: string) {
   const deps = new Set<string>();
   collectRequires(file, deps);
   const allDeps = [...deps].reverse();
@@ -254,18 +318,17 @@ export function lookupRegistrations(file: string, scope: Scope) {
     const registrationList = registrationsByFile.get(dep);
     if (!registrationList)
       continue;
-    for (const r of registrationList) {
-      if (scope && r.scope !== scope)
-        continue;
+    for (const r of registrationList)
       result.set(r.name, r);
-    }
+
   }
   return result;
 }
 
-export function rerunRegistrations(file: string, scope: Scope) {
+export function rerunRegistrations(file: string) {
+  registrations.clear();
   // When we are running several tests in the same worker, we should re-run registrations before
   // each file. That way we erase potential fixture overrides from the previous test runs.
-  for (const registration of lookupRegistrations(file, scope).values())
+  for (const registration of lookupRegistrations(file).values())
     registrations.set(registration.name, registration);
 }

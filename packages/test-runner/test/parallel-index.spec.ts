@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-import '@playwright/test-runner';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
-it('should run in parallel', async({ runTest }) => {
-	const result = await runTest('parallel-index');
-	console.log(result.output)
+it('should run in parallel', async ({ runTest }) => {
+  const result = await runTest('parallel-index');
   expect(result.passed).toBe(2);
   expect(result.exitCode).toBe(0);
 });

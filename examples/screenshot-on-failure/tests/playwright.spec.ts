@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-import 'playwright-runner';
-import {registerFixture} from 'playwright-runner';
+import { it, expect, fixtures } from 'playwright-runner';
 
-registerFixture('page', async ({context, outputFile}, runTest, info) => {
+fixtures.overrideTestFixture('page', async ({ context, testInfo, outputFile }, runTest) => {
   const page = await context.newPage();
   await runTest(page);
-  const {result} = info;
-  if (result.status === 'failed' || result.status === 'timedOut') {
+  if (testInfo.status === 'failed' || testInfo.status === 'timedOut') {
     const assetPath = await outputFile('failed.png');
-    await page.screenshot({ path: assetPath});
+    await page.screenshot({ path: assetPath });
   }
   await page.close();
 });
 
-it('is a basic test with the page', async ({page}) => {
+it('is a basic test with the page', async ({ page }) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
-    Failed!
+    The red background is real!
   </div>`);
-  throw new Error('wrong!');
+  expect(await page.innerText('body')).toBe('Nooo!');
 });

@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-require('../../');
+import { fixtures } from '../..';
+const { it, expect, xit, describe, xdescribe } = fixtures;
 
 it('included test', () => {
   expect(1 + 1).toBe(2);
 });
 
 xit('excluded test', () => {
+  expect(1 + 1).toBe(3);
+});
+
+it.skip('excluded test', () => {
   expect(1 + 1).toBe(3);
 });
 

@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-if (new Error().stack.includes('testRunner'))
+const { fixtures } = require('../../');
+const { it, expect } = fixtures;
+
+if (new Error().stack.includes('workerRunner'))
   throw new Error('Suite error');
 
 it('passes',() => {

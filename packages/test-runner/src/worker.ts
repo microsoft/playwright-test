@@ -15,37 +15,41 @@
  */
 
 import { initializeImageMatcher } from './expect';
-import { TestRunner, fixturePool } from './testRunner';
+import { WorkerRunner, fixturePool } from './workerRunner';
 import { Console } from 'console';
+import { serializeError } from './util';
+import { debugLog, setDebugWorkerIndex } from './debug';
 
 let closed = false;
 
 sendMessageToParent('ready');
 
-global.console = new Console({
-  stdout: process.stdout,
-  stderr: process.stderr,
-  colorMode: process.env.FORCE_COLOR === '1',
-});
+if (!process.env.PW_RUNNER_DEBUG) {
+  global.console = new Console({
+    stdout: process.stdout,
+    stderr: process.stderr,
+    colorMode: process.env.FORCE_COLOR === '1',
+  });
 
-process.stdout.write = chunk => {
-  if (testRunner)
-    testRunner.stdout(chunk);
-  return true;
-};
+  process.stdout.write = chunk => {
+    if (testRunner)
+      testRunner.stdout(chunk);
+    return true;
+  };
 
-process.stderr.write = chunk => {
-  if (testRunner)
-    testRunner.stderr(chunk);
-  return true;
-};
+  process.stderr.write = chunk => {
+    if (testRunner)
+      testRunner.stderr(chunk);
+    return true;
+  };
+}
 
 process.on('disconnect', gracefullyCloseAndExit);
 process.on('SIGINT',() => {});
 process.on('SIGTERM',() => {});
 
-let workerId: number;
-let testRunner: TestRunner;
+let workerIndex: number;
+let testRunner: WorkerRunner;
 
 process.on('unhandledRejection', (reason, promise) => {
   if (testRunner)
@@ -59,16 +63,21 @@ process.on('uncaughtException', error => {
 
 process.on('message', async message => {
   if (message.method === 'init') {
-    workerId = message.params.workerId;
+    workerIndex = message.params.workerIndex;
+    setDebugWorkerIndex(workerIndex);
     initializeImageMatcher(message.params);
+    debugLog(`init`, message.params);
     return;
   }
   if (message.method === 'stop') {
+    debugLog(`stopping...`);
     await gracefullyCloseAndExit();
+    debugLog(`stopped`);
     return;
   }
   if (message.method === 'run') {
-    testRunner = new TestRunner(message.params.entry, message.params.config, workerId);
+    debugLog(`run`, message.params);
+    testRunner = new WorkerRunner(message.params.entry, message.params.config, workerIndex);
     for (const event of ['testBegin', 'testStdOut', 'testStdErr', 'testEnd', 'done'])
       testRunner.on(event, sendMessageToParent.bind(null, event));
     await testRunner.run();
@@ -85,7 +94,11 @@ async function gracefullyCloseAndExit() {
   // Meanwhile, try to gracefully close all browsers.
   if (testRunner)
     testRunner.stop();
-  await fixturePool.teardownScope('worker');
+  try {
+    await fixturePool.teardownScope('worker');
+  } catch (e) {
+    process.send({ method: 'teardownError', params: { error: serializeError(e) } });
+  }
   process.exit(0);
 }
 
@@ -93,6 +106,8 @@ function sendMessageToParent(method, params = {}) {
   if (closed)
     return;
   try {
+    if (method !== 'ready')
+      debugLog(`send`, { method, params });
     process.send({ method, params });
   } catch (e) {
     // Can throw when closing.

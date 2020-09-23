@@ -22,6 +22,7 @@ Place unit tests in files ending with `.spec.*`.
 // src/foo.spec.ts
 import 'playwright-runner';
 
+
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
   expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
@@ -32,8 +33,8 @@ Run all of your tests with `npx test-runner`
 
 ## Examples
 
-- [Using JavaScript](./basic-js)
-- [Using TypeScript](./basic-ts)
-- [Recording Playwright tests (Chromium only)](./record-video)
-- [Creating screenshots on failure](./screenshot-on-failure)
-- [Run multiple browsers / devices](./browser-device-matrix)
+- [Using JavaScript](./examples/basic-js)
+- [Using TypeScript](./examples/basic-ts)
+- [Recording Playwright tests (Chromium only)](./examples/record-video)
+- [Creating screenshots on failure](./examples/screenshot-on-failure)
+- [Run multiple browsers / devices](./examples/browser-device-matrix)

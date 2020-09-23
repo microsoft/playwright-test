@@ -14,212 +14,67 @@
  * limitations under the License.
  */
 
-export type Configuration = { name: string, value: string }[];
+import { Parameters, TestStatus } from './ipc';
+export { Parameters, TestStatus } from './ipc';
 
-export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
-
-export class Runnable {
+class Base {
   title: string;
   file: string;
   location: string;
   parent?: Suite;
 
   _only = false;
-  _skipped = false;
-  _flaky = false;
-  _slow = false;
-  _expectedStatus: TestStatus = 'passed';
+  _ordinal: number;
 
-  isOnly(): boolean {
-    return this._only;
-  }
-
-  isSlow(): boolean {
-    return this._slow;
-  }
-
-  slow(): void;
-  slow(condition: boolean): void;
-  slow(description: string): void;
-  slow(condition: boolean, description: string): void;
-  slow(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
-      this._slow = true;
-  }
-
-  skip(): void;
-  skip(condition: boolean): void;
-  skip(description: string): void;
-  skip(condition: boolean, description: string): void;
-  skip(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
-      this._skipped = true;
-  }
-
-  fixme(): void;
-  fixme(condition: boolean): void;
-  fixme(description: string): void;
-  fixme(condition: boolean, description: string): void;
-  fixme(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
-      this._skipped = true;
-  }
-
-  flaky(): void;
-  flaky(condition: boolean): void;
-  flaky(description: string): void;
-  flaky(condition: boolean, description: string): void;
-  flaky(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
-      this._flaky = true;
-  }
-
-  fail(): void;
-  fail(condition: boolean): void;
-  fail(description: string): void;
-  fail(condition: boolean, description: string): void;
-  fail(arg?: boolean | string, description?: string) {
-    const { condition } = this._interpretCondition(arg, description);
-    if (condition)
-      this._expectedStatus = 'failed';
-  }
-
-  private _interpretCondition(arg?: boolean | string, description?: string): { condition: boolean, description?: string } {
-    if (arg === undefined && description === undefined)
-      return { condition: true };
-    if (typeof arg === 'string')
-      return { condition: true, description: arg };
-    return { condition: !!arg, description };
-  }
-
-  _isSkipped(): boolean {
-    return this._skipped || (this.parent && this.parent._isSkipped());
-  }
-
-  _isSlow(): boolean {
-    return this._slow || (this.parent && this.parent._isSlow());
-  }
-
-  isFlaky(): boolean {
-    return this._flaky || (this.parent && this.parent.isFlaky());
+  constructor(title: string, parent?: Suite) {
+    this.title = title;
+    this.parent = parent;
   }
 
   titlePath(): string[] {
     if (!this.parent)
       return [];
+    if (!this.title)
+      return this.parent.titlePath();
     return [...this.parent.titlePath(), this.title];
   }
 
   fullTitle(): string {
     return this.titlePath().join(' ');
   }
-
-  _copyFrom(other: Runnable) {
-    this.file = other.file;
-    this.location = other.location;
-    this._only = other._only;
-    this._flaky = other._flaky;
-    this._skipped = other._skipped;
-    this._slow = other._slow;
-  }
 }
 
-export class Test extends Runnable {
+export class Spec extends Base {
   fn: Function;
-  results: TestResult[] = [];
-  _id: string;
-  _overriddenFn: Function;
-  _startTime: number;
-  _timeout = 0;
+  tests: Test[] = [];
 
-  constructor(title: string, fn: Function) {
-    super();
-    this.title = title;
+  constructor(title: string, fn: Function, suite: Suite) {
+    super(title, suite);
     this.fn = fn;
-  }
-
-  _appendResult(): TestResult {
-    const result: TestResult = {
-      duration: 0,
-      expectedStatus: 'passed',
-      stdout: [],
-      stderr: [],
-      data: {}
-    };
-    this.results.push(result);
-    return result;
-  }
-
-  timeout(): number {
-    return this._timeout;
+    suite._addSpec(this);
   }
 
   _ok(): boolean {
-    if (this._isSkipped())
-      return true;
-    const hasFailedResults = !!this.results.find(r => r.status !== r.expectedStatus);
-    if (!hasFailedResults)
-      return true;
-    if (!this.isFlaky())
-      return false;
-    const hasPassedResults = !!this.results.find(r => r.status === r.expectedStatus);
-    return hasPassedResults;
-  }
-
-  _hasResultWithStatus(status: TestStatus): boolean {
-    return !!this.results.find(r => r.status === status);
-  }
-
-  _clone(): Test {
-    const test = new Test(this.title, this.fn);
-    test._copyFrom(this);
-    test._timeout = this._timeout;
-    test._overriddenFn = this._overriddenFn;
-    return test;
+    return !this.tests.find(r => !r.ok());
   }
 }
 
-export type TestResult = {
-  duration: number;
-  status?: TestStatus;
-  expectedStatus: TestStatus;
-  error?: any;
-  stdout: (string | Buffer)[];
-  stderr: (string | Buffer)[];
-  data: any;
-}
-
-export class Suite extends Runnable {
+export class Suite extends Base {
   suites: Suite[] = [];
-  tests: Test[] = [];
-  configuration: Configuration;
-  _configurationString: string;
-
-  _hooks: { type: string, fn: Function } [] = [];
-  _entries: (Suite | Test)[] = [];
+  specs: Spec[] = [];
+  _entries: (Suite | Spec)[] = [];
+  total = 0;
 
   constructor(title: string, parent?: Suite) {
-    super();
-    this.title = title;
-    this.parent = parent;
+    super(title, parent);
+    if (parent)
+      parent._addSuite(this);
   }
 
-  total(): number {
-    let count = 0;
-    this.findTest(fn => {
-      ++count;
-    });
-    return count;
-  }
-
-  _addTest(test: Test) {
-    test.parent = this;
-    this.tests.push(test);
-    this._entries.push(test);
+  _addSpec(spec: Spec) {
+    spec.parent = this;
+    this.specs.push(spec);
+    this._entries.push(spec);
   }
 
   _addSuite(suite: Suite) {
@@ -228,83 +83,102 @@ export class Suite extends Runnable {
     this._entries.push(suite);
   }
 
-  eachSuite(fn: (suite: Suite) => boolean | void): boolean {
+  findSpec(fn: (test: Spec) => boolean | void): boolean {
     for (const suite of this.suites) {
-      if (suite.eachSuite(fn))
+      if (suite.findSpec(fn))
         return true;
     }
-    return false;
-  }
-
-  findTest(fn: (test: Test) => boolean | void): boolean {
-    for (const suite of this.suites) {
-      if (suite.findTest(fn))
-        return true;
-    }
-    for (const test of this.tests) {
+    for (const test of this.specs) {
       if (fn(test))
         return true;
     }
     return false;
   }
 
-  _clone(): Suite {
-    const suite = new Suite(this.title);
-    suite._copyFrom(this);
-    return suite;
+  findSuite(fn: (suite: Suite) => boolean | void): boolean {
+    if (fn(this))
+      return true;
+    for (const suite of this.suites) {
+      if (suite.findSuite(fn))
+        return true;
+    }
+    return false;
+  }
+
+  _allSpecs(): Spec[] {
+    const result: Spec[] = [];
+    this.findSpec(test => { result.push(test); });
+    return result;
   }
 
   _renumber() {
+    // All tests are identified with their ordinals.
     let ordinal = 0;
-    this.findTest((test: Test) => {
-      // All tests are identified with their ordinals.
-      test._id = `${ordinal++}@${this.file}::[${this._configurationString}]`;
+    this.findSpec((test: Spec) => {
+      test._ordinal = ordinal++;
     });
   }
 
-  _addHook(type: string, fn: any) {
-    this._hooks.push({ type, fn });
-  }
-
-  _hasTestsToRun(): boolean {
-    let found = false;
-    this.findTest(test => {
-      if (!test._isSkipped()) {
-        found = true;
-        return true;
-      }
-    });
-    return found;
+  _countTotal() {
+    this.total = 0;
+    for (const suite of this.suites) {
+      suite._countTotal();
+      this.total += suite.total;
+    }
+    for (const spec of this.specs)
+      this.total += spec.tests.length;
   }
 }
 
-export function serializeConfiguration(configuration: Configuration): string {
-  const tokens = [];
-  for (const { name, value } of configuration)
-    tokens.push(`${name}=${value}`);
-  return tokens.join(', ');
-}
+export class Test {
+  spec: Spec;
+  parameters: Parameters;
+  results: TestResult[] = [];
 
-export function serializeError(error: Error | any): any {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      stack: error.stack
+  skipped = false;
+  flaky = false;
+  slow = false;
+  expectedStatus: TestStatus = 'passed';
+  timeout = 0;
+  annotations: any[] = [];
+
+  constructor(spec: Spec) {
+    this.spec = spec;
+  }
+
+  _appendTestRun(): TestResult {
+    const result: TestResult = {
+      workerIndex: 0,
+      duration: 0,
+      stdout: [],
+      stderr: [],
+      data: {}
     };
+    this.results.push(result);
+    return result;
   }
-  return trimCycles(error);
+
+  ok(): boolean {
+    let hasPassedResults = false;
+    for (const result of this.results) {
+      // Missing status is Ok when running in shards mode.
+      if (result.status === 'skipped' || !result.status)
+        return true;
+      if (!this.flaky && result.status !== this.expectedStatus)
+        return false;
+      if (result.status === this.expectedStatus)
+        hasPassedResults = true;
+    }
+    return hasPassedResults;
+  }
 }
 
-function trimCycles(obj: any): any {
-  const cache = new Set();
-  return JSON.parse(
-      JSON.stringify(obj, function(key, value) {
-        if (typeof value === 'object' && value !== null) {
-          if (cache.has(value))
-            return '' + value;
-          cache.add(value);
-        }
-        return value;
-      })
-  );
-}
+export type TestResult = {
+  workerIndex: number,
+  duration: number;
+  status?: TestStatus;
+  error?: any;
+  stdout: (string | Buffer)[];
+  stderr: (string | Buffer)[];
+  data: any;
+};

@@ -3,7 +3,8 @@
   "compilerOptions": {
       "outDir": "out",
       "rootDir": "src",
-      "strict": false
+      "strict": false,
+      "lib": ["esnext"]
   },
   "exclude": [
       "out"

@@ -20,9 +20,9 @@ import fs from 'fs';
 import milliseconds from 'ms';
 import path from 'path';
 import StackUtils from 'stack-utils';
-import { Reporter } from '../reporter';
-import { RunnerConfig } from '../runnerConfig';
-import { Suite, Test, TestResult } from '../test';
+import { TestStatus } from '../ipc';
+import { Reporter, Config } from '../runner';
+import { Test, Suite, TestResult, Parameters } from '../test';
 
 const stackUtils = new StackUtils();
 
@@ -34,18 +34,20 @@ export class BaseReporter implements Reporter  {
   unexpectedFlaky: Test[] = [];
   duration = 0;
   startTime: number;
-  config: RunnerConfig;
+  config: Config;
   suite: Suite;
   timeout: number;
+  fileDurations = new Map<string, number>();
 
   constructor() {
     process.on('SIGINT', async () => {
+      this.onEnd();
       this.epilogue();
       process.exit(130);
     });
   }
 
-  onBegin(config: RunnerConfig, suite: Suite) {
+  onBegin(config: Config, suite: Suite) {
     this.startTime = Date.now();
     this.config = config;
     this.suite = suite;
@@ -65,18 +67,23 @@ export class BaseReporter implements Reporter  {
   }
 
   onTestEnd(test: Test, result: TestResult) {
+    const spec = test.spec;
+    let duration = this.fileDurations.get(spec.file) || 0;
+    duration += result.duration;
+    this.fileDurations.set(spec.file, duration);
+
     if (result.status === 'skipped') {
       this.skipped.push(test);
       return;
     }
 
-    if (result.status === result.expectedStatus) {
+    if (result.status === test.expectedStatus) {
       if (test.results.length === 1) {
         // as expected from the first attempt
         this.asExpected.push(test);
       } else {
         // as expected after unexpected -> flaky.
-        if (test.isFlaky())
+        if (test.flaky)
           this.expectedFlaky.push(test);
         else
           this.unexpectedFlaky.push(test);
@@ -89,6 +96,10 @@ export class BaseReporter implements Reporter  {
     }
   }
 
+  onError(error: any, file?: string) {
+    console.log(formatError(error, file));
+  }
+
   onTimeout(timeout: number) {
     this.timeout = timeout;
   }
@@ -97,15 +108,29 @@ export class BaseReporter implements Reporter  {
     this.duration = Date.now() - this.startTime;
   }
 
+  printSlowTests() {
+    const fileDurations = [...this.fileDurations.entries()];
+    fileDurations.sort((a, b) => b[1] - a[1]);
+    for (let i = 0; i < 10 && i < fileDurations.length; ++i) {
+      const baseName = path.basename(fileDurations[i][0]);
+      const duration = fileDurations[i][1];
+      if (duration < 5000)
+        break;
+      console.log(colors.yellow('Slow test: ') + baseName + colors.yellow(` (${milliseconds(duration)})`));
+    }
+    console.log();
+  }
+
   epilogue() {
     console.log('');
 
+    this.printSlowTests();
     console.log(colors.green(`  ${this.asExpected.length} passed`) + colors.dim(` (${milliseconds(this.duration)})`));
 
     if (this.skipped.length)
       console.log(colors.yellow(`  ${this.skipped.length} skipped`));
 
-    const filteredUnexpected = [...this.unexpected].filter(t => !t._hasResultWithStatus('timedOut'));
+    const filteredUnexpected = [...this.unexpected].filter(t => !this.hasResultWithStatus(t, 'timedOut'));
     if (filteredUnexpected.length) {
       console.log(colors.red(`  ${filteredUnexpected.length} failed`));
       console.log('');
@@ -123,7 +148,7 @@ export class BaseReporter implements Reporter  {
       }
     }
 
-    const timedOut = [...this.unexpected].filter(t => t._hasResultWithStatus('timedOut'));
+    const timedOut = [...this.unexpected].filter(t => this.hasResultWithStatus(t, 'timedOut'));
     if (timedOut.length) {
       console.log(colors.red(`  ${timedOut.length} timed out`));
       console.log('');
@@ -144,51 +169,67 @@ export class BaseReporter implements Reporter  {
 
   formatFailure(test: Test, index?: number): string {
     const tokens: string[] = [];
-    let relativePath = path.relative(this.config.testDir, test.file) || path.basename(test.file);
-    if (test.location.includes(test.file))
-      relativePath += test.location.substring(test.file.length);
+    const spec = test.spec;
+    let relativePath = path.relative(this.config.testDir, spec.file) || path.basename(spec.file);
+    if (spec.location.includes(spec.file))
+      relativePath += spec.location.substring(spec.file.length);
     const passedUnexpectedlySuffix = test.results[0].status === 'passed' ? ' -- passed unexpectedly' : '';
-    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${test.title}${passedUnexpectedlySuffix}`;
+    const header = `  ${index ? index + ')' : ''} ${relativePath} › ${spec.fullTitle()}${passedUnexpectedlySuffix}`;
     tokens.push(colors.bold(colors.red(header)));
+
+    // Print parameters.
+    if (test.parameters)
+      tokens.push('    ' + ' '.repeat(String(index).length) + colors.gray(serializeParameters(test.parameters)));
+
     for (const result of test.results) {
       if (result.status === 'passed')
         continue;
       if (result.status === 'timedOut') {
         tokens.push('');
-        tokens.push(indent(colors.red(`Timeout of ${test._timeout}ms exceeded.`), '    '));
+        tokens.push(indent(colors.red(`Timeout of ${test.timeout}ms exceeded.`), '    '));
       } else {
-        const stack = result.error.stack;
-        if (stack) {
-          tokens.push('');
-          const messageLocation = result.error.stack.indexOf(result.error.message);
-          const preamble = result.error.stack.substring(0, messageLocation + result.error.message.length);
-          tokens.push(indent(preamble, '    '));
-          const position = positionInFile(stack, test.file);
-          if (position) {
-            const source = fs.readFileSync(test.file, 'utf8');
-            tokens.push('');
-            tokens.push(indent(codeFrameColumns(source, {
-              start: position,
-            },
-            { highlightCode: true}
-            ), '    '));
-          }
-          tokens.push('');
-          tokens.push(indent(colors.dim(stack.substring(preamble.length + 1)), '    '));
-        } else {
-          tokens.push('');
-          tokens.push(indent(String(result.error), '    '));
-        }
+        tokens.push(indent(formatError(result.error, spec.file), '    '));
       }
       break;
     }
     tokens.push('');
     return tokens.join('\n');
   }
+
+  hasResultWithStatus(test: Test, status: TestStatus): boolean {
+    return !!test.results.find(r => r.status === status);
+  }
+}
+
+function formatError(error: any, file?: string) {
+  const stack = error.stack;
+  const tokens = [];
+  if (stack) {
+    tokens.push('');
+    const messageLocation = error.stack.indexOf(error.message);
+    const preamble = error.stack.substring(0, messageLocation + error.message.length);
+    tokens.push(preamble);
+    const position = file ? positionInFile(stack, file) : null;
+    if (position) {
+      const source = fs.readFileSync(file, 'utf8');
+      tokens.push('');
+      tokens.push(codeFrameColumns(source, {
+        start: position,
+      },
+      { highlightCode: true}
+      ));
+    }
+    tokens.push('');
+    tokens.push(colors.dim(stack.substring(preamble.length + 1)));
+  } else {
+    tokens.push('');
+    tokens.push(String(error));
+  }
+  return tokens.join('\n');
 }
 
 function indent(lines: string, tab: string) {
-  return lines.replace(/^/gm, tab);
+  return lines.replace(/^(?=.+$)/gm, tab);
 }
 
 function positionInFile(stack: string, file: string): { column: number; line: number; } {
@@ -200,4 +241,11 @@ function positionInFile(stack: string, file: string): { column: number; line: nu
       return {column: parsed.column, line: parsed.line};
   }
   return null;
+}
+
+function serializeParameters(parameters: Parameters): string {
+  const tokens = [];
+  for (const name of Object.keys(parameters))
+    tokens.push(`${name}=${parameters[name]}`);
+  return tokens.join(', ');
 }

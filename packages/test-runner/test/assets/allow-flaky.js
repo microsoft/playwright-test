@@ -16,6 +16,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { fixtures } = require('../..');
+const { it, expect } = fixtures;
 
 it('flake', test => {
   test.flaky();

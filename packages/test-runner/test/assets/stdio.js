@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-require('../..');
+const { fixtures } = require('../..');
+const { it } = fixtures;
 
 it('stdio', () => {
   process.stdout.write('stdout text');

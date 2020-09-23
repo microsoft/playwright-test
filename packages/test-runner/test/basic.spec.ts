@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import '@playwright/test-runner';
-import './fixtures';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should fail', async ({ runTest }) => {
   const result = await runTest('one-failure.ts');
   expect(result.exitCode).toBe(1);
   expect(result.passed).toBe(0);
   expect(result.failed).toBe(1);
-  expect(result.output).toContain('one-failure.ts:18:1');
+  expect(result.output).toContain('one-failure.ts:20:1');
 });
 
 it('should timeout', async ({ runTest }) => {
@@ -62,13 +62,13 @@ it('should respect slow test', async ({ runTest }) => {
 });
 
 it('should respect excluded tests', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('excluded.ts', { timeout: 1 });
+  const { exitCode, passed } = await runTest('excluded.ts');
   expect(passed).toBe(2);
   expect(exitCode).toBe(0);
 });
 
 it('should respect focused tests', async ({ runTest }) => {
-  const { exitCode, passed } = await runTest('focused.ts', { timeout: 1 });
-  expect(passed).toBe(2);
+  const { exitCode, passed } = await runTest('focused.ts');
+  expect(passed).toBe(4);
   expect(exitCode).toBe(0);
 });

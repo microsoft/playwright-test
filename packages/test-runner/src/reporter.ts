@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import { RunnerConfig } from './runnerConfig';
-import { Suite, Test, TestResult } from './test';
+import { Config } from './config';
+import { Test, Suite, TestResult } from './test';
 
 export interface Reporter {
-  onBegin(config: RunnerConfig, suite: Suite): void;
+  onBegin(config: Config, suite: Suite): void;
   onTestBegin(test: Test): void;
   onTestStdOut(test: Test, chunk: string | Buffer): void;
   onTestStdErr(test: Test, chunk: string | Buffer): void;
   onTestEnd(test: Test, result: TestResult): void;
   onTimeout(timeout: number): void;
+  onError(error: any, file?: string): void;
   onEnd(): void;
 }

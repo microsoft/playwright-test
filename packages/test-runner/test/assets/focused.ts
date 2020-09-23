@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-require('../../');
+import { fixtures } from '../..';
+const { it, fit, expect, describe, fdescribe } = fixtures;
 
 it('included test', () => {
   expect(1 + 1).toBe(3);
 });
 
 fit('focused test', () => {
+  expect(1 + 1).toBe(2);
+});
+
+it.only('focused only test', () => {
   expect(1 + 1).toBe(2);
 });
 
@@ -33,5 +38,11 @@ fdescribe('focused describe', () => {
 describe('non-focused describe', () => {
   it('describe test', () => {
     expect(1 + 1).toBe(3);
+  });
+});
+
+describe.only('focused describe', () => {
+  it('describe test', () => {
+    expect(1 + 1).toBe(2);
   });
 });

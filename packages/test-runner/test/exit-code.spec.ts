@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
-import '@playwright/test-runner';
-import './fixtures';
+import path from 'path';
+import { fixtures } from './fixtures';
+const { it, expect } = fixtures;
 
 it('should collect stdio', async ({ runTest }) => {
   const { exitCode, report } = await runTest('stdio.js');
   expect(exitCode).toBe(0);
-  const testResult = report.suites[0].tests[0].results[0];
+  const testResult = report.suites[0].specs[0].tests[0].runs[0];
   const { stdout, stderr } = testResult;
   expect(stdout).toEqual([{ text: 'stdout text' }, { buffer: Buffer.from('stdout buffer').toString('base64') }]);
   expect(stderr).toEqual([{ text: 'stderr text' }, { buffer: Buffer.from('stderr buffer').toString('base64') }]);
+});
+
+it('should work with not defined errors', async ({runTest}) => {
+  const result = await runTest('is-not-defined-error.ts');
+  const { errors } = result.report;
+  expect(errors.length).toBe(1);
+  expect(errors[0].file).toContain('assets' + path.sep + 'is-not-defined-error.ts');
+  expect(errors[0].error.message).toContain('foo is not defined');
+  expect(result.exitCode).toBe(1);
 });
 
 it('should work with typescript', async ({ runTest }) => {
@@ -34,9 +44,9 @@ it('should work with typescript', async ({ runTest }) => {
 it('should repeat each', async ({ runTest }) => {
   const { exitCode, report } = await runTest('one-success.js', { 'repeat-each': 3 });
   expect(exitCode).toBe(0);
-  expect(report.suites.length).toBe(3);
-  for (const suite of report.suites)
-    expect(suite.tests.length).toBe(1);
+  expect(report.suites.length).toBe(1);
+  expect(report.suites[0].specs.length).toBe(1);
+  expect(report.suites[0].specs[0].tests.length).toBe(3);
 });
 
 it('should allow flaky', async ({ runTest }) => {
@@ -57,4 +67,10 @@ it('should respect global timeout', async ({ runTest }) => {
   const { exitCode, output } = await runTest('one-timeout.js', { 'timeout': 100000, 'global-timeout': 500 });
   expect(exitCode).toBe(1);
   expect(output).toContain('Timed out waiting 0.5s for the entire test run');
+});
+
+it('should exit with code 1 if the specified folder/file does not exist', async ({runTest}) => {
+  const result = await runTest('111111111111.js');
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`${path.join(__dirname, 'assets', '111111111111.js')} does not exist`);
 });
