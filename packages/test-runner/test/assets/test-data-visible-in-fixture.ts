@@ -24,12 +24,12 @@ defineTestFixture('postProcess', async ({testInfo}, runTest) => {
   testInfo.data['myname'] = 'myvalue';
 });
 
-defineWorkerFixture('config', async ({config}, runTest) => {
-  await runTest(config);
+defineWorkerFixture('config', async ({testConfig}, runTest) => {
+  await runTest(testConfig);
 });
 
-it('ensure fixture handles test error', async ({ postProcess, config }) => {
+it('ensure fixture handles test error', async ({ postProcess, testConfig }) => {
   console.log('console.log');
   console.error('console.error');
-  expect(config.outputDir).toBeTruthy();
+  expect(testConfig.outputDir).toBeTruthy();
 });

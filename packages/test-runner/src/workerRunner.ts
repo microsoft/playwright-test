@@ -62,8 +62,8 @@ export class WorkerRunner extends EventEmitter {
     this._remaining = new Map(runPayload.entries.map(e => [ e.testId, e ]));
     this._config = config;
     this._parsedParameters = runPayload.parameters;
-    this._parsedParameters['config'] = config;
-    this._parsedParameters['workerIndex'] = workerIndex;
+    this._parsedParameters['testConfig'] = config;
+    this._parsedParameters['testWorkerIndex'] = workerIndex;
     setCurrentTestFile(this._suite.file);
   }
 

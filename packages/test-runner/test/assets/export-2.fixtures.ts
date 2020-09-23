@@ -27,10 +27,10 @@ export const fixtures2 = baseFixtures
     .declareWorkerFixtures<TypeOnlyWorkerState>()
     .declareTestFixtures<TypeOnlyTestState>();
 
-fixtures2.defineTestFixture('testTypeOnly', async ({config}, runTest, info) => {
+fixtures2.defineTestFixture('testTypeOnly', async ({}, runTest) => {
   await runTest('testTypeOnly');
 });
 
-fixtures2.defineWorkerFixture('workerTypeOnly', async ({workerIndex}, runTest, info) => {
+fixtures2.defineWorkerFixture('workerTypeOnly', async ({}, runTest) => {
   await runTest(42);
 });

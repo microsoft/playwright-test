@@ -114,27 +114,27 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
 export interface Fixtures<P, W, T> extends FixturesImpl<P, W, T> {
 }
 
-export type DefaultWorkerParameters = {
+type BuiltinWorkerParameters = {
 };
 
-export type DefaultWorkerFixtures = {
-  config: Config;
-  workerIndex: number;
+type BuiltinWorkerFixtures = {
+  testConfig: Config;
+  testWorkerIndex: number;
 };
 
-export type DefaultTestFixtures = {
+type BuiltinTestFixtures = {
   testInfo: TestInfo;
 };
 
-export const fixtures = new FixturesImpl<DefaultWorkerParameters, DefaultWorkerFixtures, DefaultTestFixtures>();
+export const fixtures = new FixturesImpl<BuiltinWorkerParameters, BuiltinWorkerFixtures, BuiltinTestFixtures>();
 export const expect = expectFunction;
 
-fixtures.defineWorkerFixture('config', async ({}, runTest) => {
+fixtures.defineWorkerFixture('testConfig', async ({}, runTest) => {
   // Worker injects the value for this one.
   await runTest(undefined as any);
 });
 
-fixtures.defineWorkerFixture('workerIndex', async ({}, runTest) => {
+fixtures.defineWorkerFixture('testWorkerIndex', async ({}, runTest) => {
   // Worker injects the value for this one.
   await runTest(undefined as any);
 });
