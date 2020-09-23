@@ -25,6 +25,7 @@ import LineReporter from './reporters/line';
 import ListReporter from './reporters/list';
 import { Multiplexer } from './reporters/multiplexer';
 import { Runner, Config } from './runner';
+import { ParameterRegistration } from './fixtures';
 
 export const reporters = {
   'dot': DotReporter,
@@ -53,15 +54,16 @@ program
     .option('--test-ignore <pattern>', 'Pattern used to ignore test files', '**/node_modules/**')
     .option('--test-match <pattern>', 'Pattern used to find test files', '**/?(*.)+(spec|test).[jt]s')
     .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds), default: 10000', '10000')
-    .option('--trial-run', 'Only collect the matching tests and report them as passing')
+    .option('--list', 'Only collect all the test and report them')
     .option('-u, --update-snapshots', 'Use this flag to re-record every snapshot that fails during this test run')
     .action(command => runAction(command));
 
 let runner: Runner;
+let parameterRegistrations: ParameterRegistration[];
+let reporter: Reporter;
 
 program.allowUnknownOption(true);
 program.parse(process.argv);
-
 
 async function runStage1(command) {
   const filteredArguments = [];
@@ -91,7 +93,6 @@ async function runStage1(command) {
     testDir,
     timeout: parseInt(command.timeout, 10),
     globalTimeout: parseInt(command.globalTimeout, 10),
-    trialRun: command.trialRun,
     updateSnapshots: command.updateSnapshots
   };
 
@@ -117,20 +118,26 @@ async function runStage1(command) {
     process.exit(1);
   }
 
-  runner = new Runner(config, new Multiplexer(reporterObjects));
-  runner.loadFiles(files);
+  reporter = new Multiplexer(reporterObjects);
+  runner = new Runner(config, reporter);
+  parameterRegistrations = runner.loadFiles(files).parameters;
   runAction = runStage2;
   program.allowUnknownOption(false);
-  for (const param of runner.parameters())
+  for (const param of parameterRegistrations)
     program.option(`--${param.name} <value>`, param.description);
   program.parse(process.argv);
 }
 
 async function runStage2(command) {
-  for (const param of runner.parameters()) {
-    const value = command[param.name];
-    if (value)
-      runner.setParameterValue(param.name, value);
+  const parameters: any = {};
+  for (const param of parameterRegistrations) {
+    if (param.name in command)
+      parameters[param.name] = command[param.name];
+  }
+  runner.generateTests({ parameters });
+  if (command.list) {
+    runner.list();
+    return;
   }
 
   try {

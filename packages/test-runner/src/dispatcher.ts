@@ -134,15 +134,6 @@ export class Dispatcher {
     const jobs = [];
     while (this._queue.length) {
       const file = this._queue.shift();
-      if (this._config.trialRun) {
-        for (const entry of file.entries) {
-          const { test, result: testRun } = this._testById.get(entry.testId)!;
-          this._reporter.onTestBegin(test);
-          testRun.status = test.skipped ? 'skipped' : test.expectedStatus;
-          this._reporter.onTestEnd(test, testRun);
-        }
-        continue;
-      }
       const requiredHash = file.hash;
       let worker = await this._obtainWorker();
       while (worker.hash && worker.hash !== requiredHash) {
@@ -275,7 +266,6 @@ export class Dispatcher {
   }
 
   async _restartWorker(worker) {
-    assert(!this._config.trialRun);
     await worker.stop();
     this._createWorker();
   }

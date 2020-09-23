@@ -109,9 +109,6 @@ export class WorkerRunner extends EventEmitter {
 
     const revertBabelRequire = workerSpec(this._suite);
 
-    // Trial mode runs everything in one worker, delete test from cache.
-    delete require.cache[this._suite.file];
-
     require(this._suite.file);
     revertBabelRequire();
     // Enumerate tests to assign ordinals.

@@ -28,6 +28,7 @@ import { raceAgainstTimeout, serializeError } from './util';
 import { RunnerSuite } from './runnerTest';
 import { runnerSpec } from './runnerSpec';
 import { debugLog } from './debug';
+import { Suite } from './test';
 export { Reporter } from './reporter';
 export { Config } from './config';
 
@@ -49,15 +50,7 @@ export class Runner {
     this._reporter = reporter;
   }
 
-  parameters(): ParameterRegistration[] {
-    return [...parameterRegistrations.values()];
-  }
-
-  setParameterValue(name: string, value: string) {
-    setParameterValues(name, [value]);
-  }
-
-  loadFiles(files: string[]) {
+  loadFiles(files: string[]): { parameters: ParameterRegistration[] } {
     // Resolve symlinks. TODO: do this asynchronously?
     files = files.map(file => fs.realpathSync(file));
     debugLog(`loadFiles`, files);
@@ -78,20 +71,32 @@ export class Runner {
     }
 
     // Set default values
-    for (const param of this.parameters()) {
+    for (const param of parameterRegistrations.values()) {
       if (!(param.name in matrix))
-        this.setParameterValue(param.name, param.defaultValue);
+        setParameterValues(param.name, [param.defaultValue]);
     }
+    return { parameters: [...parameterRegistrations.values()] };
   }
 
-  async run(): Promise<RunResult> {
-    if (!this._config.trialRun) {
-      await removeFolderAsync(this._config.outputDir).catch(e => {});
-      fs.mkdirSync(this._config.outputDir, { recursive: true });
+  generateTests(options: { parameters?: any } = {}): Suite {
+    if (options.parameters) {
+      for (const name of Object.keys(options.parameters))
+        setParameterValues(name, [options.parameters[name]]);
     }
 
     // We can only generate tests after parameters have been assigned.
     this._rootSuite = generateTests(this._suites, this._config);
+    return this._rootSuite;
+  }
+
+  list() {
+    this._reporter.onBegin(this._config, this._rootSuite);
+    this._reporter.onEnd();
+  }
+
+  async run(): Promise<RunResult> {
+    await removeFolderAsync(this._config.outputDir).catch(e => {});
+    fs.mkdirSync(this._config.outputDir, { recursive: true });
 
     if (this._config.forbidOnly) {
       const hasOnly = this._rootSuite.findSpec(t => t._only) || this._rootSuite.findSuite(s => s._only);

@@ -47,10 +47,8 @@ it('should work with parameters', async ({ runInlineTest }) => {
         expect(true).toBe(false);
       });
     `,
-  }, { 'trial-run': true });
+  }, { 'list': true });
   expect(result.exitCode).toBe(0);
-  expect(result.passed).toBe(9);
-  expect(result.failed).toBe(0);
   const suites = result.report.suites;
   expect(suites[0].file).toContain('a.test.js');
   expect(suites[0].specs[0].tests.length).toBe(3);
@@ -58,20 +56,17 @@ it('should work with parameters', async ({ runInlineTest }) => {
   expect(suites[1].specs[0].tests.length).toBe(3);
   expect(suites[2].file).toContain('c.test.js');
   expect(suites[2].specs[0].tests.length).toBe(3);
-  const log = [];
+  const paramsLog = [];
+  const resultsLog = [];
   for (let i = 0; i < 3; ++i) {
-    for (const testRun of suites[0].specs[0].tests) {
-      for (const name of Object.keys(testRun.parameters))
-        log.push(name + '=' + testRun.parameters[name]);
-
+    for (const test of suites[i].specs[0].tests) {
+      for (const name of Object.keys(test.parameters))
+        paramsLog.push(name + '=' + test.parameters[name]);
+      resultsLog.push(test.expectedStatus);
     }
   }
-  expect(log.join('|')).toBe('worker=A|worker=B|worker=C|worker=A|worker=B|worker=C|worker=A|worker=B|worker=C');
-
-  const log2 = [];
-  for (const r of result.results)
-    log2.push(r.status);
-  expect(log2.join('|')).toBe('passed|failed|failed|failed|passed|failed|failed|failed|passed');
+  expect(paramsLog.join('|')).toBe('worker=A|worker=B|worker=C|worker=A|worker=B|worker=C|worker=A|worker=B|worker=C');
+  expect(resultsLog.join('|')).toBe('passed|failed|failed|failed|passed|failed|failed|failed|passed');
 });
 
 it('should emit test annotations', async ({ runInlineTest }) => {
@@ -83,9 +78,8 @@ it('should emit test annotations', async ({ runInlineTest }) => {
         expect(true).toBe(false);
       });
     `
-  }, { 'trial-run': true });
+  }, { 'list': true });
   expect(result.exitCode).toBe(0);
-  expect(result.passed).toBe(1);
   expect(result.report.suites[0].specs[0].tests[0].annotations).toEqual([{ type: 'fail', description: 'Fail annotation' }]);
 });
 
@@ -100,29 +94,7 @@ it('should emit suite annotations', async ({ runInlineTest }) => {
         });
       });
     `
-  }, { 'trial-run': true });
+  }, { 'list': true });
   expect(result.exitCode).toBe(0);
-  expect(result.skipped).toBe(1);
   expect(result.report.suites[0].suites[0].specs[0].tests[0].annotations).toEqual([{ type: 'fixme', description: 'Fix me!' }]);
-});
-
-it('should not restart worker', async ({ runInlineTest }) => {
-  const result = await runInlineTest({
-    'a.test.js': `
-      it('test1', test => {
-        test.fail();
-      }, () => {
-        expect(true).toBe(false);
-      });
-
-      it('test2', test => {
-        test.fail();
-      }, () => {
-        expect(true).toBe(false);
-      });
-    `
-  }, { 'trial-run': true });
-  expect(result.exitCode).toBe(0);
-  expect(result.report.suites[0].specs[0].tests[0].runs[0].workerIndex).toBe(0);
-  expect(result.report.suites[0].specs[1].tests[0].runs[0].workerIndex).toBe(0);
 });

@@ -28,6 +28,5 @@ export type Config = {
   snapshotDir: string;
   testDir: string;
   timeout: number;
-  trialRun?: boolean;
   updateSnapshots?: boolean;
 };
