@@ -6,7 +6,6 @@ on:
     branches: [ master ]
 jobs:
   build:
-    name: Build
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -18,20 +17,10 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '10.x'
-    - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
-    - uses: actions/cache@v1
-      id: yarn-cache
-      with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/package.json') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
     - uses: microsoft/playwright-github-action@v1
     - name: Install dependencies and build
-      run: yarn
+      run: npm ci
     - name: lint
-      run: yarn lint
-    - name: test
-      run: yarn test --reporter=dot
+      run: npm run lint
+    - name: build
+      run: npm run build

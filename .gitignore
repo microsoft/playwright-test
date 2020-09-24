@@ -1,7 +1,6 @@
 node_modules
 package-lock.json
-yarn-error.log
 .vscode
-/packages/*/out/
+out/
 tsconfig.tsbuildinfo
 test-results/

@@ -1,40 +1,20 @@
-# 🎭 Playwright Test
-> ⚠️ **WARNING:** For testing in production please refer to the [Test runners](https://github.com/microsoft/playwright/blob/master/docs/test-runners.md) document. This repository contains an experimental test runner.
+# 🎭 playwright-test
 
-## Features
+> This package is not ready for use. If you want to run tests with playwright, checkout [jest-playwright](https://github.com/mmarkelov/jest-playwright) for Jest or [karma-playwright-launcher](https://github.com/JoelEinbinder/karma-playwright-launcher) for Karma.
 
-- Support for Javascript and TypeScript
-- Abstracted logic support for running logic before and after a test called fixtures
-- New Playwright Context for each new test
-- Integration for running multiple browsers / devices via CLI and environment variables
+A test runner for running tests with Playwright.
 
-## Installation
-
-```
-npm i -D @playwright/test
-```
-
-## Usage
-
-Place unit tests in files ending with `.spec.*`.
-
+1. `npm i -D @playwright/test`
+2. Place unit tests in files ending with `.spec.*`.
 ```js
 // src/foo.spec.ts
 import '@playwright/test';
-
+import { it, expected } from '@playwright/test-runner';
 
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
-  expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
+  const home = await page.waitForSelector('home-navigation');
+  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
 });
 ```
-
-Run all of your tests with `npx test-runner`
-
-## Examples
-
-- [Using JavaScript](./examples/basic-js)
-- [Using TypeScript](./examples/basic-ts)
-- [Recording Playwright tests (Chromium only)](./examples/record-video)
-- [Creating screenshots on failure](./examples/screenshot-on-failure)
-- [Run multiple browsers / devices](./examples/browser-device-matrix)
+5. Run all of your tests with `npx test-runner .`
