@@ -1,6 +1,6 @@
 # 🎭 playwright-test
 
-> 🚧 This project is under development. See [Test runner integrations](https://playwright.dev/#version=v1.4.1&path=docs%2Ftest-runners.md&q=) to use Jest or Mocha with Playwright.
+> 🚧 This project is under development. See [Test runner integrations](https://playwright.dev/#path=docs%2Ftest-runners.md&q=) to use Jest or Mocha with Playwright.
 
 Build an end-to-end test suite with Playwright.
 
