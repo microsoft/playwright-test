@@ -11,7 +11,7 @@
 ## Installation
 
 ```
-npm i -D playwright-runner
+npm i -D @playwright/test
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ Place unit tests in files ending with `.spec.*`.
 
 ```js
 // src/foo.spec.ts
-import 'playwright-runner';
+import '@playwright/test';
 
 
 it('is a basic test with the page', async ({page}) => {

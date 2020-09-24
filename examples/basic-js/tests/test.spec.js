@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const { it, expect } = require('playwright-runner');
+const { it, expect } = require('@playwright/test');
 
 it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');

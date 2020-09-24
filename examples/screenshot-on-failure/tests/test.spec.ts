@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { it, expect } from 'playwright-runner';
+import { it, expect } from '@playwright/test';
 
 // Run this test with the --screenshotOnFailure=true command line parameter.
 

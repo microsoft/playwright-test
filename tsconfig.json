@@ -2,7 +2,7 @@
   "files": [],
   "include": [],
   "references": [
-      { "path": "./packages/test-runner/" },
-      { "path": "./packages/playwright-runner/" }
+      { "path": "./packages/playwright-test-runner/" },
+      { "path": "./packages/playwright-test/" }
   ]
 }
