@@ -114,7 +114,7 @@ export class BaseReporter implements Reporter  {
     for (let i = 0; i < 10 && i < fileDurations.length; ++i) {
       const baseName = path.basename(fileDurations[i][0]);
       const duration = fileDurations[i][1];
-      if (duration < 5000)
+      if (duration < 15000)
         break;
       console.log(colors.yellow('Slow test: ') + baseName + colors.yellow(` (${milliseconds(duration)})`));
     }

@@ -16,4 +16,4 @@
  * limitations under the License.
  */
 
-module.exports = require('./out/cli');
+require('./out/cli');

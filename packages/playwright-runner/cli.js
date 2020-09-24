@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Copyright Microsoft Corporation. All rights reserved.
  *
@@ -14,4 +16,4 @@
  * limitations under the License.
  */
 
-module.exports = require('@playwright/test-runner/cli');
+require('@playwright/test-runner/cli');

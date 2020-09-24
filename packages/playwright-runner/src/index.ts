@@ -153,9 +153,9 @@ fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOpt
   if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
     let ordinal = 0;
     for (const context of contexts) {
-      for (const page of context.pages()) {
+      for (const page of context.pages())
         await page.screenshot({ timeout: 5000, path: await testOutputFile(`test-failed-${++ordinal}.png`) });
-      }
+
     }
   }
 

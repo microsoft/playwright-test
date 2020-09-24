@@ -13,6 +13,9 @@
     "test": "test-runner"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "repository": "github:Microsoft/playwright-runner"
 }

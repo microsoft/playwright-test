@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import colors from 'colors/safe';
 import * as path from 'path';
 import { Config } from '../config';
 import { BaseReporter } from './base';
@@ -23,10 +24,33 @@ class LineReporter extends BaseReporter {
   private _total: number;
   private _current = 0;
   private _failures = 0;
+  private _lastTest: Test;
 
   onBegin(config: Config, suite: Suite) {
     super.onBegin(config, suite);
     this._total = suite.total;
+    console.log();
+  }
+
+  onTestStdOut(test: Test, chunk: string | Buffer) {
+    this._dumpToStdio(test, chunk, process.stdout);
+  }
+
+  onTestStdErr(test: Test, chunk: string | Buffer) {
+    this._dumpToStdio(test, chunk, process.stderr);
+  }
+
+  private _dumpToStdio(test: Test, chunk: string | Buffer, stream: NodeJS.WriteStream) {
+    if (this.config.quiet)
+      return;
+    stream.write(`\u001B[1A\u001B[2K`);
+    if (this._lastTest !== test) {
+      // Write new header for the output.
+      stream.write(colors.gray(`${path.basename(test.spec.file)} - ${test.spec.fullTitle()}\n`));
+      this._lastTest = test;
+    }
+
+    stream.write(chunk);
     console.log();
   }
 
