@@ -1,13 +1,13 @@
 {
   "name": "playwright-basic-ts",
-  "version": "0.3.27-post",
+  "version": "0.3.28-post",
   "description": "",
   "directories": {
     "test": "tests"
   },
   "dependencies": {},
   "devDependencies": {
-    "@playwright/test": "0.3.27"
+    "@playwright/test": "0.3.28"
   },
   "scripts": {
     "test": "test-runner"
