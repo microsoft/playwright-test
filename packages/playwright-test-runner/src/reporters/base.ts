@@ -42,7 +42,6 @@ export class BaseReporter implements Reporter  {
   constructor() {
     process.on('SIGINT', async () => {
       this.onEnd();
-      this.epilogue(true);
       process.exit(130);
     });
   }
