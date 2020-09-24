@@ -16,7 +16,7 @@
 
 import { it, expect } from '@playwright/test';
 
-// Run this test with the --screenshotOnFailure=true command line parameter.
+// Run this test with the --screenshot-on-failure command line parameter.
 
 it('is a basic test with the page', async ({ page, browserName, testInfo }) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
