@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.3.27",
+  "version": "0.3.27-post",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
