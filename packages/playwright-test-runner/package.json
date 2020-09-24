@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test-runner",
-  "version": "0.3.26",
+  "version": "0.3.27",
   "bin": {
     "test-runner": "./cli.js"
   },
@@ -42,5 +42,5 @@
   "author": {
     "name": "Microsoft Corporation"
   },
-  "repository": "github:Microsoft/playwright-runner"
+  "repository": "github:Microsoft/playwright-test"
 }

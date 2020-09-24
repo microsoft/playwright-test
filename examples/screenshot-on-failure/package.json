@@ -1,12 +1,12 @@
 {
   "name": "playwright-screenshot-on-failure",
-  "version": "0.3.26",
+  "version": "0.3.27",
   "directories": {
     "test": "tests"
   },
   "dependencies": {},
   "devDependencies": {
-    "@playwright/test": "0.3.26"
+    "@playwright/test": "0.3.27"
   },
   "scripts": {
     "test": "test-runner"
@@ -16,5 +16,5 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
-  "repository": "github:Microsoft/playwright-runner"
+  "repository": "github:Microsoft/playwright-test"
 }

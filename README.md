@@ -1,4 +1,4 @@
-# 🎭 Playwright Runner
+# 🎭 Playwright Test
 > ⚠️ **WARNING:** For testing in production please refer to the [Test runners](https://github.com/microsoft/playwright/blob/master/docs/test-runners.md) document. This repository contains an experimental test runner.
 
 ## Features

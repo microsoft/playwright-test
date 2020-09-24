@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.3.26",
+  "version": "0.3.27",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -8,14 +8,14 @@
   "engines": {
     "node": ">=10.17.0"
   },
-  "repository": "github:Microsoft/playwright-runner",
+  "repository": "github:Microsoft/playwright-test",
   "description": "A test runner for running tests with Playwright.",
   "bin": {
     "@playwright/test": "cli.js"
   },
   "main": "out/index.js",
   "dependencies": {
-    "@playwright/test-runner": "0.3.26",
+    "@playwright/test-runner": "0.3.27",
     "playwright": "^1.3.0"
   }
 }

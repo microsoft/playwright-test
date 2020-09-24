@@ -25,7 +25,7 @@ for (const {fileName, json} of packages) {
   let errors = false;
   checkField('license', 'Apache-2.0');
   checkField('author', {name: 'Microsoft Corporation'});
-  checkField('repository', 'github:Microsoft/playwright-runner');
+  checkField('repository', 'github:Microsoft/playwright-test');
   if (errors) {
     console.log('writing', fileName);
     fs.writeFileSync(fileName, JSON.stringify(json, undefined, 2) + '\n', 'utf8');

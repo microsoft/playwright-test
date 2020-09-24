@@ -39,7 +39,7 @@ if ! npm whoami >/dev/null 2>&1; then
   exit 1
 fi
 
-UPSTREAM_SHA=$(git ls-remote git@github.com:microsoft/playwright-runner.git --tags master | cut -f1)
+UPSTREAM_SHA=$(git ls-remote git@github.com:microsoft/playwright-test.git --tags master | cut -f1)
 CURRENT_SHA=$(git rev-parse HEAD)
 
 if [[ "${UPSTREAM_SHA}" != "${CURRENT_SHA}" ]]; then
