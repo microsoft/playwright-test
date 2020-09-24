@@ -1,34 +1,36 @@
 {
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "name": "@playwright/test",
+  "version": "0.9.1",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Microsoft Corporation"
+  },
   "engines": {
     "node": ">=10.17.0"
   },
   "scripts": {
-    "test": "yarn workspace @playwright/test-runner test",
-    "lint": "node scripts/lintPackages.js && eslint . --ext js,ts",
+    "lint": "eslint . --ext js,ts",
     "build": "tsc --build tsconfig.json",
     "watch": "tsc --build tsconfig.json --watch",
-    "clean": "tsc --build tsconfig.json --clean && rimraf packages/*/out",
-    "prepare": "yarn run build",
-    "preinstall": "yarn -s --cwd stable-test-runner",
-    "update-version": "node scripts/updateVersion.js"
+    "prepare": "npm run build"
   },
-  "version": "0.0.0",
+  "repository": "github:Microsoft/playwright-test",
+  "description": "A test runner for running tests with Playwright.",
+  "bin": {
+    "@playwright/test": "cli.js"
+  },
+  "main": "out/index.js",
+  "dependencies": {
+    "@playwright/test-runner": "0.9.1",
+    "playwright": "^1.3.0",
+    "rimraf": "^3.0.2"
+  },
   "devDependencies": {
-    "@types/debug": "^4.1.5",
-    "@types/node": "^10.17.29",
     "@types/rimraf": "^3.0.0",
-    "@types/source-map-support": "^0.5.3",
-    "@typescript-eslint/eslint-plugin": "^4.0.1",
-    "@typescript-eslint/parser": "^4.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.2.0",
+    "@typescript-eslint/parser": "^4.2.0",
     "eslint": "^7.8.1",
     "eslint-plugin-notice": "^0.9.10",
-    "expect": "^26.4.2",
-    "glob": "^7.1.6",
-    "rimraf": "^3.0.2",
     "typescript": "^4.0.2"
   }
 }
