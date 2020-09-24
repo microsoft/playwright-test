@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.3.28-post",
+  "version": "0.3.29-post",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -15,7 +15,7 @@
   },
   "main": "out/index.js",
   "dependencies": {
-    "@playwright/test-runner": "0.3.28-post",
+    "@playwright/test-runner": "0.3.29-post",
     "playwright": "^1.3.0"
   }
 }

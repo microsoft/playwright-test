@@ -1,12 +1,12 @@
 {
   "name": "playwright-basic-js",
-  "version": "0.3.28-post",
+  "version": "0.3.29-post",
   "directories": {
     "test": "tests"
   },
   "dependencies": {},
   "devDependencies": {
-    "@playwright/test": "0.3.28"
+    "@playwright/test": "0.3.29"
   },
   "scripts": {
     "test": "test-runner"
