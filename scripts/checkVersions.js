@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 const fs = require('fs');
-const packages = require('./packages');
+const packages = [...require('./packages'), require('./examples')];
 const names = new Set(packages.filter(({json}) => !json.private).map(({json}) => json.name));
 
 /**
