@@ -1,15 +1,25 @@
 # 🎭 playwright-test
 
-> This package is not ready for use. If you want to run tests with playwright, checkout [jest-playwright](https://github.com/mmarkelov/jest-playwright) for Jest or [karma-playwright-launcher](https://github.com/JoelEinbinder/karma-playwright-launcher) for Karma.
+> 🚧 This project is under development. See [Test runner integrations](https://playwright.dev/#version=v1.4.1&path=docs%2Ftest-runners.md&q=) to use Jest or Mocha with Playwright.
 
-A test runner for running tests with Playwright.
+Build an end-to-end test suite with Playwright.
 
-1. `npm i -D @playwright/test`
-2. Place unit tests in files ending with `.spec.*`.
+- **Parallelized execution** across multiple browsers.
+- **Annotate your tests** to mark your tests as `flaky`, `fixme`, `skip`, `slow` or `fail` and get better reporting.
+- **Shape your tests** with built-in and custom fixtures.
+- Control test execution with test retries.
+- Built-in support for **TypeScript**.
+
+## Get started
+```
+npm i -D @playwright/test
+```
+
+Place tests in files ending with `.spec.js` or `.spec.ts`.
+
 ```js
 // src/foo.spec.ts
-import '@playwright/test';
-import { it, expected } from '@playwright/test-runner';
+const { it, expect } = require('@playwright/test');
 
 it('is a basic test with the page', async ({page}) => {
   await page.goto('https://playwright.dev/');
@@ -17,4 +27,16 @@ it('is a basic test with the page', async ({page}) => {
   expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
 });
 ```
-5. Run all of your tests with `npx test-runner .`
+
+Run all tests with
+
+```
+npx test-runner
+```
+
+## Execution options
+```
+npx test-runner --help
+```
+
+
