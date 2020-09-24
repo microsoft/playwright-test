@@ -1,12 +1,12 @@
 {
   "name": "playwright-screenshot-on-failure",
-  "version": "1.0.0",
+  "version": "0.3.24",
   "directories": {
     "test": "tests"
   },
   "dependencies": {},
   "devDependencies": {
-    "playwright-runner": "0.3.23"
+    "playwright-runner": "0.3.24"
   },
   "scripts": {
     "test": "test-runner"
