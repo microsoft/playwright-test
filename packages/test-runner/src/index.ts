@@ -105,8 +105,12 @@ class FixturesImpl<WorkerParameters, WorkerFixtures, TestFixtures> {
     return this as any;
   }
 
-  defineParameter<T extends keyof WorkerParameters>(name: T, description: string, defaultValue?: WorkerParameters[T]) {
-    registerWorkerParameter(name as string, description, defaultValue);
+  defineParameter<T extends keyof WorkerParameters>(name: T, description: string, defaultValue: WorkerParameters[T]) {
+    registerWorkerParameter({
+      name: name as string,
+      description,
+      defaultValue: defaultValue as any,
+    });
     registerWorkerFixture(name as string, async ({}, runTest) => runTest(defaultValue));
   }
 

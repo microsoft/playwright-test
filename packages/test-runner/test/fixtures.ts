@@ -21,7 +21,7 @@ import { tmpdir } from 'os';
 import * as path from 'path';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-import type { ReportFormat, SerializedSuite } from '../src/reporters/json';
+import type { ReportFormat } from '../src/reporters/json';
 
 const removeFolderAsync = promisify(rimraf);
 

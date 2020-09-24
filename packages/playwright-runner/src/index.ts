@@ -31,12 +31,12 @@ const mkdirAsync = promisify(fs.mkdir);
 
 type PlaywrightParameters = {
   // Browser name, one of 'chromium', 'webkit' and 'firefox', can be specified via
-  // environment BROWSER=webkit or via command line, --browserName=webkit
+  // environment BROWSER=webkit or via command line, --browse-name=webkit
   browserName: string;
   // Run tests in a headful mode, can be specified via environment HEADFUL=1 or via
-  // command line, --headful=true. Defaults to false.
+  // command line, --headful. Defaults to false.
   headful: boolean;
-  // Whether to take screenshots on failure, --screenshotOnFailure. Defaults to false.
+  // Whether to take screenshots on failure, --screenshot-on-failure. Defaults to false.
   screenshotOnFailure: boolean;
 };
 

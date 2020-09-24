@@ -63,3 +63,33 @@ it('should fail on invalid parameters', async ({ runInlineTest }) => {
   expect(result.output).toContain('a.spec.ts');
   expect(result.output).toContain(`Unregistered parameter 'invalid' was set.`);
 });
+
+it('should use kebab for CLI name', async ({ runInlineFixturesTest }) => {
+  const result = await runInlineFixturesTest({
+    'a.test.ts': `
+      const fixtures = baseFixtures.declareParameters<{ fooCamelCase: string }>();
+      fixtures.defineParameter('fooCamelCase', 'Foo parameters', 'foo');
+
+      const { it } = fixtures;
+
+      it('test', async ({ fooCamelCase }) => {
+        expect(fooCamelCase).toBe('kebab-value');
+      });
+    `
+  }, { 'foo-camel-case': 'kebab-value' });
+  expect(result.exitCode).toBe(0);
+});
+
+it('should respect boolean CLI option', async ({ runInlineFixturesTest }) => {
+  const result = await runInlineFixturesTest({
+    'a.test.ts': `
+      const fixtures = baseFixtures.declareParameters<{ fooCamelCase: boolean }>();
+      fixtures.defineParameter('fooCamelCase', 'Foo parameters', false);
+      const { it } = fixtures;
+      it('test', async ({ fooCamelCase }) => {
+        expect(fooCamelCase).toBeTruthy();
+      });
+    `
+  }, { 'foo-camel-case': true });
+  expect(result.exitCode).toBe(0);
+});

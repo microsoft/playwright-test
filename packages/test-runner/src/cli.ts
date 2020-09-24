@@ -122,7 +122,7 @@ async function runStage1(command) {
   runAction = runStage2;
   program.allowUnknownOption(false);
   for (const param of parameterRegistrations)
-    program.option(`--${param.name} <value>`, param.description);
+    program.option(`--${toKebabCase(param.name)}${typeof param.defaultValue === 'boolean' ? '' : ' <value>'}`);
   program.parse(process.argv);
 }
 
@@ -189,4 +189,8 @@ function collectFiles(testDir: string, dir: string, filters: string[], testMatch
     }
   }
   return files;
+}
+
+function toKebabCase(name: string): string {
+  return name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 }

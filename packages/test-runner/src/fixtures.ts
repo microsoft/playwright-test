@@ -60,7 +60,7 @@ export let parameters: any = {};
 export type ParameterRegistration = {
   name: string;
   description: string;
-  defaultValue?: string;
+  defaultValue: string | number | boolean;
 };
 
 export const parameterRegistrations = new Map<string, ParameterRegistration>();
@@ -289,8 +289,8 @@ export function registerWorkerFixture(name: string, fn: (params: any, runTest: (
   innerRegisterFixture(name, 'worker', fn, registerWorkerFixture);
 }
 
-export function registerWorkerParameter(name: string, description: string, defaultValue?: any) {
-  parameterRegistrations.set(name, { name, description, defaultValue });
+export function registerWorkerParameter(parameter: ParameterRegistration) {
+  parameterRegistrations.set(parameter.name, parameter);
 }
 
 export function setParameterValues(name: string, values: any[]) {
