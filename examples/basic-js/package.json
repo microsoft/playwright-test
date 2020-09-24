@@ -1,6 +1,6 @@
 {
   "name": "playwright-basic-js",
-  "version": "0.3.27",
+  "version": "0.3.27-post",
   "directories": {
     "test": "tests"
   },

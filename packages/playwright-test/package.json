@@ -15,7 +15,7 @@
   },
   "main": "out/index.js",
   "dependencies": {
-    "@playwright/test-runner": "0.3.27",
+    "@playwright/test-runner": "0.3.27-post",
     "playwright": "^1.3.0"
   }
 }

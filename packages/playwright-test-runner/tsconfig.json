@@ -1,15 +1,15 @@
 {
   "extends": "../../tsconfig-base.json",
   "compilerOptions": {
-      "outDir": "out",
-      "rootDir": "src",
-      "strict": false,
-      "lib": ["esnext"]
+    "outDir": "out",
+    "rootDir": "src",
+    "strict": false,
+    "lib": ["esnext"]
   },
   "exclude": [
-      "out"
+    "out"
   ],
   "include": [
-      "src"
+    "src"
   ]
 }

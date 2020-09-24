@@ -68,9 +68,9 @@ class LineReporter extends BaseReporter {
   }
 
   onEnd() {
+    process.stdout.write(`\u001B[1A\u001B[2K`);
     super.onEnd();
-    console.log('');
-    this.printSlowTests();
+    this.epilogue(false);
   }
 }
 

@@ -42,7 +42,7 @@ export class BaseReporter implements Reporter  {
   constructor() {
     process.on('SIGINT', async () => {
       this.onEnd();
-      this.epilogue();
+      this.epilogue(true);
       process.exit(130);
     });
   }
@@ -108,23 +108,25 @@ export class BaseReporter implements Reporter  {
     this.duration = Date.now() - this.startTime;
   }
 
-  printSlowTests() {
+  private _printSlowTests() {
     const fileDurations = [...this.fileDurations.entries()];
     fileDurations.sort((a, b) => b[1] - a[1]);
+    let insertedGap = false;
     for (let i = 0; i < 10 && i < fileDurations.length; ++i) {
       const baseName = path.basename(fileDurations[i][0]);
       const duration = fileDurations[i][1];
       if (duration < 15000)
         break;
-      console.log(colors.yellow('Slow test: ') + baseName + colors.yellow(` (${milliseconds(duration)})`));
+      if (!insertedGap) {
+        insertedGap = true;
+        console.log();
+      }
+      console.log(colors.yellow('  Slow test: ') + baseName + colors.yellow(` (${milliseconds(duration)})`));
     }
     console.log();
   }
 
-  epilogue() {
-    console.log('');
-
-    this.printSlowTests();
+  epilogue(full: boolean) {
     console.log(colors.green(`  ${this.asExpected.length} passed`) + colors.dim(` (${milliseconds(this.duration)})`));
 
     if (this.skipped.length)
@@ -133,8 +135,10 @@ export class BaseReporter implements Reporter  {
     const filteredUnexpected = [...this.unexpected].filter(t => !this.hasResultWithStatus(t, 'timedOut'));
     if (filteredUnexpected.length) {
       console.log(colors.red(`  ${filteredUnexpected.length} failed`));
-      console.log('');
-      this._printFailures(filteredUnexpected);
+      if (full) {
+        console.log('');
+        this._printFailures(filteredUnexpected);
+      }
     }
 
     if (this.expectedFlaky.length)
@@ -143,22 +147,24 @@ export class BaseReporter implements Reporter  {
     if (this.unexpectedFlaky.length) {
       console.log(colors.red(`  ${this.unexpectedFlaky.length} unexpected flaky`));
       if (this.unexpectedFlaky.length) {
-        console.log('');
-        this._printFailures(this.unexpectedFlaky);
+        if (full) {
+          console.log('');
+          this._printFailures(this.unexpectedFlaky);
+        }
       }
     }
 
     const timedOut = [...this.unexpected].filter(t => this.hasResultWithStatus(t, 'timedOut'));
     if (timedOut.length) {
       console.log(colors.red(`  ${timedOut.length} timed out`));
-      console.log('');
-      this._printFailures(timedOut);
+      if (full) {
+        console.log('');
+        this._printFailures(timedOut);
+      }
     }
-    console.log('');
-    if (this.timeout) {
+    if (this.timeout)
       console.log(colors.red(`  Timed out waiting ${this.timeout / 1000}s for the entire test run`));
-      console.log('');
-    }
+    this._printSlowTests();
   }
 
   private _printFailures(failures: Test[]) {

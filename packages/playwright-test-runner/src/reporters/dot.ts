@@ -37,7 +37,7 @@ class DotReporter extends BaseReporter {
   onEnd() {
     super.onEnd();
     process.stdout.write('\n');
-    this.epilogue();
+    this.epilogue(true);
   }
 }
 

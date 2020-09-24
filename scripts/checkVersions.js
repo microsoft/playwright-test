@@ -37,7 +37,7 @@ module.exports = function(version, write) {
     for (const dependencyType of dependencyTypes) {
       for (const dep in json[dependencyType]) {
         if (names.has(dep) && !json[dependencyType][dep].startsWith('.'))
-          json[dependencyType][dep] = version;
+          json[dependencyType][dep] = fileName.includes('examples') ? version.replace('-post', '') : version;
       }
     }
     const goodContent = JSON.stringify(json, undefined, 2) + '\n';
@@ -45,7 +45,7 @@ module.exports = function(version, write) {
       if (write)
         fs.writeFileSync(fileName, goodContent, 'utf8');
       else
-        throw new Error(`Version number mismatch. Run yarn update-version <version>`);
+        throw new Error(`Version number mismatch in ${fileName}. Run yarn update-version <version>`);
     }
   }
 };

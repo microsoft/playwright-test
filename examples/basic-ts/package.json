@@ -1,6 +1,6 @@
 {
   "name": "playwright-basic-ts",
-  "version": "0.3.27",
+  "version": "0.3.27-post",
   "description": "",
   "directories": {
     "test": "tests"
