@@ -15,7 +15,7 @@
  */
 
 import { fixtures as baseFixtures } from '@playwright/test-runner';
-import { TestInfo } from '@playwright/test-runner';
+import { config, TestInfo } from '@playwright/test-runner';
 import expectLibrary from 'expect';
 import * as path from 'path';
 import { compare } from './golden';
@@ -54,7 +54,7 @@ fixtures.beforeEach(async ({ testInfo, snapshotDir, updateSnapshots }) => {
 });
 
 function toMatchImage(received: Buffer, name: string, options?: { threshold?: number }) {
-  const { pass, message } = compare(received, name, state.testInfo, path.join(state.testInfo.config.testDir, state.snapshotDir), state.updateSnapshots, options);
+  const { pass, message } = compare(received, name, state.testInfo, path.join(config.testDir, state.snapshotDir), state.updateSnapshots, options);
   return { pass, message: () => message };
 }
 expect.extend({ toMatchImage });

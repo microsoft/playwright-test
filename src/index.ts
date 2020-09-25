@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
+import { config, fixtures as baseFixtures } from '@playwright/test-runner';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as playwright from 'playwright';
 import rimraf from 'rimraf';
 import { promisify } from 'util';
-
-import { fixtures as baseFixtures } from '@playwright/test-runner';
-export { fixtures as baseFixtures } from '@playwright/test-runner';
 export { expect } from './matcher.fixtures';
-import * as playwright from 'playwright';
 
 const mkdtempAsync = promisify(fs.mkdtemp);
 const removeFolderAsync = promisify(rimraf);
@@ -182,11 +180,11 @@ fixtures.defineTestFixture('tmpDir', async ({ }, test) => {
 
 fixtures.overrideTestFixture('testOutputFile', async ({ testInfo, browserName }, runTest) => {
   const outputFile = async (suffix: string): Promise<string> => {
-    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
+    const relativePath = path.relative(config.testDir, testInfo.file)
         .replace(/\.spec\.[jt]s/, '')
         .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
     const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(testInfo.config.outputDir, relativePath, browserName, `${sanitizedTitle}-${suffix}`);
+    const assetPath = path.join(config.outputDir, relativePath, browserName, `${sanitizedTitle}-${suffix}`);
     await mkdirAsync(path.dirname(assetPath), {
       recursive: true
     });

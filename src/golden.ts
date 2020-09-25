@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { TestInfo } from '@playwright/test-runner';
+import { config, TestInfo } from '@playwright/test-runner';
 import  colors from 'colors/safe';
 import fs from 'fs';
 import jpeg from 'jpeg-js';
@@ -52,7 +52,7 @@ function compareImages(actualBuffer: Buffer, expectedBuffer: Buffer, mimeType: s
 
 export function compare(actual: Buffer, name: string, testInfo: TestInfo, snapshotDir: string, updateSnapshots: boolean, options?: { threshold?: number }): { pass: boolean; message?: string; } {
   let expectedPath: string;
-  const relativeTestFile = path.relative(testInfo.config.testDir, testInfo.file);
+  const relativeTestFile = path.relative(config.testDir, testInfo.file);
   const testAssetsDir = relativeTestFile.replace(/\.spec\.[jt]s/, '');
   if (path.isAbsolute(name))
     expectedPath = name;
@@ -96,7 +96,7 @@ export function compare(actual: Buffer, name: string, testInfo: TestInfo, snapsh
     actualPath = addSuffix(expectedPath, '-actual');
     diffPath = addSuffix(expectedPath, '-diff', result.diffExtension);
   } else {
-    const outputPath = path.join(testInfo.config.outputDir, testAssetsDir, name);
+    const outputPath = path.join(config.outputDir, testAssetsDir, name);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     const expectedPathOut = addSuffix(outputPath, '-expected');
     actualPath = addSuffix(outputPath, '-actual');
