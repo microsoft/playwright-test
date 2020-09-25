@@ -15,7 +15,7 @@
  */
 
 import { fixtures as baseFixtures } from '@playwright/test-runner';
-import { TestInfo } from '@playwright/test-runner/out/fixtures';
+import { TestInfo } from '@playwright/test-runner';
 import expectLibrary from 'expect';
 import * as path from 'path';
 import { compare } from './golden';

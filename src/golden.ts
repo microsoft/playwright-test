@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { TestInfo } from '@playwright/test-runner/out/fixtures';
+import { TestInfo } from '@playwright/test-runner';
 import  colors from 'colors/safe';
 import fs from 'fs';
 import jpeg from 'jpeg-js';
