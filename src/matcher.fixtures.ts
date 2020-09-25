@@ -28,7 +28,14 @@ type MatcherParameters = {
   updateSnapshots: boolean;
 };
 
-const fixtures = baseFixtures.declareParameters<MatcherParameters>();
+type MatcherTestFixtures = {
+  // Automatically installs image matcher.
+  expectToMatchImage: undefined;
+};
+
+const fixtures = baseFixtures
+  .declareParameters<MatcherParameters>()
+  .declareTestFixtures<MatcherTestFixtures>();
 
 // Parameter and matrix definitions --------------------------------------------
 
@@ -49,9 +56,10 @@ let state: {
   updateSnapshots: boolean;
 };
 
-fixtures.beforeEach(async ({ testInfo, snapshotDir, updateSnapshots }) => {
+fixtures.defineTestFixture('expectToMatchImage',  async ({ testInfo, snapshotDir, updateSnapshots }, runTest) => {
   state = { testInfo, snapshotDir, updateSnapshots };
-});
+  await runTest(undefined);
+}, { auto: true });
 
 function toMatchImage(received: Buffer, name: string, options?: { threshold?: number }) {
   const { pass, message } = compare(received, name, state.testInfo, path.join(config.testDir, state.snapshotDir), state.updateSnapshots, options);
