@@ -4,9 +4,11 @@
 
 Build an end-to-end test suite with Playwright.
 
-- **Parallelized execution** across multiple browsers.
-- **Annotate your tests** to mark your tests as `flaky`, `fixme`, `skip`, `slow` or `fail` and get better reporting.
-- **Shape your tests** with built-in and custom fixtures.
+- [**Parallelized execution**](#parallelized-execution) across multiple browsers.
+- Setup your environment with [**test fixtures**](#setup-environment-with-fixtures).
+- [**Parameterize your tests**](#parameterize-your-tests) to run tests against all scenarios.
+- [**Annotate your tests**](#annotate-your-tests) to mark flaky or slow tests.
+- Use Jest-like [syntax for specs](#spec-syntax) and [assertions](#assertions).
 - Control test execution with test retries.
 - Built-in support for **TypeScript**.
 
@@ -58,8 +60,74 @@ See all options
 npx test-runner --help
 ```
 
-## Test fixtures
-TODO
+## Parallelized execution
+The test runner launches a number of worker processes to parallelize test execution. By default, this number is equal to number of CPU cores divided by 2. Each worker process runs a browser and some tests.
+
+To run in serial, use the `--jobs` flag.
+
+```
+npx test-runner --jobs 1
+```
+
+## Setup environment with fixtures
+Fixtures initialize your test functions. Fixtures can be used to set up the test environment with services and state that are required by the test.
+
+For end-to-end testing, this test runner sets up a page in a browser. This behavior
+can be customized.
+
+#### Default fixtures
+* Each worker process launches a browser (this is the `browser` fixture).
+  * The `browser` fixture uses the `defaultBrowserOptions` fixture to define [browser launch options][browser-opts].
+* Each worker runs tests.
+* Each test is provided a browser context (`context` fixture) and a page (`page` fixture). Browser contexts are isolated execution environments that share a browser instance.
+  * The `context` fixture uses the `defaultContextOptions` fixture to define [context options][context-opts].
+
+Examples
+
+```js
+// Test uses the page fixture
+it('should load the website', async ({ page }) => {
+  await page.goto('https://playwright.dev');
+  expect(await page.title()).toContain('Playwright');
+});
+
+// Test uses the context fixture and launches multiple pages
+it('should load two pages', async ({ context }) => {
+  const pageOne = await context.newPage();
+  const pageTwo = await context.newPage();
+  // ...
+})
+```
+
+#### Override default fixtures
+Default options can be overriden to specific testing requirements. For example, `defaultContextOptions` can be modified to launch browser contexts with mobile emulation.
+
+```js
+const { fixtures } = require('@playwright/test');
+const { devices } = require('playwright');
+
+fixtures.overrideTestFixture('defaultContextOptions', async ({}, test) => {
+  await test({ ...devices['iPhone 11'] })
+});
+```
+
+#### Define custom fixtures
+It is possible to define custom fixtures to setup the test environment. If the fixture is to be shared across tests, define a worker-level fixture. If not, use test-level fixtures.
+
+For example, we can extend the default `page` fixture to navigate to a URL before running the tests. This will be a test-level fixture. This can be further extended to wrap the page into a page object model.
+
+```js
+fixtures.defineTestFixture('homePage', async({page}, test) => {
+  await page.goto('https://playwright.dev/');
+  test(page);
+});
+
+it('should be on the homepage', async ({homePage}) => { 
+  expect(await homePage.title()).toContain('Playwright');
+});
+```
+
+TODO: How to add TypeScript support with `declareTestFixtures`
 
 ## Parameterize your tests
 A common pattern with end-to-end tests is to run test suites against multiple
@@ -90,6 +158,8 @@ it('should add item to cart', async ({ appUrl }) => {
   // ...
 })
 ```
+
+TODO: How to add TypeScript support with `declareParameters`
 
 To run tests with a custom value for the parameter, convert the name of the parameter
 into kebab-case (`appUrl` becomes `app-url`)
@@ -146,3 +216,7 @@ Tests can be wrapped inside `describe` blocks to structure tests.
 
 For assertions, the test runner uses the popular [expect](https://www.npmjs.com/package/expect) package. See
 [expect API reference](https://jestjs.io/docs/en/expect).
+
+
+[browser-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsertypelaunchoptions
+[context-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsernewcontextoptions
