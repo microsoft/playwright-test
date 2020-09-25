@@ -117,3 +117,32 @@ it('should add item to cart', (test, params) => {
   // Test content
 })
 ```
+
+## Spec syntax
+
+To run a single test use `fit` or `it.only`.
+
+```js
+const { it, fit } = require('@playwright/test');
+
+it.only('should be focused', ...);
+// Alternatively
+fit('should be focused', ...);
+```
+
+To skip a test use `xit` or `it.skip`.
+
+```js
+const { it, fit } = require('@playwright/test');
+
+it.skip('should be skipped', ...);
+// Alternatively
+xit('should be skipped', ...);
+```
+
+Tests can be wrapped inside `describe` blocks to structure tests.
+
+## Assertions
+
+For assertions, the test runner uses the popular [expect](https://www.npmjs.com/package/expect) package. See
+[expect API reference](https://jestjs.io/docs/en/expect).
