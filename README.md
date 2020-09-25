@@ -119,7 +119,7 @@ For example, we can extend the default `page` fixture to navigate to a URL befor
 ```js
 fixtures.defineTestFixture('homePage', async({page}, test) => {
   await page.goto('https://playwright.dev/');
-  test(page);
+  await test(page);
 });
 
 it('should be on the homepage', async ({homePage}) => { 
