@@ -21,6 +21,8 @@ import rimraf from 'rimraf';
 import { promisify } from 'util';
 
 import { fixtures as baseFixtures } from '@playwright/test-runner';
+export { fixtures as baseFixtures } from '@playwright/test-runner';
+export { expect } from './matcher.fixtures';
 import * as playwright from 'playwright';
 
 const mkdtempAsync = promisify(fs.mkdtemp);
@@ -88,8 +90,6 @@ export const beforeEach = fixtures.beforeEach;
 export const afterEach = fixtures.afterEach;
 export const beforeAll = fixtures.beforeAll;
 export const afterAll = fixtures.afterAll;
-export const expect = fixtures.expect;
-
 
 // Parameter and matrix definitions --------------------------------------------
 
