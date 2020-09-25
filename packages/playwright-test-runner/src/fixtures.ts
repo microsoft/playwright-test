@@ -40,6 +40,7 @@ export type TestInfo = {
   config: Config;
   parameters: Parameters;
   workerIndex: number;
+  retry: number;
 
   // Modifiers
   expectedStatus: TestStatus;

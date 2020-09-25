@@ -148,7 +148,7 @@ export class WorkerRunner extends EventEmitter {
       return;
     if (!this._entries.has(test._id))
       return;
-    const { timeout, expectedStatus, skipped } = this._entries.get(test._id);
+    const { timeout, expectedStatus, skipped, retry } = this._entries.get(test._id);
     this._remaining.delete(test._id);
 
     const testId = test._id;
@@ -162,7 +162,8 @@ export class WorkerRunner extends EventEmitter {
       config: this._config,
       parameters,
       workerIndex: this._workerIndex,
-      expectedStatus: expectedStatus,
+      retry,
+      expectedStatus,
       duration: 0,
       status: 'passed',
       stdout: [],

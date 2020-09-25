@@ -17,6 +17,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import rimraf from 'rimraf';
 import { promisify } from 'util';
 import { Config } from './config';
 import { expect as expectFunction } from './expect';
@@ -25,6 +26,8 @@ import * as spec from './spec';
 import { TestModifier } from './testModifier';
 
 const mkdirAsync = promisify(fs.mkdir);
+const readdirAsync = promisify(fs.readdir);
+const removeFolderAsync = promisify(rimraf);
 
 interface DescribeHelper<WorkerParameters> {
   describe(name: string, inner: () => void): void;
@@ -135,8 +138,10 @@ type BuiltinWorkerFixtures = {
 type BuiltinTestFixtures = {
   // Information about the test being run.
   testInfo: TestInfo;
+  // Output directory for a particular test run.
+  testOutputDir: string;
   // File name for an artifact this test intends to write.
-  testOutputFile: (suffix: string) => Promise<string>;
+  testOutputFile: (relativePath: string) => Promise<string>;
 };
 
 export const fixtures = new FixturesImpl<BuiltinWorkerParameters, BuiltinWorkerFixtures, BuiltinTestFixtures>();
@@ -157,17 +162,27 @@ fixtures.defineTestFixture('testInfo', async ({}, runTest) => {
   await runTest(undefined as any);
 });
 
-fixtures.defineTestFixture('testOutputFile', async ({ testInfo }, runTest) => {
-  const outputFile = async (suffix: string): Promise<string> => {
-    const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
-        .replace(/\.spec\.[jt]s/, '')
-        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
-    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(testInfo.config.outputDir, relativePath, `${sanitizedTitle}-${suffix}`);
-    await mkdirAsync(path.dirname(assetPath), {
-      recursive: true
-    });
+fixtures.defineTestFixture('testOutputDir', async ({ testInfo }, runTest) => {
+  const relativePath = path.relative(testInfo.config.testDir, testInfo.file)
+      .replace(/\.spec\.[jt]s/, '')
+      .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
+  const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_') + (testInfo.retry ? '_retry' + testInfo.retry : '');
+  const testOutputDir = path.join(testInfo.config.outputDir, relativePath, sanitizedTitle);
+  await mkdirAsync(testOutputDir, { recursive: true });
+
+  await runTest(testOutputDir);
+
+  // Do not leave an empty useless directory.
+  const files = await readdirAsync(testOutputDir);
+  if (!files.length)
+    await removeFolderAsync(testOutputDir).catch(e => {});
+});
+
+fixtures.defineTestFixture('testOutputFile', async ({ testOutputDir }, runTest) => {
+  const testOutputFile = async (relativePath: string): Promise<string> => {
+    const assetPath = path.join(testOutputDir, relativePath);
+    await mkdirAsync(path.dirname(assetPath), { recursive: true });
     return assetPath;
   };
-  await runTest(outputFile);
+  await runTest(testOutputFile);
 });
