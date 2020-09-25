@@ -34,8 +34,8 @@ type MatcherTestFixtures = {
 };
 
 const fixtures = baseFixtures
-  .declareParameters<MatcherParameters>()
-  .declareTestFixtures<MatcherTestFixtures>();
+    .declareParameters<MatcherParameters>()
+    .declareTestFixtures<MatcherTestFixtures>();
 
 // Parameter and matrix definitions --------------------------------------------
 
