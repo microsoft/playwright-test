@@ -33,31 +33,31 @@ it('is a basic test with the page', async ({page}) => {
 Run all tests across Chromium, Firefox and WebKit
 
 ```
-npx test-runner
+npx test
 ```
 
 Run tests on a single browser
 
 ```
-npx test-runner --browser-name=chromium
+npx test --browser-name=chromium
 ```
 
 Run all tests in headful mode
 
 ```
-npx test-runner --headful
+npx test --headful
 ```
 
 Take screenshots on failure
 
 ```
-npx test-runner --screenshot-on-failure
+npx test --screenshot-on-failure
 ```
 
 See all options
 
 ```
-npx test-runner --help
+npx test --help
 ```
 
 ## Parallelized execution
@@ -66,7 +66,7 @@ The test runner launches a number of worker processes to parallelize test execut
 To run in serial, use the `--jobs` flag.
 
 ```
-npx test-runner --jobs 1
+npx test --jobs 1
 ```
 
 ## Setup environment with fixtures
@@ -122,7 +122,7 @@ fixtures.defineTestFixture('homePage', async({page}, test) => {
   await test(page);
 });
 
-it('should be on the homepage', async ({homePage}) => { 
+it('should be on the homepage', async ({homePage}) => {
   expect(await homePage.title()).toContain('Playwright');
 });
 ```
@@ -165,7 +165,7 @@ To run tests with a custom value for the parameter, convert the name of the para
 into kebab-case (`appUrl` becomes `app-url`)
 
 ```
-npx test-runner --app-url=https://newlocation.app
+npx test --app-url=https://newlocation.app
 ```
 
 ## Annotate your tests
