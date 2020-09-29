@@ -53,16 +53,19 @@ declare module 'expect/build/types' {
 let state: {
   testInfo: TestInfo;
   snapshotDir: string;
+  testOutputPath: (name: string) => string;
+  testRelativeArtifactsPath: string;
   updateSnapshots: boolean;
 };
 
-fixtures.defineTestFixture('expectToMatchImage',  async ({ testInfo, snapshotDir, updateSnapshots }, runTest) => {
-  state = { testInfo, snapshotDir, updateSnapshots };
+fixtures.defineTestFixture('expectToMatchImage',  async ({ testInfo, testOutputPath, testRelativeArtifactsPath, snapshotDir, updateSnapshots }, runTest) => {
+  state = { testInfo, snapshotDir, updateSnapshots, testOutputPath, testRelativeArtifactsPath };
   await runTest(undefined);
 }, { auto: true });
 
 function toMatchImage(received: Buffer, name: string, options?: { threshold?: number }) {
-  const { pass, message } = compare(received, name, state.testInfo, path.join(config.testDir, state.snapshotDir), state.updateSnapshots, options);
+  const snapshotFile = path.join(config.testDir, state.snapshotDir, state.testRelativeArtifactsPath, name);
+  const { pass, message } = compare(received, name, snapshotFile, state.testOutputPath, state.updateSnapshots, options);
   return { pass, message: () => message };
 }
 expect.extend({ toMatchImage });

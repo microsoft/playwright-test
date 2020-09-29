@@ -15,133 +15,164 @@
  */
 
 import { config, fixtures as baseFixtures } from '@playwright/test-runner';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import * as playwright from 'playwright';
-import rimraf from 'rimraf';
-import { promisify } from 'util';
-export { expect } from './matcher.fixtures';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import util from 'util';
+import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
 
-const mkdtempAsync = promisify(fs.mkdtemp);
-const removeFolderAsync = promisify(rimraf);
-const mkdirAsync = promisify(fs.mkdir);
+const mkdtempAsync = util.promisify(fs.mkdtemp);
+const removeFolderAsync = util.promisify(require('rimraf'));
+
 
 // Parameter declarations ------------------------------------------------------
 
 type PlaywrightParameters = {
   // Browser name, one of 'chromium', 'webkit' and 'firefox', can be specified via
   // environment BROWSER=webkit or via command line, --browser-name=webkit
-  browserName: string;
+  browserName: 'chromium' | 'firefox' | 'webkit';
   // Run tests in a headful mode, can be specified via environment HEADFUL=1 or via
   // command line, --headful. Defaults to false.
   headful: boolean;
+  // Slows down Playwright operations by the specified amount of milliseconds.
+  // Useful so that you can see what is going on. Defaults to 0.
+  slowMo: number;
   // Whether to take screenshots on failure, --screenshot-on-failure. Defaults to false.
   screenshotOnFailure: boolean;
+  // Whether to record the execution trace
+  trace: boolean;
+  // Host platform
+  platform: 'win32' | 'linux' | 'darwin';
 };
+
 
 // Worker fixture declarations -------------------------------------------------
-// ... those are the same for all the test in the test file.
+// ... these live as long as the worker process.
 
 type PlaywrightWorkerFixtures = {
+  // Playwright library.
+  playwright: typeof import('playwright');
   // Browser type (Chromium / WebKit / Firefox)
-  browserType: playwright.BrowserType<playwright.Browser>;
+  browserType: BrowserType<Browser>;
   // Default browserType.launch() options.
-  defaultBrowserOptions: playwright.LaunchOptions;
+  defaultBrowserOptions: LaunchOptions;
   // Factory for creating a browser with given additional options.
-  browserFactory: (options?: playwright.LaunchOptions) => Promise<playwright.Browser>;
+  browserFactory: (options?: LaunchOptions) => Promise<Browser>;
   // Browser instance, shared for the worker.
-  browser: playwright.Browser;
+  browser: Browser;
+  // True iff browserName is Chromium
+  isChromium: boolean;
+  // True iff browserName is Firefox
+  isFirefox: boolean;
+  // True iff browserName is WebKit
+  isWebKit: boolean;
+  // True iff running on Windows.
+  isWindows: boolean;
+  // True iff running on Mac.
+  isMac: boolean;
+  // True iff running on Linux.
+  isLinux: boolean;
 };
 
-// Test fixtures declarations, those are create for each test ------------------
+
+// Test fixture definitions, those are created for each test ------------------
 
 type PlaywrightTestFixtures = {
   // Default browser.newContext() options.
-  defaultContextOptions: playwright.BrowserContextOptions;
+  defaultContextOptions: BrowserContextOptions;
   // Factory for creating a context with given additional options.
-  contextFactory: (options?: playwright.BrowserContextOptions) => Promise<playwright.BrowserContext>;
+  contextFactory: (options?: BrowserContextOptions) => Promise<BrowserContext>;
   // Context instance for test.
-  context: playwright.BrowserContext;
+  context: BrowserContext;
   // Page instance for test.
-  page: playwright.Page;
+  page: Page;
   // Temporary directory for this test's artifacts.
   tmpDir: string;
 };
-
-// Create the fixtures based on above ------------------------------------------
 
 export const fixtures = baseFixtures
     .declareParameters<PlaywrightParameters>()
     .declareWorkerFixtures<PlaywrightWorkerFixtures>()
     .declareTestFixtures<PlaywrightTestFixtures>();
 
-// Re-export all the test primitives for convenience.
-
-export const it = fixtures.it;
-export const fit = fixtures.fit;
-export const xit = fixtures.xit;
-export const describe = fixtures.describe;
-export const fdescribe = fixtures.fdescribe;
-export const xdescribe = fixtures.xdescribe;
-export const beforeEach = fixtures.beforeEach;
-export const afterEach = fixtures.afterEach;
-export const beforeAll = fixtures.beforeAll;
-export const afterAll = fixtures.afterAll;
-
 // Parameter and matrix definitions --------------------------------------------
 
-fixtures.defineParameter('browserName', 'Browser type name', '');
+fixtures.defineParameter('browserName', 'Browser type name', process.env.BROWSER || 'chromium' as any);
 fixtures.defineParameter('headful', 'Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
+fixtures.defineParameter('platform', 'Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
 fixtures.defineParameter('screenshotOnFailure', 'Generate screenshot on failure', false);
+fixtures.defineParameter('slowMo', 'Slows down Playwright operations by the specified amount of milliseconds', 0);
+fixtures.defineParameter('trace', 'Whether to record the execution trace', !!process.env.TRACING || false);
 
 // If browser is not specified, we are running tests against all three browsers.
 fixtures.generateParametrizedTests(
     'browserName',
-    process.env.BROWSER ? [process.env.BROWSER] : ['chromium', 'webkit', 'firefox']);
-
+    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
 
 // Worker fixtures definitions -------------------------------------------------
 
-fixtures.defineWorkerFixture('browserType', async ({ browserName }, test) => {
-  const browserType = playwright[browserName as 'chromium' | 'firefox' | 'webkit'];
-  await test(browserType);
-});
-
-fixtures.defineWorkerFixture('defaultBrowserOptions', async ({ headful }, test) => {
-  await test({
+fixtures.defineWorkerFixture('defaultBrowserOptions', async ({ headful, slowMo }, runTest) => {
+  await runTest({
     handleSIGINT: false,
-    ...{ headless: !headful }
+    slowMo,
+    headless: !headful,
+    artifactsPath: config.outputDir,
   });
 });
 
-fixtures.defineWorkerFixture('browserFactory', async ({ browserType, defaultBrowserOptions }, runTest) => {
-  const browsers: playwright.Browser[] = [];
-  async function browserFactory(options: playwright.LaunchOptions = {}) {
-    const browser = await browserType.launch({ ...defaultBrowserOptions, ...options });
-    browsers.push(browser);
-    return browser;
-  }
-  await runTest(browserFactory);
-  for (const browser of browsers)
-    await browser.close();
+fixtures.defineWorkerFixture('playwright', async ({}, runTest) => {
+  const playwright = require('../index');
+  await runTest(playwright);
 });
 
-fixtures.defineWorkerFixture('browser', async ({browserType, defaultBrowserOptions}, test) => {
+fixtures.defineWorkerFixture('browserType', async ({playwright, browserName}, runTest) => {
+  const browserType = playwright[browserName];
+  await runTest(browserType);
+});
+
+fixtures.defineWorkerFixture('browser', async ({browserType, defaultBrowserOptions}, runTest) => {
   const browser = await browserType.launch(defaultBrowserOptions);
-  await test(browser);
+  await runTest(browser);
   await browser.close();
+});
+
+fixtures.defineWorkerFixture('isChromium', async ({browserName}, runTest) => {
+  await runTest(browserName === 'chromium');
+});
+
+fixtures.defineWorkerFixture('isFirefox', async ({browserName}, runTest) => {
+  await runTest(browserName === 'firefox');
+});
+
+fixtures.defineWorkerFixture('isWebKit', async ({browserName}, runTest) => {
+  await runTest(browserName === 'webkit');
+});
+
+fixtures.defineWorkerFixture('isWindows', async ({platform}, test) => {
+  await test(platform === 'win32');
+});
+
+fixtures.defineWorkerFixture('isMac', async ({platform}, test) => {
+  await test(platform === 'darwin');
+});
+
+fixtures.defineWorkerFixture('isLinux', async ({platform}, test) => {
+  await test(platform === 'linux');
 });
 
 // Test fixtures definitions ---------------------------------------------------
 
-fixtures.defineTestFixture('defaultContextOptions', async ({}, test) => {
-  await test({});
+fixtures.defineTestFixture('defaultContextOptions', async ({ testRelativeArtifactsPath, trace }, runTest) => {
+  await runTest({
+    relativeArtifactsPath: testRelativeArtifactsPath,
+    recordTrace: trace,
+    recordVideos: trace,
+  });
 });
 
-fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure, testOutputFile }, runTest) => {
-  const contexts: playwright.BrowserContext[] = [];
-  async function contextFactory(options: playwright.BrowserContextOptions = {}) {
+fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure, testOutputPath }, runTest) => {
+  const contexts: BrowserContext[] = [];
+  async function contextFactory(options: BrowserContextOptions = {}) {
     const context = await browser.newContext({ ...defaultContextOptions, ...options });
     contexts.push(context);
     return context;
@@ -152,43 +183,32 @@ fixtures.defineTestFixture('contextFactory', async ({ browser, defaultContextOpt
     let ordinal = 0;
     for (const context of contexts) {
       for (const page of context.pages())
-        await page.screenshot({ timeout: 5000, path: await testOutputFile(`test-failed-${++ordinal}.png`) });
-
+        await page.screenshot({ timeout: 5000, path: testOutputPath(`test-failed-${++ordinal}.png`) });
     }
   }
-
   for (const context of contexts)
     await context.close();
 });
 
-fixtures.defineTestFixture('context', async ({ contextFactory }, test) => {
+fixtures.defineTestFixture('context', async ({ contextFactory }, runTest) => {
   const context = await contextFactory();
-  await test(context);
-  // context factory is taking care of closing the context.
+  await runTest(context);
+  // Context factory is taking care of closing the context,
+  // so that it could capture a screenshot on failure.
 });
 
 fixtures.defineTestFixture('page', async ({context}, runTest) => {
   // Always create page off context so that they matched.
   await runTest(await context.newPage());
+  // Context fixture is taking care of closing the page.
 });
 
-fixtures.defineTestFixture('tmpDir', async ({ }, test) => {
+fixtures.defineTestFixture('tmpDir', async ({ }, runTest) => {
   const tmpDir = await mkdtempAsync(path.join(os.tmpdir(), 'playwright-test-'));
-  await test(tmpDir);
-  await removeFolderAsync(tmpDir).catch(e => { });
+  await runTest(tmpDir);
+  await removeFolderAsync(tmpDir).catch(() => { });
 });
 
-fixtures.overrideTestFixture('testOutputFile', async ({ testInfo, browserName }, runTest) => {
-  const outputFile = async (suffix: string): Promise<string> => {
-    const relativePath = path.relative(config.testDir, testInfo.file)
-        .replace(/\.spec\.[jt]s/, '')
-        .replace(new RegExp(`(tests|test|src)${path.sep}`), '');
-    const sanitizedTitle = testInfo.title.replace(/[^\w\d]+/g, '_');
-    const assetPath = path.join(config.outputDir, relativePath, browserName, `${sanitizedTitle}-${suffix}`);
-    await mkdirAsync(path.dirname(assetPath), {
-      recursive: true
-    });
-    return assetPath;
-  };
-  await runTest(outputFile);
+fixtures.overrideTestFixture('testParametersArtifactsPath', async ({ browserName, platform }, runTest) => {
+  await runTest(browserName + '-' + platform);
 });

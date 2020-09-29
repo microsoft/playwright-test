@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import { config, TestInfo } from '@playwright/test-runner';
 import  colors from 'colors/safe';
 import fs from 'fs';
 import jpeg from 'jpeg-js';
@@ -50,30 +49,23 @@ function compareImages(actualBuffer: Buffer, expectedBuffer: Buffer, mimeType: s
   return count > 0 ? { diff: PNG.sync.write(diff) } : null;
 }
 
-export function compare(actual: Buffer, name: string, testInfo: TestInfo, snapshotDir: string, updateSnapshots: boolean, options?: { threshold?: number }): { pass: boolean; message?: string; } {
-  let expectedPath: string;
-  const relativeTestFile = path.relative(config.testDir, testInfo.file);
-  const testAssetsDir = relativeTestFile.replace(/\.spec\.[jt]s/, '');
-  if (path.isAbsolute(name))
-    expectedPath = name;
-  else
-    expectedPath = path.join(snapshotDir, testAssetsDir, name);
-  if (!fs.existsSync(expectedPath)) {
-    fs.mkdirSync(path.dirname(expectedPath), { recursive: true });
-    fs.writeFileSync(expectedPath, actual);
+export function compare(actual: Buffer, name: string, snapshotFile: string, testOutputPath: (name: string) => string, updateSnapshots: boolean, options?: { threshold?: number }): { pass: boolean; message?: string; } {
+  if (!fs.existsSync(snapshotFile)) {
+    fs.mkdirSync(path.dirname(snapshotFile), { recursive: true });
+    fs.writeFileSync(snapshotFile, actual);
     return {
       pass: false,
-      message: expectedPath + ' is missing in golden results, writing actual.'
+      message: snapshotFile + ' is missing in golden results, writing actual.'
     };
   }
-  const expected = fs.readFileSync(expectedPath);
-  const extension = path.extname(expectedPath).substring(1);
+  const expected = fs.readFileSync(snapshotFile);
+  const extension = path.extname(snapshotFile).substring(1);
   const mimeType = extensionToMimeType[extension];
   const comparator = GoldenComparators[mimeType];
   if (!comparator) {
     return {
       pass: false,
-      message: 'Failed to find comparator with type ' + mimeType + ': '  + expectedPath,
+      message: 'Failed to find comparator with type ' + mimeType + ': '  + snapshotFile,
     };
   }
 
@@ -82,27 +74,19 @@ export function compare(actual: Buffer, name: string, testInfo: TestInfo, snapsh
     return { pass: true };
 
   if (updateSnapshots) {
-    fs.mkdirSync(path.dirname(expectedPath), { recursive: true });
-    fs.writeFileSync(expectedPath, actual);
+    fs.mkdirSync(path.dirname(snapshotFile), { recursive: true });
+    fs.writeFileSync(snapshotFile, actual);
+    console.log('Updating snapshot at ' + snapshotFile);
     return {
       pass: true,
-      message: expectedPath + ' running with --update-snapshots, writing actual.'
+      message: snapshotFile + ' running with --p-update-snapshots, writing actual.'
     };
   }
-
-  let actualPath;
-  let diffPath;
-  if (path.isAbsolute(name)) {
-    actualPath = addSuffix(expectedPath, '-actual');
-    diffPath = addSuffix(expectedPath, '-diff', result.diffExtension);
-  } else {
-    const outputPath = path.join(config.outputDir, testAssetsDir, name);
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    const expectedPathOut = addSuffix(outputPath, '-expected');
-    actualPath = addSuffix(outputPath, '-actual');
-    diffPath = addSuffix(outputPath, '-diff', result.diffExtension);
-    fs.writeFileSync(expectedPathOut, expected);
-  }
+  const outputFile = testOutputPath(name);
+  const expectedPath = addSuffix(outputFile, '-expected');
+  const actualPath = addSuffix(outputFile, '-actual');
+  const diffPath = addSuffix(outputFile, '-diff');
+  fs.writeFileSync(expectedPath, expected);
   fs.writeFileSync(actualPath, actual);
   if (result.diff)
     fs.writeFileSync(diffPath, result.diff);
