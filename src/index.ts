@@ -121,7 +121,7 @@ fixtures.defineWorkerFixture('defaultBrowserOptions', async ({ headful, slowMo }
 });
 
 fixtures.defineWorkerFixture('playwright', async ({}, runTest) => {
-  const playwright = require('../index');
+  const playwright = require('playwright');
   await runTest(playwright);
 });
 
