@@ -1,5 +1,7 @@
 # 🎭 playwright-test
 
+[![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
+
 > 🚧 This project is under development. See [Test runner integrations](https://playwright.dev/#path=docs%2Ftest-runners.md&q=) to use Jest or Mocha with Playwright.
 
 Build an end-to-end test suite with Playwright.
