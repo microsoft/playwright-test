@@ -1,66 +1,93 @@
-# 🎭 playwright-test
+# 🎭 End-to-end web tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
-[![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
+Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and support for TypeScript.
 
-> 🚧 This project is under development. See [Test runner integrations](https://playwright.dev/#path=docs%2Ftest-runners.md&q=) to use Jest or Mocha with Playwright.
-
-Build an end-to-end test suite with Playwright.
-
-- [**Parallelized execution**](#parallelized-execution) across multiple browsers.
-- Setup your environment with [**test fixtures**](#setup-environment-with-fixtures).
-- [**Parameterize your tests**](#parameterize-your-tests) to run tests against all scenarios.
-- [**Annotate your tests**](#annotate-your-tests) to mark flaky or slow tests.
-- Use Jest-like [syntax for specs](#spec-syntax) and [assertions](#assertions).
-- Control test execution with test retries.
-- Built-in support for **TypeScript**.
+- [Get started](#get-started)
+  - [Installation](#installation)
+  - [Write a test](#write-a-test)
+  - [Run the test](#run-the-test)
+- Examples
+  - Multiple pages
+  - Mobile emulation
+  - Network mocking
+- Customize your suite
+  - Annotations
+  - Parameters
+  - Fixtures
+  - Parallel execution
+  - Retries
 
 ## Get started
+### Installation
+
 ```
-npm i -D @playwright/test
+npm i -D @playwright/test @playwright/test-runner
 ```
 
-Place tests in files ending with `.spec.js` or `.spec.ts`.
+### Write a test
+Create `foo.spec.ts` (or `foo.spec.js`) to define your test. Playwright provides a [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument to the test function.
 
 ```js
-// src/foo.spec.ts
+// tests/foo.spec.ts
 const { it, expect } = require('@playwright/test');
 
-it('is a basic test with the page', async ({page}) => {
+it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
   const home = await page.waitForSelector('home-navigation');
-  expect(await home.evaluate(home => home.innerText)).toBe('🎭 Playwright');
+  expect(await home.innerText()).toBe('🎭 Playwright');
 });
 ```
 
-Run all tests across Chromium, Firefox and WebKit
+#### Default arguments
+This package provides browser primitives as arguments to your test functions. Tests can use one or more of these primitives.
 
+Learn how to customize or create your own arguments with [test fixtures](#fixtures).
+
+* `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
+* `context`: Instance of [BrowserContext](https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext). Each test gets a new isolated context to run the test. The `page` object belongs to this context.
+* `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
+
+#### Spec syntax
+
+Use `it` and `describe` to write test functions. 
+
+```js
+const { it, describe, beforeAll, beforeEach, afterAll, afterEach } = require('@playwright/test');
+
+describe('feature foo', () => {
+  it('is working correctly', async ({ page }) => {
+    // Test function
+    // ...
+  })
+});
 ```
+
+To run a single test use `fit` or `it.only`. To skip a test use `xit` or `it.skip`. See [annotations](#annotations) to mark tests as slow, flaky or fixme.
+
+#### Assertions
+For assertions, the test runner uses the [expect](https://www.npmjs.com/package/expect) package. See [expect API reference](https://jestjs.io/docs/en/expect).
+
+### Run the test
+Tests can be run on single or multiple browsers and with flags to generate screenshot on test failures.
+
+```sh
+# Run all tests across Chromium, Firefox and WebKit
 npx test-runner
-```
 
-Run tests on a single browser
-
-```
+# Run tests on a single browser
 npx test-runner --browser-name=chromium
-```
 
-Run all tests in headful mode
-
-```
+# Run all tests in headful mode
 npx test-runner --headful
-```
 
-Take screenshots on failure
-
-```
+# Take screenshots on failure
 npx test-runner --screenshot-on-failure
-```
 
-See all options
-
-```
+# See all options
 npx test-runner --help
 ```
+
+-----------
 
 ## Parallelized execution
 The test runner launches a number of worker processes to parallelize test execution. By default, this number is equal to number of CPU cores divided by 2. Each worker process runs a browser and some tests.
