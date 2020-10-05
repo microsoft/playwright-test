@@ -59,112 +59,112 @@ type PlaywrightTestFixtures = {
 };
 
 export const fixtures = baseFixtures
-  .defineParameter('browserName', 'Browser type name', process.env.BROWSER || 'chromium' as any)
-  .defineParameter('headful', 'Whether to run tests headless or headful', process.env.HEADFUL ? true : false)
-  .defineParameter('platform', 'Operating system', process.platform as ('win32' | 'linux' | 'darwin'))
-  .defineParameter('screenshotOnFailure', 'Generate screenshot on failure', false)
-  .defineParameter('slowMo', 'Slows down Playwright operations by the specified amount of milliseconds', 0)
-  .defineParameter('trace', 'Whether to record the execution trace', !!process.env.TRACING || false)
-  .defineWorkerFixtures<PlaywrightWorkerFixtures>({
-    defaultBrowserOptions: async ({ headful, slowMo }, runTest) => {
-      await runTest({
-        handleSIGINT: false,
-        slowMo,
-        headless: !headful,
-      });
-    },
-
-    playwright: async ({ }, runTest) => {
-      const playwright = require('playwright');
-      await runTest(playwright);
-    },
-
-    browserType: async ({ playwright, browserName }, runTest) => {
-      const browserType = (playwright as any)[browserName];
-      await runTest(browserType);
-    },
-
-    browser: async ({ browserType, defaultBrowserOptions }, runTest) => {
-      const browser = await browserType.launch(defaultBrowserOptions);
-      await runTest(browser);
-      await browser.close();
-    },
-
-    isChromium: async ({ browserName }, runTest) => {
-      await runTest(browserName === 'chromium');
-    },
-
-    isFirefox: async ({ browserName }, runTest) => {
-      await runTest(browserName === 'firefox');
-    },
-
-    isWebKit: async ({ browserName }, runTest) => {
-      await runTest(browserName === 'webkit');
-    },
-
-    isWindows: async ({ platform }, test) => {
-      await test(platform === 'win32');
-    },
-
-    isMac: async ({ platform }, test) => {
-      await test(platform === 'darwin');
-    },
-
-    isLinux: async ({ platform }, test) => {
-      await test(platform === 'linux');
-    },
-  })
-  .defineTestFixtures<PlaywrightTestFixtures>({
-    defaultContextOptions: async ({ trace, testInfo }, runTest) => {
-      if (trace || testInfo.retry) {
+    .defineParameter<'browserName', 'chromium' | 'firefox' | 'webkit'>('browserName', 'Browser type name', process.env.BROWSER || 'chromium' as any)
+    .defineParameter<'headful', boolean>('headful', 'Whether to run tests headless or headful', process.env.HEADFUL ? true : false)
+    .defineParameter<'platform', 'win32' | 'linux' | 'darwin'>('platform', 'Operating system', process.platform as ('win32' | 'linux' | 'darwin'))
+    .defineParameter<'screenshotOnFailure', boolean>('screenshotOnFailure', 'Generate screenshot on failure', false)
+    .defineParameter<'slowMo', number>('slowMo', 'Slows down Playwright operations by the specified amount of milliseconds', 0)
+    .defineParameter<'trace', boolean>('trace', 'Whether to record the execution trace', !!process.env.TRACING || false)
+    .defineWorkerFixtures<PlaywrightWorkerFixtures>({
+      defaultBrowserOptions: async ({ headful, slowMo }, runTest) => {
         await runTest({
-          _traceResourcesPath: path.join(config.outputDir, 'trace-resources'),
-          _tracePath: testInfo.outputPath('playwright.trace'),
-          videosPath: testInfo.outputPath(''),
-        } as any);
-      } else {
-        await runTest({});
-      }
-    },
+          handleSIGINT: false,
+          slowMo,
+          headless: !headful,
+        });
+      },
 
-    contextFactory: async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure }, runTest) => {
-      const contexts: BrowserContext[] = [];
-      async function contextFactory(options: BrowserContextOptions = {}) {
-        const context = await browser.newContext({ ...defaultContextOptions, ...options });
-        contexts.push(context);
-        return context;
-      }
-      await runTest(contextFactory);
+      playwright: async ({ }, runTest) => {
+        const playwright = require('playwright');
+        await runTest(playwright);
+      },
 
-      if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
-        let ordinal = 0;
-        for (const context of contexts) {
-          for (const page of context.pages())
-            await page.screenshot({ timeout: 5000, path: testInfo.outputPath + `-test-failed-${++ordinal}.png` });
+      browserType: async ({ playwright, browserName }, runTest) => {
+        const browserType = (playwright as any)[browserName];
+        await runTest(browserType);
+      },
+
+      browser: async ({ browserType, defaultBrowserOptions }, runTest) => {
+        const browser = await browserType.launch(defaultBrowserOptions);
+        await runTest(browser);
+        await browser.close();
+      },
+
+      isChromium: async ({ browserName }, runTest) => {
+        await runTest(browserName === 'chromium');
+      },
+
+      isFirefox: async ({ browserName }, runTest) => {
+        await runTest(browserName === 'firefox');
+      },
+
+      isWebKit: async ({ browserName }, runTest) => {
+        await runTest(browserName === 'webkit');
+      },
+
+      isWindows: async ({ platform }, test) => {
+        await test(platform === 'win32');
+      },
+
+      isMac: async ({ platform }, test) => {
+        await test(platform === 'darwin');
+      },
+
+      isLinux: async ({ platform }, test) => {
+        await test(platform === 'linux');
+      },
+    })
+    .defineTestFixtures<PlaywrightTestFixtures>({
+      defaultContextOptions: async ({ trace, testInfo }, runTest) => {
+        if (trace || testInfo.retry) {
+          await runTest({
+            _traceResourcesPath: path.join(config.outputDir, 'trace-resources'),
+            _tracePath: testInfo.outputPath('playwright.trace'),
+            videosPath: testInfo.outputPath(''),
+          } as any);
+        } else {
+          await runTest({});
         }
-      }
-      for (const context of contexts)
-        await context.close();
-    },
+      },
 
-    context: async ({ contextFactory }, runTest) => {
-      const context = await contextFactory();
-      await runTest(context);
+      contextFactory: async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure }, runTest) => {
+        const contexts: BrowserContext[] = [];
+        async function contextFactory(options: BrowserContextOptions = {}) {
+          const context = await browser.newContext({ ...defaultContextOptions, ...options });
+          contexts.push(context);
+          return context;
+        }
+        await runTest(contextFactory);
+
+        if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
+          let ordinal = 0;
+          for (const context of contexts) {
+            for (const page of context.pages())
+              await page.screenshot({ timeout: 5000, path: testInfo.outputPath + `-test-failed-${++ordinal}.png` });
+          }
+        }
+        for (const context of contexts)
+          await context.close();
+      },
+
+      context: async ({ contextFactory }, runTest) => {
+        const context = await contextFactory();
+        await runTest(context);
       // Context factory is taking care of closing the context,
       // so that it could capture a screenshot on failure.
-    },
+      },
 
-    page: async ({ context }, runTest) => {
+      page: async ({ context }, runTest) => {
       // Always create page off context so that they matched.
-      await runTest(await context.newPage());
+        await runTest(await context.newPage());
       // Context fixture is taking care of closing the page.
-    },
-  });
+      },
+    });
 
 // If browser is not specified, we are running tests against all three browsers.
 fixtures.generateParametrizedTests(
-  'browserName',
-  process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
+    'browserName',
+    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
 
 
 fixtures.overrideTestFixtures({
