@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.9.9-post",
+  "version": "0.9.10-post",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -25,10 +25,10 @@
     "rimraf": "^3.0.2"
   },
   "peerDependencies": {
-    "@playwright/test-runner": "0.9.20"
+    "@playwright/test-runner": "0.9.x"
   },
   "devDependencies": {
-    "@playwright/test-runner": "0.9.20",
+    "@playwright/test-runner": "0.9.21",
     "@types/rimraf": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
     "@typescript-eslint/parser": "^4.2.0",
