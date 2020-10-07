@@ -172,3 +172,15 @@ fixtures.overrideTestFixtures({
     await runTest(browserName + '-' + platform);
   }
 });
+
+export const it = fixtures.it;
+export const fit = fixtures.fit;
+export const xit = fixtures.xit;
+export const test = fixtures.test;
+export const describe = fixtures.describe;
+export const fdescribe = fixtures.fdescribe;
+export const xdescribe = fixtures.xdescribe;
+export const beforeEach = fixtures.beforeEach;
+export const afterEach = fixtures.afterEach;
+export const beforeAll = fixtures.beforeAll;
+export const afterAll = fixtures.afterAll;
