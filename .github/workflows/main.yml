@@ -19,7 +19,7 @@ jobs:
         node-version: '10.x'
     - uses: microsoft/playwright-github-action@v1
     - name: Install dependencies and build
-      run: npm ci
+      run: npm i
     - name: lint
       run: npm run lint
     - name: build

@@ -28,7 +28,7 @@
     "@playwright/test-runner": "0.9.x"
   },
   "devDependencies": {
-    "@playwright/test-runner": "0.9.21",
+    "@playwright/test-runner": "0.9.22",
     "@types/rimraf": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
     "@typescript-eslint/parser": "^4.2.0",
