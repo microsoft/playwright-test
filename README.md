@@ -157,3 +157,4 @@ it('uses mobile emulation', async ({ context }) => {
 
 [browser-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsertypelaunchoptions
 [context-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsernewcontextoptions
+[multi-page]: https://playwright.dev/#path=docs%2Fmulti-pages.md&q=
