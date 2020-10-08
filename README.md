@@ -6,10 +6,10 @@ Zero config cross-browser end-to-end testing for web apps. Browser automation wi
   - [Installation](#installation)
   - [Write a test](#write-a-test)
   - [Run the test](#run-the-test)
-- Examples
-  - Multiple pages
-  - Mobile emulation
-  - Network mocking
+- [Examples](#examples)
+  - [Multiple pages](#multiple-pages)
+  - [Network mocking](#network-mocking)
+  - [Mobile emulation](#mobile-emulation)
 - Customize your suite
   - Annotations
   - Parameters
@@ -18,13 +18,15 @@ Zero config cross-browser end-to-end testing for web apps. Browser automation wi
   - Retries
 
 ## Get started
+
 ### Installation
 
-```
+```sh
 npm i -D @playwright/test @playwright/test-runner
 ```
 
 ### Write a test
+
 Create `foo.spec.ts` (or `foo.spec.js`) to define your test. Playwright provides a [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument to the test function.
 
 ```js
@@ -39,17 +41,18 @@ it('is a basic test with the page', async ({ page }) => {
 ```
 
 #### Default arguments
-This package provides browser primitives as arguments to your test functions. Tests can use one or more of these primitives.
 
-Learn how to customize or create your own arguments with [test fixtures](#fixtures).
+The test runner provides browser primitives as arguments to your test functions. Tests can use one or more of these primitives.
 
-* `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
-* `context`: Instance of [BrowserContext](https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext). Each test gets a new isolated context to run the test. The `page` object belongs to this context.
-* `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
+- `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
+- `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
+- `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
+
+Use [test fixtures](docs/fixtures.md) to customize or create new function arguments.
 
 #### Spec syntax
 
-Use `it` and `describe` to write test functions. 
+Use `it` and `describe` to write test functions.
 
 ```js
 const { it, describe, beforeAll, beforeEach, afterAll, afterEach } = require('@playwright/test');
@@ -62,12 +65,14 @@ describe('feature foo', () => {
 });
 ```
 
-To run a single test use `fit` or `it.only`. To skip a test use `xit` or `it.skip`. See [annotations](#annotations) to mark tests as slow, flaky or fixme.
+To run a single test use `fit` or `it.only`. To skip a test use `xit` or `it.skip`. Use [test annotations](docs/annotations.md) to mark tests as slow, flaky or fixme.
 
 #### Assertions
-For assertions, the test runner uses the [expect](https://www.npmjs.com/package/expect) package. See [expect API reference](https://jestjs.io/docs/en/expect).
+
+The test runner provides the [expect](https://www.npmjs.com/package/expect) package for assertions. See [expect API reference](https://jestjs.io/docs/en/expect).
 
 ### Run the test
+
 Tests can be run on single or multiple browsers and with flags to generate screenshot on test failures.
 
 ```sh
@@ -75,17 +80,19 @@ Tests can be run on single or multiple browsers and with flags to generate scree
 npx test-runner
 
 # Run tests on a single browser
-npx test-runner --browser-name=chromium
+npx test-runner --param browserName=chromium
 
 # Run all tests in headful mode
-npx test-runner --headful
+npx test-runner --param headful
 
 # Take screenshots on failure
-npx test-runner --screenshot-on-failure
+npx test-runner --param screenshotOnFailure
 
 # See all options
 npx test-runner --help
 ```
+
+Test runner CLI can be customized with [test parameters](docs/parameters.md).
 
 -----------
 
