@@ -1,5 +1,7 @@
 # 🎭 End-to-end web tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
+🚧 This project is under active development and is not ready for serious use.
+
 Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and support for TypeScript.
 
 - [Get started](#get-started)
