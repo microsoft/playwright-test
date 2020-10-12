@@ -17,6 +17,7 @@
 import { config, folio as baseFolio } from 'folio';
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
 import * as path from 'path';
+export { expect, config } from 'folio';
 
 // Parameters ------------------------------------------------------------------
 // ... these can be used to run tests in different modes.
