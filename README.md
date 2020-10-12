@@ -24,7 +24,7 @@ Zero config cross-browser end-to-end testing for web apps. Browser automation wi
 ### Installation
 
 ```sh
-npm i -D @playwright/test @playwright/test-runner
+npm i -D @playwright/test
 ```
 
 ### Write a test
@@ -57,7 +57,7 @@ Use [test fixtures](docs/fixtures.md) to customize or create new function argume
 Use `it` and `describe` to write test functions.
 
 ```js
-const { it, describe, beforeAll, beforeEach, afterAll, afterEach } = require('@playwright/test');
+const { it, describe } = require('@playwright/test');
 
 describe('feature foo', () => {
   it('is working correctly', async ({ page }) => {
@@ -79,19 +79,19 @@ Tests can be run on single or multiple browsers and with flags to generate scree
 
 ```sh
 # Run all tests across Chromium, Firefox and WebKit
-npx test-runner
+npx folio
 
 # Run tests on a single browser
-npx test-runner --param browserName=chromium
+npx folio --param browserName=chromium
 
 # Run all tests in headful mode
-npx test-runner --param headful
+npx folio --param headful
 
 # Take screenshots on failure
-npx test-runner --param screenshotOnFailure
+npx folio --param screenshotOnFailure
 
 # See all options
-npx test-runner --help
+npx folio --help
 ```
 
 Test runner CLI can be customized with [test parameters](docs/parameters.md).
@@ -124,11 +124,9 @@ Define a custom argument that mocks networks call for a browser context.
 ```js
 const { it, fixtures } = require('@playwright/test');
 
-fixtures.defineTestFixtures({
-  mockedContext: async ({ context }, runTest) => {
-    context.route(/.css/, route => route.abort());
-    runTest(context);
-  }
+fixtures.mockedContext.init(async ({ context }, runTest) => {
+  context.route(/.css/, route => route.abort());
+  runTest(context);
 });
 
 it('loads pages without css requests', async ({ mockedContext }) => {
@@ -146,10 +144,8 @@ Override default options for creating a BrowserContext to use mobile emulation.
 const { it, fixtures } = require('@playwright/test');
 const { devices } = require('playwright');
 
-fixtures.overrideTestFixtures({
-  defaultContextOptions: async ({}, runTest) => {
-    await runTest({ ...devices['iPhone 11'] });
-  }
+fixtures.defaultContextOptions.override(async ({}, runTest) => {
+  await runTest({ ...devices['iPhone 11'] });
 });
 
 it('uses mobile emulation', async ({ context }) => {

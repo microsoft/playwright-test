@@ -14,9 +14,28 @@
  * limitations under the License.
  */
 
-import { config, fixtures as baseFixtures } from '@playwright/test-runner';
+import { config, folio as baseFolio } from 'folio';
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
 import * as path from 'path';
+
+// Parameters ------------------------------------------------------------------
+// ... these can be used to run tests in different modes.
+
+type PlaywrightParameters = {
+  // Browser type name.
+  browserName: 'chromium' | 'firefox' | 'webkit';
+  // Whether to run tests headless or headful.
+  headful: boolean;
+  // Operating system.
+  platform: 'win32' | 'linux' | 'darwin';
+  // Generate screenshot on failure.
+  screenshotOnFailure: boolean;
+  // Slows down Playwright operations by the specified amount of milliseconds.
+  slowMo: number;
+  // Whether to record the execution trace.
+  trace: boolean;
+};
+
 
 // Worker fixture declarations -------------------------------------------------
 // ... these live as long as the worker process.
@@ -58,129 +77,126 @@ type PlaywrightTestFixtures = {
   page: Page;
 };
 
-export const fixtures = baseFixtures
-    .defineParameter<'browserName', 'chromium' | 'firefox' | 'webkit'>('browserName', 'Browser type name', process.env.BROWSER || 'chromium' as any)
-    .defineParameter<'headful', boolean>('headful', 'Whether to run tests headless or headful', process.env.HEADFUL ? true : false)
-    .defineParameter<'platform', 'win32' | 'linux' | 'darwin'>('platform', 'Operating system', process.platform as ('win32' | 'linux' | 'darwin'))
-    .defineParameter<'screenshotOnFailure', boolean>('screenshotOnFailure', 'Generate screenshot on failure', false)
-    .defineParameter<'slowMo', number>('slowMo', 'Slows down Playwright operations by the specified amount of milliseconds', 0)
-    .defineParameter<'trace', boolean>('trace', 'Whether to record the execution trace', !!process.env.TRACING || false)
-    .defineWorkerFixtures<PlaywrightWorkerFixtures>({
-      defaultBrowserOptions: async ({ headful, slowMo }, runTest) => {
-        await runTest({
-          handleSIGINT: false,
-          slowMo,
-          headless: !headful,
-        });
-      },
+const fixtures = baseFolio.extend<PlaywrightWorkerFixtures, PlaywrightTestFixtures, PlaywrightParameters>();
+fixtures.browserName.initParameter('Browser type name', (process.env.BROWSER || 'chromium') as 'chromium' | 'firefox' | 'webkit');
+fixtures.headful.initParameter('Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
+fixtures.platform.initParameter('Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
+fixtures.screenshotOnFailure.initParameter('Generate screenshot on failure', false);
+fixtures.slowMo.initParameter('Slows down Playwright operations by the specified amount of milliseconds', 0);
+fixtures.trace.initParameter('Whether to record the execution trace', !!process.env.TRACING);
 
-      playwright: async ({ }, runTest) => {
-        const playwright = require('playwright');
-        await runTest(playwright);
-      },
+fixtures.defaultBrowserOptions.init(async ({ headful, slowMo }, run) => {
+  await run({
+    handleSIGINT: false,
+    slowMo,
+    headless: !headful,
+  });
+}, { scope: 'worker' });
 
-      browserType: async ({ playwright, browserName }, runTest) => {
-        const browserType = (playwright as any)[browserName];
-        await runTest(browserType);
-      },
+fixtures.playwright.init(async ({ }, run) => {
+  const playwright = require('playwright');
+  await run(playwright);
+}, { scope: 'worker' });
 
-      browser: async ({ browserType, defaultBrowserOptions }, runTest) => {
-        const browser = await browserType.launch(defaultBrowserOptions);
-        await runTest(browser);
-        await browser.close();
-      },
+fixtures.browserType.init(async ({ playwright, browserName }, run) => {
+  const browserType = (playwright as any)[browserName];
+  await run(browserType);
+}, { scope: 'worker' });
 
-      isChromium: async ({ browserName }, runTest) => {
-        await runTest(browserName === 'chromium');
-      },
+fixtures.browser.init(async ({ browserType, defaultBrowserOptions }, run) => {
+  const browser = await browserType.launch(defaultBrowserOptions);
+  await run(browser);
+  await browser.close();
+}, { scope: 'worker' });
 
-      isFirefox: async ({ browserName }, runTest) => {
-        await runTest(browserName === 'firefox');
-      },
+fixtures.isChromium.init(async ({ browserName }, run) => {
+  await run(browserName === 'chromium');
+}, { scope: 'worker' });
 
-      isWebKit: async ({ browserName }, runTest) => {
-        await runTest(browserName === 'webkit');
-      },
+fixtures.isFirefox.init(async ({ browserName }, run) => {
+  await run(browserName === 'firefox');
+}, { scope: 'worker' });
 
-      isWindows: async ({ platform }, test) => {
-        await test(platform === 'win32');
-      },
+fixtures.isWebKit.init(async ({ browserName }, run) => {
+  await run(browserName === 'webkit');
+}, { scope: 'worker' });
 
-      isMac: async ({ platform }, test) => {
-        await test(platform === 'darwin');
-      },
+fixtures.isWindows.init(async ({ platform }, run) => {
+  await run(platform === 'win32');
+}, { scope: 'worker' });
 
-      isLinux: async ({ platform }, test) => {
-        await test(platform === 'linux');
-      },
-    })
-    .defineTestFixtures<PlaywrightTestFixtures>({
-      defaultContextOptions: async ({ trace, testInfo }, runTest) => {
-        if (trace || testInfo.retry) {
-          await runTest({
-            _traceResourcesPath: path.join(config.outputDir, 'trace-resources'),
-            _tracePath: testInfo.outputPath('playwright.trace'),
-            videosPath: testInfo.outputPath(''),
-          } as any);
-        } else {
-          await runTest({});
-        }
-      },
+fixtures.isMac.init(async ({ platform }, run) => {
+  await run(platform === 'darwin');
+}, { scope: 'worker' });
 
-      contextFactory: async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure }, runTest) => {
-        const contexts: BrowserContext[] = [];
-        async function contextFactory(options: BrowserContextOptions = {}) {
-          const context = await browser.newContext({ ...defaultContextOptions, ...options });
-          contexts.push(context);
-          return context;
-        }
-        await runTest(contextFactory);
+fixtures.isLinux.init(async ({ platform }, run) => {
+  await run(platform === 'linux');
+}, { scope: 'worker' });
 
-        if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
-          let ordinal = 0;
-          for (const context of contexts) {
-            for (const page of context.pages())
-              await page.screenshot({ timeout: 5000, path: testInfo.outputPath(`test-failed-${++ordinal}.png`) });
-          }
-        }
-        for (const context of contexts)
-          await context.close();
-      },
-
-      context: async ({ contextFactory }, runTest) => {
-        const context = await contextFactory();
-        await runTest(context);
-      // Context factory is taking care of closing the context,
-      // so that it could capture a screenshot on failure.
-      },
-
-      page: async ({ context }, runTest) => {
-      // Always create page off context so that they matched.
-        await runTest(await context.newPage());
-      // Context fixture is taking care of closing the page.
-      },
-    });
-
-// If browser is not specified, we are running tests against all three browsers.
-fixtures.generateParametrizedTests(
-    'browserName',
-    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
-
-
-fixtures.overrideTestFixtures({
-  testParametersPathSegment: async ({ browserName, platform }, runTest) => {
-    await runTest(browserName + '-' + platform);
+fixtures.defaultContextOptions.init(async ({ trace, testInfo }, run) => {
+  if (trace || testInfo.retry) {
+    await run({
+      _traceResourcesPath: path.join(config.outputDir, 'trace-resources'),
+      _tracePath: testInfo.outputPath('playwright.trace'),
+      videosPath: testInfo.outputPath(''),
+    } as any);
+  } else {
+    await run({});
   }
 });
 
-export const it = fixtures.it;
-export const fit = fixtures.fit;
-export const xit = fixtures.xit;
-export const test = fixtures.test;
-export const describe = fixtures.describe;
-export const fdescribe = fixtures.fdescribe;
-export const xdescribe = fixtures.xdescribe;
-export const beforeEach = fixtures.beforeEach;
-export const afterEach = fixtures.afterEach;
-export const beforeAll = fixtures.beforeAll;
-export const afterAll = fixtures.afterAll;
+fixtures.contextFactory.init(async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure }, run) => {
+  const contexts: BrowserContext[] = [];
+  async function contextFactory(options: BrowserContextOptions = {}) {
+    const context = await browser.newContext({ ...defaultContextOptions, ...options });
+    contexts.push(context);
+    return context;
+  }
+  await run(contextFactory);
+
+  if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
+    let ordinal = 0;
+    for (const context of contexts) {
+      for (const page of context.pages())
+        await page.screenshot({ timeout: 5000, path: testInfo.outputPath + `-test-failed-${++ordinal}.png` });
+    }
+  }
+  for (const context of contexts)
+    await context.close();
+});
+
+fixtures.context.init(async ({ contextFactory }, run) => {
+  const context = await contextFactory();
+  await run(context);
+  // Context factory is taking care of closing the context,
+  // so that it could capture a screenshot on failure.
+});
+
+fixtures.page.init(async ({ context }, run) => {
+  // Always create page off context so that they matched.
+  await run(await context.newPage());
+  // Context fixture is taking care of closing the page.
+});
+
+fixtures.testParametersPathSegment.override(async ({ browserName, platform }, run) => {
+  await run(browserName + '-' + platform);
+});
+
+export const folio = fixtures.build();
+export const it = folio.it;
+export const fit = folio.fit;
+export const xit = folio.xit;
+export const test = folio.test;
+export const describe = folio.describe;
+export const fdescribe = folio.fdescribe;
+export const xdescribe = folio.xdescribe;
+export const beforeEach = folio.beforeEach;
+export const afterEach = folio.afterEach;
+export const beforeAll = folio.beforeAll;
+export const afterAll = folio.afterAll;
+
+// If browser is not specified, we are running tests against all three browsers.
+
+folio.generateParametrizedTests(
+  'browserName',
+  process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
