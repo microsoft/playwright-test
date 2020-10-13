@@ -18,8 +18,8 @@
   "description": "A test runner for running tests with Playwright.",
   "main": "out/index.js",
   "dependencies": {
-    "folio": "=0.3.10",
-    "playwright": "1.5.0-next.1602552387242",
+    "folio": "=0.3.11",
+    "playwright": "=1.5.0",
     "rimraf": "^3.0.2"
   },
   "devDependencies": {
