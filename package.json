@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.9.21-post",
+  "version": "0.150.0-post",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -12,7 +12,8 @@
     "lint": "eslint . --ext js,ts",
     "build": "tsc --build tsconfig.json",
     "watch": "tsc --build tsconfig.json --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "rm tsconfig.tsbuildinfo && rm -rf out && npm run build"
   },
   "repository": "github:Microsoft/playwright-test",
   "description": "A test runner for running tests with Playwright.",
