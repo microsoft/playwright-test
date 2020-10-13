@@ -1,7 +1,5 @@
 # 🎭 End-to-end tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
-🚧 This project is under active development and is not ready for serious use.
-
 Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and support for TypeScript.
 
 - [Get started](#get-started)
@@ -10,14 +8,8 @@ Zero config cross-browser end-to-end testing for web apps. Browser automation wi
   - [Run the test](#run-the-test)
 - [Examples](#examples)
   - [Multiple pages](#multiple-pages)
-  - [Network mocking](#network-mocking)
   - [Mobile emulation](#mobile-emulation)
-- Customize your suite
-  - Annotations
-  - Parameters
-  - Fixtures
-  - Parallel execution
-  - Retries
+  - [Network mocking](#network-mocking)
 
 ## Get started
 
@@ -43,17 +35,18 @@ it('is a basic test with the page', async ({ page }) => {
 
 #### Default arguments
 
-The test runner provides browser primitives as arguments to your test functions. Tests can use one or more of these primitives.
+The test runner provides browser primitives as arguments to your test functions. Test functions can use one or more of these arguments.
 
 - `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
 - `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
+  - `contextOptions`: Default options passed to context creation.
 - `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
-
-Use [test fixtures](docs/fixtures.md) to customize or create new function arguments.
+  - `browserOptions`: Default options passed to browser creation.
 
 #### Specs and assertions
 
-Use `it` and `describe` to write test functions.
+- Use `it` and `describe` to write test functions. Run a single test with `it.only` and skip a test with `it.skip`.
+- For assertions, use the [`expect` API](https://jestjs.io/docs/en/expect).
 
 ```js
 const { it, describe } = require('@playwright/test');
@@ -61,13 +54,9 @@ const { it, describe } = require('@playwright/test');
 describe('feature foo', () => {
   it('is working correctly', async ({ page }) => {
     // Test function
-  })
+  });
 });
 ```
-
-To run a single test use `fit` or `it.only`. To skip a test use `xit` or `it.skip`. Use [test annotations](docs/annotations.md) to mark tests as slow, flaky or fixme.
-
-The test runner provides the [expect](https://www.npmjs.com/package/expect) package for assertions. See [expect API reference](https://jestjs.io/docs/en/expect).
 
 ### Run the test
 
@@ -85,6 +74,9 @@ npx folio --param headful
 
 # Save screenshots on failure in test-results directory
 npx folio --param screenshotOnFailure
+
+# Record videos
+npx folio --param video
 
 # See all options
 npx folio --help
@@ -110,52 +102,70 @@ Save the run command as an NPM script.
 
 ### Multiple pages
 
-The `context` argument is an instance of [BrowserContext][browser-context]. Browser contexts are isolated execution environments that can host multiple pages.
+The default `context` argument is a [BrowserContext][browser-context]. Browser contexts are isolated execution environments that can host multiple pages. See [multi-page scenarios][multi-page] for more examples.
 
 ```js
-const { it } = require('@playwright/test');
+import { it } from '@playwright/test';
 
 it('tests on multiple web pages', async ({ context }) => {
   const pageFoo = await context.newPage();
   const pageBar = await context.newPage();
-  // Test function code
+  // Test function
 });
 ```
 
-See [multi-page scenarios][multi-page] for more examples.
+### Mobile emulation
+
+The `contextOptions` fixture defines default options used for context creation. This fixture can be overriden to configure mobile emulation in the default `context`.
+
+```js
+import { folio } from '@playwright/test';
+import { devices } from 'playwright';
+
+const fixtures = folio.extend();
+fixtures.contextOptions.override(async ({ contextOptions }, runTest) => {
+  await runTest({
+    ...contextOptions,
+    ...devices['iPhone 11']
+  });
+});
+const { it, describe, extend } = fixtures.build();
+
+it('uses mobile emulation', async ({ context }) => {
+  // Test function
+});
+```
 
 ### Network mocking
 
 Define a custom argument that mocks networks call for a browser context.
 
 ```js
-const { it, fixtures } = require('@playwright/test');
+// In fixtures.ts
+import { folio as base } from '@playwright/test';
+import { BrowserContext } from 'playwright';
+
+// Extend base fixtures with a new test-level fixture
+const fixtures = base.extend<{ mockedContext: BrowserContext }>();
 
 fixtures.mockedContext.init(async ({ context }, runTest) => {
+  // Modify existing `context` fixture to add a route
   context.route(/.css/, route => route.abort());
+  // Pass fixture to test functions
   runTest(context);
 });
+
+export folio = fixtures.build();
+```
+
+```js
+// In foo.spec.ts
+import { folio } from './fixtures';
+const { it, expect } = folio;
 
 it('loads pages without css requests', async ({ mockedContext }) => {
   const page = await mockedContext.newPage();
   await page.goto('https://stackoverflow.com');
-  // Test function code
-});
-```
-
-### Mobile emulation
-
-Override default options for creating a BrowserContext to use mobile emulation.
-
-```js
-const { it, fixtures } = require('@playwright/test');
-const { devices } = require('playwright');
-
-fixtures.defaultContextOptions.override(async ({}, runTest) => {
-  await runTest({ ...devices['iPhone 11'] });
-});
-
-it('uses mobile emulation', async ({ context }) => {
   // Test function code
 });
 ```
