@@ -16,7 +16,6 @@
 
 import { config, folio as baseFolio } from 'folio';
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
-import * as path from 'path';
 export { expect, config } from 'folio';
 
 // Test timeout for e2e tests is 30 seconds.
@@ -36,8 +35,8 @@ type PlaywrightParameters = {
   screenshotOnFailure: boolean;
   // Slows down Playwright operations by the specified amount of milliseconds.
   slowMo: number;
-  // Whether to record the execution trace.
-  trace: boolean;
+  // Whether to record videos for all tests.
+  video: boolean;
 };
 
 
@@ -50,7 +49,7 @@ type PlaywrightWorkerFixtures = {
   // Browser type (Chromium / WebKit / Firefox)
   browserType: BrowserType<Browser>;
   // Default browserType.launch() options.
-  defaultBrowserOptions: LaunchOptions;
+  browserOptions: LaunchOptions;
   // Browser instance, shared for the worker.
   browser: Browser;
   // True iff browserName is Chromium
@@ -72,7 +71,7 @@ type PlaywrightWorkerFixtures = {
 
 type PlaywrightTestFixtures = {
   // Default browser.newContext() options.
-  defaultContextOptions: BrowserContextOptions;
+  contextOptions: BrowserContextOptions;
   // Factory for creating a context with given additional options.
   contextFactory: (options?: BrowserContextOptions) => Promise<BrowserContext>;
   // Context instance for test.
@@ -87,9 +86,9 @@ fixtures.headful.initParameter('Whether to run tests headless or headful', proce
 fixtures.platform.initParameter('Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
 fixtures.screenshotOnFailure.initParameter('Generate screenshot on failure', false);
 fixtures.slowMo.initParameter('Slows down Playwright operations by the specified amount of milliseconds', 0);
-fixtures.trace.initParameter('Whether to record the execution trace', !!process.env.TRACING);
+fixtures.video.initParameter('Record videos while running tests', false);
 
-fixtures.defaultBrowserOptions.init(async ({ headful, slowMo }, run) => {
+fixtures.browserOptions.init(async ({ headful, slowMo }, run) => {
   await run({
     handleSIGINT: false,
     slowMo,
@@ -107,8 +106,8 @@ fixtures.browserType.init(async ({ playwright, browserName }, run) => {
   await run(browserType);
 }, { scope: 'worker' });
 
-fixtures.browser.init(async ({ browserType, defaultBrowserOptions }, run) => {
-  const browser = await browserType.launch(defaultBrowserOptions);
+fixtures.browser.init(async ({ browserType, browserOptions }, run) => {
+  const browser = await browserType.launch(browserOptions);
   await run(browser);
   await browser.close();
 }, { scope: 'worker' });
@@ -137,22 +136,20 @@ fixtures.isLinux.init(async ({ platform }, run) => {
   await run(platform === 'linux');
 }, { scope: 'worker' });
 
-fixtures.defaultContextOptions.init(async ({ trace, testInfo }, run) => {
-  if (trace || testInfo.retry) {
+fixtures.contextOptions.init(async ({ video, testInfo }, run) => {
+  if (video) {
     await run({
-      _traceResourcesPath: path.join(config.outputDir, 'trace-resources'),
-      _tracePath: testInfo.outputPath('playwright.trace'),
       videosPath: testInfo.outputPath(''),
-    } as any);
+    });
   } else {
     await run({});
   }
 });
 
-fixtures.contextFactory.init(async ({ browser, defaultContextOptions, testInfo, screenshotOnFailure }, run) => {
+fixtures.contextFactory.init(async ({ browser, contextOptions, testInfo, screenshotOnFailure }, run) => {
   const contexts: BrowserContext[] = [];
   async function contextFactory(options: BrowserContextOptions = {}) {
-    const context = await browser.newContext({ ...defaultContextOptions, ...options });
+    const context = await browser.newContext({ ...contextOptions, ...options });
     contexts.push(context);
     return context;
   }
