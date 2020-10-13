@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.9.13-post",
+  "version": "0.9.16-post",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -18,7 +18,7 @@
   "description": "A test runner for running tests with Playwright.",
   "main": "out/index.js",
   "dependencies": {
-    "folio": "=0.3.8",
+    "folio": "=0.3.10",
     "playwright": "1.4.0-next.1601161680085",
     "rimraf": "^3.0.2"
   },
