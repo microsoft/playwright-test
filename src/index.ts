@@ -19,6 +19,9 @@ import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, Launc
 import * as path from 'path';
 export { expect, config } from 'folio';
 
+// Test timeout for e2e tests is 30 seconds.
+config.timeout = 30000;
+
 // Parameters ------------------------------------------------------------------
 // ... these can be used to run tests in different modes.
 
@@ -159,7 +162,7 @@ fixtures.contextFactory.init(async ({ browser, defaultContextOptions, testInfo, 
     let ordinal = 0;
     for (const context of contexts) {
       for (const page of context.pages())
-        await page.screenshot({ timeout: 5000, path: testInfo.outputPath + `-test-failed-${++ordinal}.png` });
+        await page.screenshot({ timeout: 5000, path: testInfo.outputPath(`test-failed-${++ordinal}.png`) });
     }
   }
   for (const context of contexts)
@@ -199,5 +202,5 @@ export const afterAll = folio.afterAll;
 // If browser is not specified, we are running tests against all three browsers.
 
 folio.generateParametrizedTests(
-  'browserName',
-  process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
+    'browserName',
+    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
