@@ -1,4 +1,4 @@
-# 🎭 End-to-end web tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
+# 🎭 End-to-end tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
 🚧 This project is under active development and is not ready for serious use.
 
@@ -29,16 +29,15 @@ npm i -D @playwright/test
 
 ### Write a test
 
-Create `foo.spec.ts` (or `foo.spec.js`) to define your test. Playwright provides a [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument to the test function.
+Create `foo.spec.ts` to define your test. The test function uses the [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument for browser automation.
 
 ```js
-// tests/foo.spec.ts
-const { it, expect } = require('@playwright/test');
+import { it, expect } from '@playwright/test';
 
 it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
-  const home = await page.waitForSelector('home-navigation');
-  expect(await home.innerText()).toBe('🎭 Playwright');
+  const name = await page.innerText('.home-navigation');
+  expect(name).toBe('🎭 Playwright');
 });
 ```
 
@@ -52,7 +51,7 @@ The test runner provides browser primitives as arguments to your test functions.
 
 Use [test fixtures](docs/fixtures.md) to customize or create new function arguments.
 
-#### Spec syntax
+#### Specs and assertions
 
 Use `it` and `describe` to write test functions.
 
@@ -62,14 +61,11 @@ const { it, describe } = require('@playwright/test');
 describe('feature foo', () => {
   it('is working correctly', async ({ page }) => {
     // Test function
-    // ...
   })
 });
 ```
 
 To run a single test use `fit` or `it.only`. To skip a test use `xit` or `it.skip`. Use [test annotations](docs/annotations.md) to mark tests as slow, flaky or fixme.
-
-#### Assertions
 
 The test runner provides the [expect](https://www.npmjs.com/package/expect) package for assertions. See [expect API reference](https://jestjs.io/docs/en/expect).
 
@@ -87,7 +83,7 @@ npx folio --param browserName=chromium
 # Run all tests in headful mode
 npx folio --param headful
 
-# Take screenshots on failure
+# Save screenshots on failure in test-results directory
 npx folio --param screenshotOnFailure
 
 # See all options
@@ -96,6 +92,17 @@ npx folio --help
 
 Test runner CLI can be customized with [test parameters](docs/parameters.md).
 
+#### Configure NPM scripts
+
+Save the run command as an NPM script.
+
+```json
+{
+  "scripts": {
+    "test": "npx folio --param screenshotOnFailure"
+  }
+}
+```
 
 -----------
 
