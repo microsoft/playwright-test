@@ -12,6 +12,8 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Multiple pages](#multiple-pages)
   - [Mobile emulation](#mobile-emulation)
   - [Network mocking](#network-mocking)
+- [Configuration](#configuration)
+  - [JUnit reporter](#junit-reporter)
 
 ## Get started
 
@@ -172,7 +174,30 @@ it('loads pages without css requests', async ({ mockedContext }) => {
 });
 ```
 
-[browser-context]: https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext
+-----------
+
+## Configuration
+
+### JUnit reporter
+
+The Playwright test runner supports various reporters, including exporting as a JUnit compatible XML file.
+
+```sh
+# Specify output file for junit report
+# Linux/macOS
+export FOLIO_JUNIT_OUTPUT_NAME=junit.xml
+
+# Windows
+set FOLIO_JUNIT_OUTPUT_NAME=junit.xml
+
+# Use junit and CLI reporters
+npx folio --reporter=junit,line
+
+# See all supported reporters
+npx folio --help
+```
+
 [browser-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsertypelaunchoptions
 [context-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsernewcontextoptions
 [multi-page]: https://playwright.dev/#path=docs%2Fmulti-pages.md&q=
+[browser-context]: https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext
