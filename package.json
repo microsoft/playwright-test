@@ -13,7 +13,8 @@
     "build": "tsc --build tsconfig.json",
     "watch": "tsc --build tsconfig.json --watch",
     "prepare": "npm run build",
-    "prepublishOnly": "rm tsconfig.tsbuildinfo && rm -rf out && npm run build"
+    "prepublishOnly": "rm tsconfig.tsbuildinfo && rm -rf out && npm run build",
+    "test": "folio test/"
   },
   "repository": "github:Microsoft/playwright-test",
   "description": "A test runner for running tests with Playwright.",
