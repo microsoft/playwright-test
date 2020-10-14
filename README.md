@@ -1,6 +1,8 @@
-# 🎭 End-to-end tests with Playwright [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
+# 🎭 Playwright test runner [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
-Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and support for TypeScript.
+Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and built-in support for TypeScript.
+
+Playwright test runner is **available in preview** and minor breaking changes could happen. We welcome your feedback to shape this towards 1.0.
 
 - [Get started](#get-started)
   - [Installation](#installation)
