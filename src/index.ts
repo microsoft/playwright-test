@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import { config, folio as baseFolio } from 'folio';
+import { expect, config, folio as baseFolio } from 'folio';
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
-export { expect, config } from 'folio';
 
 // Test timeout for e2e tests is 30 seconds.
 config.timeout = 30000;
