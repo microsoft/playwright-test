@@ -1,6 +1,6 @@
 {
   "name": "@playwright/test",
-  "version": "0.150.0-post",
+  "version": "0.151.0",
   "license": "Apache-2.0",
   "author": {
     "name": "Microsoft Corporation"
@@ -21,7 +21,7 @@
   "main": "out/index.js",
   "dependencies": {
     "folio": "=0.3.11",
-    "playwright": "=1.5.0",
+    "playwright": "=1.5.1",
     "rimraf": "^3.0.2"
   },
   "devDependencies": {
