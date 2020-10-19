@@ -1,0 +1,20 @@
+{
+  "name": "playwright-login-once-per-worker",
+  "version": "0.9.13",
+  "description": "",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@playwright/test": "0.151.0"
+  },
+  "scripts": {
+    "test": "test-runner"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "repository": "github:Microsoft/playwright-test"
+}
