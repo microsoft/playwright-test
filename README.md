@@ -13,6 +13,7 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Mobile emulation](#mobile-emulation)
   - [Network mocking](#network-mocking)
 - [Configuration](#configuration)
+  - [Modify context options](#modify-context-options)
   - [JUnit reporter](#junit-reporter)
 
 ## Get started
@@ -43,7 +44,7 @@ The test runner provides browser primitives as arguments to your test functions.
 
 - `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
 - `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
-  - `contextOptions`: Default options passed to context creation.
+  - `contextOptions`: Default options passed to context creation. Learn [how to modify them](#modify-context-options).
 - `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
   - `browserOptions`: Default options passed to browser creation.
 
@@ -178,15 +179,84 @@ it('loads pages without css requests', async ({ mockedContext }) => {
 
 ## Configuration
 
+### Modify context options
+
+You can modify the built-in fixtures. This example modifies the default `contextOptions` with a custom viewport size.
+
+**Step 1**: Create a new file (say `test/fixtures.ts`) which contains our modifications.
+
+```ts
+// test/fixtures.ts
+import { folio as baseFolio } from '@playwright/test';
+
+const builder = baseFolio.extend();
+
+// Fixture modifications go here
+
+const folio = builder.build();
+```
+
+**Step 2**: Override the existing `contextOptions` fixture to add a custom viewport size.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from '@playwright/test';
++ import { BrowserContextOptions } from 'playwright';
+
+const builder = baseFolio.extend();
+
++ builder.contextOptions.override(async ({ contextOptions }, runTest) => {
++   const modifiedOptions: BrowserContextOptions = {
++     ...contextOptions, // Default options
++     viewport: { width: 1440, height: 900 } // Overrides
++   }
++   await runTest(modifiedOptions);
++ });
+
+const folio = builder.build();
+```
+
+**Step 3**: Export `it` and other helpers from the modified fixtures. In your test files, import the modified fixture.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from '@playwright/test';
+import { BrowserContextOptions } from 'playwright';
+
+const builder = baseFolio.extend();
+
+builder.contextOptions.override(async ({ contextOptions }, runTest) => {
+  const modifiedOptions: BrowserContextOptions = {
+    ...contextOptions, // default
+    viewport: { width: 1440, height: 900 }
+  }
+  await runTest(modifiedOptions);
+});
+
+const folio = builder.build();
+
++ export const it = folio.it;
++ export const expect = folio.expect;
+```
+
+```ts
+// test/index.spec.ts
+import { it, expect } from "./fixtures";
+
+// Test functions go here
+it('should have modified viewport', async ({ context }) => {
+  // ...
+});
+```
+
 ### JUnit reporter
 
 The Playwright test runner supports various reporters, including exporting as a JUnit compatible XML file.
 
 ```sh
-# Specify output file for junit report
+# Specify output file as an environment variable
 # Linux/macOS
 export FOLIO_JUNIT_OUTPUT_NAME=junit.xml
-
 # Windows
 set FOLIO_JUNIT_OUTPUT_NAME=junit.xml
 
