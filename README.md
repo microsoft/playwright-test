@@ -95,7 +95,7 @@ npx folio --retries 3
 npx folio --help
 ```
 
-Test runner CLI can be customized with [test parameters](docs/parameters.md).
+Test runner CLI can be customized with [Folio parameters](folio-parameters).
 
 #### Configure NPM scripts
 
@@ -314,3 +314,4 @@ npx folio --help
 [multi-page]: https://playwright.dev/#path=docs%2Fmulti-pages.md&q=
 [browser-context]: https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext
 [folio-annotations]: https://github.com/microsoft/folio#annotations
+[folio-parameters]: https://github.com/microsoft/folio#parameters
