@@ -95,7 +95,7 @@ npx folio --retries 3
 npx folio --help
 ```
 
-Test runner CLI can be customized with [Folio parameters](folio-parameters).
+Test runner CLI can be customized with [Folio parameters][folio-parameters].
 
 #### Configure NPM scripts
 
