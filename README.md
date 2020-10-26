@@ -15,7 +15,8 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Visual comparisons](#visual-comparisons)
 - [Configuration](#configuration)
   - [Modify context options](#modify-context-options)
-  - [JUnit reporter](#junit-reporter)
+  - [Skip tests with annotations](#skip-tests-with-annotations)
+  - [Export JUnit report](#export-junit-report)
 
 ## Get started
 
@@ -30,12 +31,12 @@ npm i -D @playwright/test
 Create `foo.spec.ts` to define your test. The test function uses the [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument for browser automation.
 
 ```js
-import { it, expect } from '@playwright/test';
+import { it, expect } from "@playwright/test";
 
-it('is a basic test with the page', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
-  const name = await page.innerText('.home-navigation');
-  expect(name).toBe('🎭 Playwright');
+it("is a basic test with the page", async ({ page }) => {
+  await page.goto("https://playwright.dev/");
+  const name = await page.innerText(".home-navigation");
+  expect(name).toBe("🎭 Playwright");
 });
 ```
 
@@ -55,10 +56,10 @@ The test runner provides browser primitives as arguments to your test functions.
 - For assertions, use the [`expect` API](https://jestjs.io/docs/en/expect).
 
 ```js
-const { it, describe } = require('@playwright/test');
+const { it, describe } = require("@playwright/test");
 
-describe('feature foo', () => {
-  it('is working correctly', async ({ page }) => {
+describe("feature foo", () => {
+  it("is working correctly", async ({ page }) => {
     // Test function
   });
 });
@@ -78,11 +79,17 @@ npx folio --param browserName=chromium
 # Run all tests in headful mode
 npx folio --param headful
 
+# Run tests with slowMo (slows down Playwright operations by n milliseconds)
+npx folio --param slowMo=100
+
 # Save screenshots on failure in test-results directory
 npx folio --param screenshotOnFailure
 
 # Record videos
 npx folio --param video
+
+# Retry test failures
+npx folio --retries 3
 
 # See all options
 npx folio --help
@@ -111,9 +118,9 @@ Save the run command as an NPM script.
 The default `context` argument is a [BrowserContext][browser-context]. Browser contexts are isolated execution environments that can host multiple pages. See [multi-page scenarios][multi-page] for more examples.
 
 ```js
-import { it } from '@playwright/test';
+import { it } from "@playwright/test";
 
-it('tests on multiple web pages', async ({ context }) => {
+it("tests on multiple web pages", async ({ context }) => {
   const pageFoo = await context.newPage();
   const pageBar = await context.newPage();
   // Test function
@@ -125,19 +132,19 @@ it('tests on multiple web pages', async ({ context }) => {
 The `contextOptions` fixture defines default options used for context creation. This fixture can be overriden to configure mobile emulation in the default `context`.
 
 ```js
-import { folio } from '@playwright/test';
-import { devices } from 'playwright';
+import { folio } from "@playwright/test";
+import { devices } from "playwright";
 
 const fixtures = folio.extend();
 fixtures.contextOptions.override(async ({ contextOptions }, runTest) => {
   await runTest({
     ...contextOptions,
-    ...devices['iPhone 11']
+    ...devices["iPhone 11"]
   });
 });
 const { it, describe, extend } = fixtures.build();
 
-it('uses mobile emulation', async ({ context }) => {
+it("uses mobile emulation", async ({ context }) => {
   // Test function
 });
 ```
@@ -148,8 +155,8 @@ Define a custom argument that mocks networks call for a browser context.
 
 ```js
 // In fixtures.ts
-import { folio as base } from '@playwright/test';
-import { BrowserContext } from 'playwright';
+import { folio as base } from "@playwright/test";
+import { BrowserContext } from "playwright";
 
 // Extend base fixtures with a new test-level fixture
 const fixtures = base.extend<{ mockedContext: BrowserContext }>();
@@ -166,12 +173,12 @@ export folio = fixtures.build();
 
 ```js
 // In foo.spec.ts
-import { folio } from './fixtures';
+import { folio } from "./fixtures";
 const { it, expect } = folio;
 
-it('loads pages without css requests', async ({ mockedContext }) => {
+it("loads pages without css requests", async ({ mockedContext }) => {
   const page = await mockedContext.newPage();
-  await page.goto('https://stackoverflow.com');
+  await page.goto("https://stackoverflow.com");
   // Test function code
 });
 ```
@@ -181,10 +188,10 @@ it('loads pages without css requests', async ({ mockedContext }) => {
 The `expect` API supports visual comparisons with `toMatchSnapshot`. This uses the [pixelmatch](https://github.com/mapbox/pixelmatch) library, and you can pass `threshold` as an option.
 
 ```js
-import { it, expect } from '@playwright/test';
+import { it, expect } from "@playwright/test";
 
-it('compares page screenshot', async ({ page, browserName }) => {
-  await page.goto('https://stackoverflow.com');
+it("compares page screenshot", async ({ page, browserName }) => {
+  await page.goto("https://stackoverflow.com");
   const screenshot = await page.screenshot();
   expect(screenshot).toMatchSnapshot(`test-${browserName}.png`, { threshold: 0.2 });
 });
@@ -209,7 +216,7 @@ You can modify the built-in fixtures. This example modifies the default `context
 
 ```ts
 // test/fixtures.ts
-import { folio as baseFolio } from '@playwright/test';
+import { folio as baseFolio } from "@playwright/test";
 
 const builder = baseFolio.extend();
 
@@ -222,8 +229,8 @@ const folio = builder.build();
 
 ```diff
 // test/fixtures.ts
-import { folio as baseFolio } from '@playwright/test';
-+ import { BrowserContextOptions } from 'playwright';
+import { folio as baseFolio } from "@playwright/test";
++ import { BrowserContextOptions } from "playwright";
 
 const builder = baseFolio.extend();
 
@@ -243,8 +250,8 @@ const folio = builder.build();
 
 ```diff
 // test/fixtures.ts
-import { folio as baseFolio } from '@playwright/test';
-import { BrowserContextOptions } from 'playwright';
+import { folio as baseFolio } from "@playwright/test";
+import { BrowserContextOptions } from "playwright";
 
 const builder = baseFolio.extend();
 
@@ -267,12 +274,24 @@ const folio = builder.build();
 import { it, expect } from "./fixtures";
 
 // Test functions go here
-it('should have modified viewport', async ({ context }) => {
+it("should have modified viewport", async ({ context }) => {
   // ...
 });
 ```
 
-### JUnit reporter
+### Skip tests with annotations
+
+The Playwright test runner can annotate tests to skip under certain parameters. This is enabled by [Folio annotations][folio-annotations].
+
+```js
+it("should be skipped on firefox", (test, { browserName }) => {
+  test.skip(browserName === "firefox", "optional description for the skip")
+}, async ({ page, browserName }) => {
+  // Test function
+});
+```
+
+### Export JUnit report
 
 The Playwright test runner supports various reporters, including exporting as a JUnit compatible XML file.
 
@@ -294,3 +313,4 @@ npx folio --help
 [context-opts]: https://playwright.dev/#path=docs%2Fapi.md&q=browsernewcontextoptions
 [multi-page]: https://playwright.dev/#path=docs%2Fmulti-pages.md&q=
 [browser-context]: https://playwright.dev/#path=docs%2Fapi.md&q=class-browsercontext
+[folio-annotations]: https://github.com/microsoft/folio#annotations
