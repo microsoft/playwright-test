@@ -12,6 +12,7 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Multiple pages](#multiple-pages)
   - [Mobile emulation](#mobile-emulation)
   - [Network mocking](#network-mocking)
+  - [Visual comparisons](#visual-comparisons)
 - [Configuration](#configuration)
   - [Modify context options](#modify-context-options)
   - [JUnit reporter](#junit-reporter)
@@ -175,6 +176,27 @@ it('loads pages without css requests', async ({ mockedContext }) => {
 });
 ```
 
+### Visual comparisons
+
+The `expect` API supports visual comparisons with `toMatchSnapshot`. This uses the [pixelmatch](https://github.com/mapbox/pixelmatch) library, and you can pass `threshold` as an option.
+
+```js
+import { it, expect } from '@playwright/test';
+
+it('compares page screenshot', async ({ page, browserName }) => {
+  await page.goto('https://stackoverflow.com');
+  const screenshot = await page.screenshot();
+  expect(screenshot).toMatchSnapshot(`test-${browserName}.png`, { threshold: 0.2 });
+});
+```
+
+On first execution, this will generate golden snapshots. Subsequent runs will compare against the golden snapshots. To update golden snapshots with new actuals, run with the `--update-snapshots` flag.
+
+```sh
+# Update golden snapshots when they differ from actual
+npx folio --update-snapshots
+```
+
 -----------
 
 ## Configuration
@@ -196,7 +218,7 @@ const builder = baseFolio.extend();
 const folio = builder.build();
 ```
 
-**Step 2**: Override the existing `contextOptions` fixture to add a custom viewport size.
+**Step 2**: Override the existing `contextOptions` fixture to configure viewport size and HTTPS error handling.
 
 ```diff
 // test/fixtures.ts
@@ -208,7 +230,8 @@ const builder = baseFolio.extend();
 + builder.contextOptions.override(async ({ contextOptions }, runTest) => {
 +   const modifiedOptions: BrowserContextOptions = {
 +     ...contextOptions, // Default options
-+     viewport: { width: 1440, height: 900 } // Overrides
++     viewport: { width: 1440, height: 900 },
++     ignoreHTTPSErrors: true
 +   }
 +   await runTest(modifiedOptions);
 + });
