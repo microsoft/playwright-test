@@ -9,7 +9,7 @@
     "@playwright/test": "0.9.13"
   },
   "scripts": {
-    "test": "npx folio"
+    "test": "folio"
   },
   "keywords": [],
   "author": {
