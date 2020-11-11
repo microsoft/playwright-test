@@ -9,7 +9,7 @@
     "@playwright/test": "0.151.0"
   },
   "scripts": {
-    "test": "test-runner"
+    "test": "folio"
   },
   "keywords": [],
   "author": {
