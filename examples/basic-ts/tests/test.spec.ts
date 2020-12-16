@@ -18,5 +18,5 @@ import { it, expect } from '@playwright/test';
 
 it('is a basic test with the page', async ({ page }) => {
   await page.goto('https://playwright.dev/');
-  expect(await page.innerText('.home-navigation')).toBe('🎭 Playwright');
+  expect(await page.innerText('.navbar__title')).toBe('Playwright');
 });
