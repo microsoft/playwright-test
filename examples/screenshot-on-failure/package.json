@@ -1,14 +1,14 @@
 {
   "name": "playwright-screenshot-on-failure",
-  "version": "0.9.13",
+  "version": "0.0.1",
   "directories": {
     "test": "tests"
   },
   "dependencies": {
-    "@playwright/test": "0.9.13"
+    "@playwright/test": "0.151.0"
   },
   "scripts": {
-    "test": "folio"
+    "test": "folio --param screenshotOnFailure"
   },
   "keywords": [],
   "author": {
