@@ -28,7 +28,7 @@ npm i -D @playwright/test
 
 ### Write a test
 
-Create `foo.spec.ts` to define your test. The test function uses the [`page`](https://playwright.dev/#path=docs%2Fapi.md&q=class-page) argument for browser automation.
+Create `foo.spec.ts` to define your test. The test function uses the [`page`](https://playwright.dev/docs/api/class-page) argument for browser automation.
 
 ```js
 import { it, expect } from "@playwright/test";
@@ -44,7 +44,7 @@ it("is a basic test with the page", async ({ page }) => {
 
 The test runner provides browser primitives as arguments to your test functions. Test functions can use one or more of these arguments.
 
-- `page`: Instance of [Page](https://playwright.dev/#path=docs%2Fapi.md&q=class-page). Each test gets a new isolated page to run the test.
+- `page`: Instance of [Page](https://playwright.dev/docs/api/class-page). Each test gets a new isolated page to run the test.
 - `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
   - `contextOptions`: Default options passed to context creation. Learn [how to modify them](#modify-context-options).
 - `browser`: Instance of [Browser](https://playwright.dev/#path=docs%2Fapi.md&q=class-browser). Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
