@@ -28,7 +28,8 @@ type PlaywrightParameters = {
   // Browser type name.
   browserName: 'chromium' | 'firefox' | 'webkit';
   // Whether to run tests headless or headful.
-  headful: boolean;
+  // If undefined, headfulness will be handled by playwright.
+  headful: boolean | undefined;
   // Operating system.
   platform: 'win32' | 'linux' | 'darwin';
   // Generate screenshot on failure.
@@ -82,7 +83,7 @@ type PlaywrightTestFixtures = {
 
 const fixtures = baseFolio.extend<PlaywrightTestFixtures, PlaywrightWorkerFixtures, PlaywrightParameters>();
 fixtures.browserName.initParameter('Browser type name', (process.env.BROWSER || 'chromium') as 'chromium' | 'firefox' | 'webkit');
-fixtures.headful.initParameter('Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
+fixtures.headful.initParameter('Whether to run tests headless or headful', process.env.HEADFUL ? true : undefined);
 fixtures.platform.initParameter('Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
 fixtures.screenshotOnFailure.initParameter('Generate screenshot on failure', false);
 fixtures.slowMo.initParameter('Slows down Playwright operations by the specified amount of milliseconds', 0);
@@ -92,7 +93,7 @@ fixtures.browserOptions.init(async ({ headful, slowMo }, run) => {
   await run({
     handleSIGINT: false,
     slowMo,
-    headless: !headful,
+    headless: headful === undefined ? undefined : !headful,
   });
 }, { scope: 'worker' });
 
