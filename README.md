@@ -15,6 +15,7 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Visual comparisons](#visual-comparisons)
 - [Configuration](#configuration)
   - [Modify context options](#modify-context-options)
+  - [Modify launch options](#modify-launch-options)
   - [Skip tests with annotations](#skip-tests-with-annotations)
   - [Export JUnit report](#export-junit-report)
 
@@ -48,7 +49,7 @@ The test runner provides browser primitives as arguments to your test functions.
 - `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
   - `contextOptions`: Default options passed to context creation. Learn [how to modify them](#modify-context-options).
 - `browser`: Instance of [Browser][browser]. Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
-  - `browserOptions`: Default options passed to browser creation.
+  - `browserOptions`: Default options passed to browser/launch creation.
 
 #### Specs and assertions
 
@@ -236,7 +237,7 @@ const builder = baseFolio.extend();
 
 + builder.contextOptions.override(async ({ contextOptions }, runTest) => {
 +   const modifiedOptions: BrowserContextOptions = {
-+     ...contextOptions, // Default options
++     ...contextOptions, // default options
 +     viewport: { width: 1440, height: 900 },
 +     ignoreHTTPSErrors: true
 +   }
@@ -257,8 +258,9 @@ const builder = baseFolio.extend();
 
 builder.contextOptions.override(async ({ contextOptions }, runTest) => {
   const modifiedOptions: BrowserContextOptions = {
-    ...contextOptions, // default
+    ...contextOptions, // default options
     viewport: { width: 1440, height: 900 }
+    ignoreHTTPSErrors: true
   }
   await runTest(modifiedOptions);
 });
@@ -275,6 +277,76 @@ import { it, expect } from "./fixtures";
 
 // Test functions go here
 it("should have modified viewport", async ({ context }) => {
+  // ...
+});
+```
+
+### Modify launch options
+
+You can modify the built-in fixtures. This example modifies the default `browserOptions` with a slowMo.
+
+**Step 1**: Create a new file (say `test/fixtures.ts`) which contains our modifications.
+
+```ts
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
+
+const builder = baseFolio.extend();
+
+// Fixture modifications go here
+
+const folio = builder.build();
+```
+
+**Step 2**: Override the existing `browserOptions` fixture to configure the slowMo.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
++ import { LaunchOptions } from "playwright";
+
+const builder = baseFolio.extend();
+
++ builder.browserOptions.override(async ({ browserOptions }, runTest) => {
++   const modifiedOptions: LaunchOptions = {
++     ...browserOptions, // Default options
++     slowMo: 50,
++   }
++   await runTest(modifiedOptions);
++ });
+
+const folio = builder.build();
+```
+
+**Step 3**: Export `it` and other helpers from the modified fixtures. In your test files, import the modified fixture.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
+import { LaunchOptions } from "playwright";
+
+const builder = baseFolio.extend();
+
+builder.browserOptions.override(async ({ browserOptions }, runTest) => {
+  const modifiedOptions: LaunchOptions = {
+    ...browserOptions, // default
+    slowMo: 50,
+  }
+  await runTest(modifiedOptions);
+});
+
+const folio = builder.build();
+
++ export const it = folio.it;
++ export const expect = folio.expect;
+```
+
+```ts
+// test/index.spec.ts
+import { it, expect } from "./fixtures";
+
+// Test functions go here
+it("should have the slow mo", async ({ context }) => {
   // ...
 });
 ```
