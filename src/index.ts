@@ -70,7 +70,7 @@ type PlaywrightWorkerFixtures = {
 
 // Test fixture definitions, those are created for each test ------------------
 
-type PlaywrightTestFixtures = {
+export type PlaywrightTestFixtures = {
   // Default browser.newContext() options.
   contextOptions: BrowserContextOptions;
   // Factory for creating a context with given additional options.
