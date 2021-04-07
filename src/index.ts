@@ -14,188 +14,174 @@
  * limitations under the License.
  */
 
-import { config, folio as baseFolio } from 'folio';
-import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
-export { expect, config } from 'folio';
+import { Browser, BrowserContext, BrowserContextOptions, Page, LaunchOptions } from 'playwright';
+import * as folio from 'folio';
+import * as fs from 'fs';
+import * as util from 'util';
 
-// Test timeout for e2e tests is 30 seconds.
-config.timeout = 30000;
+export * from 'folio';
+export { BrowserContextOptions, LaunchOptions } from 'playwright';
 
-// Parameters ------------------------------------------------------------------
-// ... these can be used to run tests in different modes.
+export type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
-type PlaywrightParameters = {
-  // Browser type name.
-  browserName: 'chromium' | 'firefox' | 'webkit';
-  // Whether to run tests headless or headful.
-  headful: boolean;
-  // Operating system.
-  platform: 'win32' | 'linux' | 'darwin';
-  // Generate screenshot on failure.
-  screenshotOnFailure: boolean;
-  // Slows down Playwright operations by the specified amount of milliseconds.
-  slowMo: number;
-  // Whether to record videos for all tests.
-  video: boolean;
-};
-
-
-// Worker fixture declarations -------------------------------------------------
-// ... these live as long as the worker process.
-
-type PlaywrightWorkerFixtures = {
-  // Playwright library.
+// Arguments available to the test function.
+export type PlaywrightTestArgs = {
+  // Playwright.
   playwright: typeof import('playwright');
-  // Browser type (Chromium / WebKit / Firefox)
-  browserType: BrowserType<Browser>;
-  // Default browserType.launch() options.
-  browserOptions: LaunchOptions;
-  // Browser instance, shared for the worker.
+
+  // Name of the browser (chromium, firefox, webkit) that runs this test.
+  browserName: BrowserName;
+
+  // Browser instance, shared between many tests.
   browser: Browser;
-  // True iff browserName is Chromium
-  isChromium: boolean;
-  // True iff browserName is Firefox
-  isFirefox: boolean;
-  // True iff browserName is WebKit
-  isWebKit: boolean;
-  // True iff running on Windows.
-  isWindows: boolean;
-  // True iff running on Mac.
-  isMac: boolean;
-  // True iff running on Linux.
-  isLinux: boolean;
-};
 
-
-// Test fixture definitions, those are created for each test ------------------
-
-type PlaywrightTestFixtures = {
-  // Default browser.newContext() options.
-  contextOptions: BrowserContextOptions;
-  // Factory for creating a context with given additional options.
-  contextFactory: (options?: BrowserContextOptions) => Promise<BrowserContext>;
-  // Context instance for test.
+  // BrowserContext instance, created fresh for each test.
   context: BrowserContext;
-  // Page instance for test.
+
+  // Page instance, created fresh for each test.
   page: Page;
 };
 
-const fixtures = baseFolio.extend<PlaywrightTestFixtures, PlaywrightWorkerFixtures, PlaywrightParameters>();
-fixtures.browserName.initParameter('Browser type name', (process.env.BROWSER || 'chromium') as 'chromium' | 'firefox' | 'webkit');
-fixtures.headful.initParameter('Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
-fixtures.platform.initParameter('Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
-fixtures.screenshotOnFailure.initParameter('Generate screenshot on failure', false);
-fixtures.slowMo.initParameter('Slows down Playwright operations by the specified amount of milliseconds', 0);
-fixtures.video.initParameter('Record videos while running tests', false);
+export type PlaywrightOptions =
+  // All browser launch options are supported.
+  LaunchOptions &
 
-fixtures.browserOptions.init(async ({ headful, slowMo }, run) => {
-  await run({
-    handleSIGINT: false,
-    slowMo,
-    headless: !headful,
-  });
-}, { scope: 'worker' });
+  // All browser context options are supported.
+  BrowserContextOptions &
 
-fixtures.playwright.init(async ({ }, run) => {
-  const playwright = require('playwright');
-  await run(playwright);
-}, { scope: 'worker' });
+  // Testing options.
+  {
+    // Whether to capture a screenshot after each test, off by default.
+    // - off: Do not capture screenshots.
+    // - on: Capture screenshot after each test.
+    // - only-on-failure: Capture screenshot after each test failure.
+    screenshot?: 'off' | 'on' | 'only-on-failure';
 
-fixtures.browserType.init(async ({ playwright, browserName }, run) => {
-  const browserType = (playwright as any)[browserName];
-  await run(browserType);
-}, { scope: 'worker' });
+    // Whether to record video for each test, off by default.
+    // - off: Do not record video.
+    // - on: Record video for each test.
+    // - retain-on-failure: Record video for each test,
+    //     but remove all videos from successful test runs.
+    // - retry-with-video: Record video only when retrying a test.
+    video?: 'off' | 'on' | 'retain-on-failure' | 'retry-with-video';
 
-fixtures.browser.init(async ({ browserType, browserOptions }, run) => {
-  const browser = await browserType.launch(browserOptions);
-  await run(browser);
-  await browser.close();
-}, { scope: 'worker' });
+    // Where to look for test snapshots (usually screenshots).
+    // Defaults to different snapshots for each browser and platform.
+    //
+    // To make snapshots platform-agnostic:
+    //    new ChromiumEnv({ snapshotPathSegment: 'chromium' })
+    //
+    // To make snapshots browser-agnostic:
+    //    new ChromiumEnv({ snapshotPathSegment: '' })
+    snapshotPathSegment?: string;
+  };
 
-fixtures.isChromium.init(async ({ browserName }, run) => {
-  await run(browserName === 'chromium');
-}, { scope: 'worker' });
+export class PlaywrightEnv implements folio.Env<PlaywrightTestArgs> {
+  private _playwright: typeof import('playwright') | undefined;
+  private _browserName: BrowserName;
+  private _options: PlaywrightOptions;
+  private _browser: Browser | undefined;
+  private _context: BrowserContext | undefined;
+  private _page: Page | undefined;
+  private _allPages: Page[] = [];
 
-fixtures.isFirefox.init(async ({ browserName }, run) => {
-  await run(browserName === 'firefox');
-}, { scope: 'worker' });
+  constructor(browserName: BrowserName, options: PlaywrightOptions = {}) {
+    this._browserName = browserName;
+    this._options = options;
+  }
 
-fixtures.isWebKit.init(async ({ browserName }, run) => {
-  await run(browserName === 'webkit');
-}, { scope: 'worker' });
-
-fixtures.isWindows.init(async ({ platform }, run) => {
-  await run(platform === 'win32');
-}, { scope: 'worker' });
-
-fixtures.isMac.init(async ({ platform }, run) => {
-  await run(platform === 'darwin');
-}, { scope: 'worker' });
-
-fixtures.isLinux.init(async ({ platform }, run) => {
-  await run(platform === 'linux');
-}, { scope: 'worker' });
-
-fixtures.contextOptions.init(async ({ video, testInfo }, run) => {
-  if (video) {
-    await run({
-      videosPath: testInfo.outputPath(''),
+  async beforeAll() {
+    this._playwright = require('playwright');
+    this._browser = await this._playwright![this._browserName].launch({
+      ...this._options,
+      handleSIGINT: false,
     });
-  } else {
-    await run({});
   }
-});
 
-fixtures.contextFactory.init(async ({ browser, contextOptions, testInfo, screenshotOnFailure }, run) => {
-  const contexts: BrowserContext[] = [];
-  async function contextFactory(options: BrowserContextOptions = {}) {
-    const context = await browser.newContext({ ...contextOptions, ...options });
-    contexts.push(context);
-    return context;
+  async beforeEach(testInfo: folio.TestInfo) {
+    const options = testInfo.testOptions as PlaywrightTestOptions;
+    const recordVideo = this._options.video === 'on' || this._options.video === 'retain-on-failure' ||
+        (this._options.video === 'retry-with-video' && !!testInfo.retry);
+    this._context = await this._browser!.newContext({
+      recordVideo: recordVideo ? { dir: testInfo.outputPath('') } : undefined,
+      ...this._options,
+      ...options.contextOptions
+    });
+    this._allPages = [];
+    this._context.on('page', page => this._allPages.push(page));
+    this._page = await this._context.newPage();
+    testInfo.snapshotPathSegment = this._options.snapshotPathSegment || (this._browserName + '-' + process.platform);
+    return {
+      playwright: this._playwright!,
+      browserName: this._browserName,
+      browser: this._browser!,
+      context: this._context!,
+      page: this._page!,
+    };
   }
-  await run(contextFactory);
 
-  if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
-    let ordinal = 0;
-    for (const context of contexts) {
-      for (const page of context.pages())
-        await page.screenshot({ timeout: 5000, path: testInfo.outputPath(`test-failed-${++ordinal}.png`) });
+  async afterEach(testInfo: folio.TestInfo) {
+    const testFailed = testInfo.status !== testInfo.expectedStatus;
+    if (this._context) {
+      if (this._options.screenshot === 'on' || (this._options.screenshot === 'only-on-failure' && testFailed)) {
+        await Promise.all(this._context.pages().map((page, index) => {
+          const screenshotPath = testInfo.outputPath(`test-${testFailed ? 'failed' : 'finished'}-${++index}.png`);
+          return page.screenshot({ timeout: 5000, path: screenshotPath }).catch(e => {});
+        }));
+      }
+      await this._context.close();
     }
+    const deleteVideos = this._options.video === 'retain-on-failure' && !testFailed;
+    if (deleteVideos) {
+      await Promise.all(this._allPages.map(async page => {
+        const video = page.video();
+        if (!video)
+          return;
+        const videoPath = await video.path();
+        await util.promisify(fs.unlink)(videoPath).catch(e => {});
+      }));
+    }
+    this._allPages = [];
+    this._context = undefined;
+    this._page = undefined;
   }
-  for (const context of contexts)
-    await context.close();
-});
 
-fixtures.context.init(async ({ contextFactory }, run) => {
-  const context = await contextFactory();
-  await run(context);
-  // Context factory is taking care of closing the context,
-  // so that it could capture a screenshot on failure.
-});
+  async afterAll() {
+    if (this._browser)
+      await this._browser.close();
+    this._browser = undefined;
+  }
+}
 
-fixtures.page.init(async ({ context }, run) => {
-  // Always create page off context so that they matched.
-  await run(await context.newPage());
-  // Context fixture is taking care of closing the page.
-});
+// Environment that runs tests in Chromium.
+export class ChromiumEnv extends PlaywrightEnv {
+  constructor(options: PlaywrightOptions = {}) {
+    super('chromium', options);
+  }
+}
 
-fixtures.testParametersPathSegment.override(async ({ browserName, platform }, run) => {
-  await run(browserName + '-' + platform);
-});
+// Environment that runs tests in Firefox.
+export class FirefoxEnv extends PlaywrightEnv {
+  constructor(options: PlaywrightOptions = {}) {
+    super('firefox', options);
+  }
+}
 
-export const folio = fixtures.build();
-export const it = folio.it;
-export const fit = folio.fit;
-export const xit = folio.xit;
-export const test = folio.test;
-export const describe = folio.describe;
-export const beforeEach = folio.beforeEach;
-export const afterEach = folio.afterEach;
-export const beforeAll = folio.beforeAll;
-export const afterAll = folio.afterAll;
+// Environment that runs tests in WebKit.
+export class WebKitEnv extends PlaywrightEnv {
+  constructor(options: PlaywrightOptions = {}) {
+    super('webkit', options);
+  }
+}
 
-// If browser is not specified, we are running tests against all three browsers.
+type PlaywrightTestOptions = {
+  // Browser context options for a single test,
+  // in addition to context options specified for the whole environment.
+  contextOptions?: BrowserContextOptions;
+};
 
-folio.generateParametrizedTests(
-    'browserName',
-    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
+export function newTestType<TestArgs = {}, TestOptions = {}>() {
+  return folio.newTestType<TestArgs & PlaywrightTestArgs, TestOptions & PlaywrightTestOptions>();
+}
+
+export const test = newTestType();
