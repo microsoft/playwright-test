@@ -5,10 +5,9 @@ Cross-browser end-to-end testing for web apps. Browser automation with [Playwrig
 Playwright test runner is **available in preview** and minor breaking changes could happen. We welcome your feedback to shape this towards 1.0.
 
 - [Get started](#get-started)
-  - [Installation](#installation)
-  - [Write a test](#write-a-test)
-  - [Write a configuration file](#write-a-configuration-file)
-  - [Run the test](#run-the-test)
+  - [Writing a test](#writing-a-test)
+  - [Writing a configuration file](#writing-a-configuration-file)
+  - [Running tests](#running-tests)
 - [Examples](#examples)
   - [Multiple pages](#multiple-pages)
   - [Mobile emulation](#mobile-emulation)
@@ -22,13 +21,30 @@ Playwright test runner is **available in preview** and minor breaking changes co
 
 ## Get started
 
-### Installation
+- Install `@playwright/test`:
+  ```sh
+  $ npm i -D @playwright/test
+  ```
 
-```sh
-npm i -D @playwright/test
-```
+- Create `tests/` directory with the default configuration and example test:
+  ```sh
+  $ npx playwright-test example-js tests/
+  ```
+  Alternatively, for TypeScript:
+  ```sh
+  $ npx playwright-test example-ts tests/
+  ```
 
-### Write a test
+- Run tests
+  ```sh
+  $ npx folio --config=tests/config.js
+  ```
+  Alternatively, for TypeScript:
+  ```sh
+  $ npx folio --config=tests/config.ts
+  ```
+
+### Writing a test
 
 Create `foo.spec.ts` to define your test. The test function uses the [`page`][page] argument for browser automation.
 
@@ -49,7 +65,7 @@ The test runner provides browser primitives as arguments to your test functions.
 - `browser`: Instance of [Browser][browser]. Browsers are shared across tests to optimize resources. Learn [how to configure](#modify-options) browser launch.
 - `browserName`: The name of the browser currently running the test. Either `chromium`, `firefox` or `webkit`.
 
-### Write a configuration file
+### Writing a configuration file
 
 Create `config.ts` to configure your tests. Here is an example configuration that runs every test in Chromium, Firefox and WebKit.
 
@@ -72,9 +88,9 @@ test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
 test.runWith(new WebKitEnv(options), { tag: 'webkit' });
 ```
 
-### Run the test
+### Running tests
 
-Tests can be run in single or multiple browsers, in parallel or sequentially.
+Tests can be run in a single or multiple browsers, in parallel or sequentially.
 
 ```sh
 # Run all tests across Chromium, Firefox and WebKit
