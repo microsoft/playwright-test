@@ -5,10 +5,10 @@
     "test": "tests"
   },
   "dependencies": {
-    "@playwright/test": "0.162.0"
+    "@playwright/test": "0.1101.0"
   },
   "scripts": {
-    "test": "folio"
+    "test": "folio --config=config.js"
   },
   "keywords": [],
   "author": {
