@@ -14,14 +14,26 @@
  * limitations under the License.
  */
 
-import { folio as baseFolio } from '@playwright/test';
+import { BrowserContext } from 'playwright';
+import { ChromiumEnv, FirefoxEnv, WebKitEnv, PlaywrightOptions, setConfig, newTestType, merge } from '@playwright/test';
+
+// Global Folio configuration.
+setConfig({
+  testDir: __dirname,
+  timeout: 30000,
+});
+
+// New test type that provides a number in addition to standard page, context, etc.
+export const test = newTestType<{ loginOnce: (context: BrowserContext) => Promise<BrowserContext> }>();
 export { expect } from '@playwright/test';
 
-const builder = baseFolio.extend<{}, { loggedInState: any }>();
+let loggedInState: any;
 
-builder.loggedInState.init(async ({ browser }, run) => {
-  // Create a new page.
-  const page = await browser.newPage();
+async function loginOnce(context: BrowserContext) {
+  if (loggedInState) return overrideContext(context, loggedInState);
+
+  const page = await context.newPage();
+
   // Perform real log in.
   await page.goto('https://www.microsoft.com/en-us/');
   await page.click('a[aria-label="Sign in to your account"]');
@@ -32,25 +44,21 @@ builder.loggedInState.init(async ({ browser }, run) => {
   await page.check('input[aria-label="Don\'t show this again"]');
   await Promise.all([
     page.waitForNavigation({ url: 'https://www.microsoft.com/en-us/?wa=wsignin1.0' }),
-    page.click('input[type="submit"]')
+    page.click('input[type="submit"]'),
   ]);
 
-  // Fetch cookies.
-  const cookies = await (await page.context().cookies()).filter(c => c.value !== '');
-  // Fetch local and session storage.
+  const cookies = (await page.context().cookies()).filter(c => c.value !== '');
   const storage = await page.evaluate(() => ({ sessionStorage, localStorage }));
-  // Close the login page, we no longer need it.
   await page.close();
 
-  // Run the test with the loggedInState.
-  const loggedInState = { ...storage, cookies };
-  await run(loggedInState);
-}, { scope: 'worker' });
+  loggedInState = { ...storage, cookies };
 
-builder.context.override(async ({ context, loggedInState }, run) => {
-  // Override context to inject cookies, local and session storage.
+  return overrideContext(context, loggedInState);
+}
+
+async function overrideContext(context: BrowserContext, loggedInState: any): Promise<BrowserContext> {
   await context.addCookies(loggedInState.cookies);
-  await context.addInitScript(loggedInState => {
+  await context.addInitScript((loggedInState: any) => {
     if (new URL(location.href).origin.endsWith('microsoft.com')) {
       for (const name of Object.keys(loggedInState.session))
         sessionStorage[name] = loggedInState.sessionStorage[name];
@@ -58,8 +66,25 @@ builder.context.override(async ({ context, loggedInState }, run) => {
         localStorage[name] = loggedInState.localStorage[name];
     }
   }, loggedInState);
-  await run(context);
-});
+  return context;
+}
 
-export const folio = builder.build();
-export const it = folio.it;
+// Custom environment
+class LoggedInEnv {
+  beforeEach() {
+    return {
+      loginOnce,
+    };
+  }
+}
+
+// Playwright-specific options for browser environments.
+const options: PlaywrightOptions = {
+  headless: true,
+  viewport: { width: 1280, height: 720 },
+};
+
+// Run tests in three browsers, with custom and browser environments.
+test.runWith(merge(new LoggedInEnv(), new ChromiumEnv(options)), { tag: 'chromium' });
+test.runWith(merge(new LoggedInEnv(), new FirefoxEnv(options)), { tag: 'firefox' });
+test.runWith(merge(new LoggedInEnv(), new WebKitEnv(options)), { tag: 'webkit' });

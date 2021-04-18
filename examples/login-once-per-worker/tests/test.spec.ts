@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import { it } from './fixtures';
+import { test } from '../config';
 
-it('test', async ({page}) => {
+test('test', async ({ context, loginOnce }) => {
+  const loggedInContext = await loginOnce(context);
+  const page = await loggedInContext.newPage();
   await page.goto('https://microsoft.com');
 });
