@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-import { it, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-// Run this test with the '--param screenshotOnFailure' command line parameter
-// or 'npm run test'.
-
-it('is a basic test with the page', async ({ page, browserName, testInfo }) => {
+test('is a basic test with the page', async ({ page, browserName }) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
-    This test's title is ${testInfo.title}<br>
     It is opening in ${browserName}!
   </div>`);
   expect(await page.innerText('body')).toBe('Nooo!');

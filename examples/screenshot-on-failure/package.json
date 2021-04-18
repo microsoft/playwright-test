@@ -5,10 +5,10 @@
     "test": "tests"
   },
   "dependencies": {
-    "@playwright/test": "0.151.0"
+    "@playwright/test": "0.1101.0"
   },
   "scripts": {
-    "test": "folio --param screenshotOnFailure"
+    "test": "folio --config=config.ts"
   },
   "keywords": [],
   "author": {
