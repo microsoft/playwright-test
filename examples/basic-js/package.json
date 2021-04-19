@@ -8,7 +8,7 @@
     "@playwright/test": "0.1101.0"
   },
   "scripts": {
-    "test": "folio --config=config.js"
+    "test": "folio"
   },
   "keywords": [],
   "author": {

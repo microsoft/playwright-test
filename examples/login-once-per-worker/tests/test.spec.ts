@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { test } from '../config';
+import { test } from '../folio.config';
 
 test('test', async ({ context, loginOnce }) => {
   const loggedInContext = await loginOnce(context);

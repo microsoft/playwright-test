@@ -9,7 +9,7 @@
     "@playwright/test": "0.1101.0"
   },
   "scripts": {
-    "test": "folio --config=config.ts"
+    "test": "folio"
   },
   "keywords": [],
   "author": {
