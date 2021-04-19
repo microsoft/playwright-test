@@ -27,53 +27,53 @@ setConfig({
 export const test = newTestType<{ loginOnce: (context: BrowserContext) => Promise<BrowserContext> }>();
 export { expect } from '@playwright/test';
 
-let loggedInState: any;
-
-async function loginOnce(context: BrowserContext) {
-  if (loggedInState) return overrideContext(context, loggedInState);
-
-  const page = await context.newPage();
-
-  // Perform real log in.
-  await page.goto('https://www.microsoft.com/en-us/');
-  await page.click('a[aria-label="Sign in to your account"]');
-  await page.fill('input[aria-label="Enter your email, phone, or Skype."]', process.env.SECRET_USERNAME);
-  await page.click('input[type="submit"]');
-  await page.fill(`input[aria-label="Enter the password for ${process.env.SECRET_USERNAME}"]`, process.env.SECRET_PASSWORD);
-  await page.click('input[type="submit"]');
-  await page.check('input[aria-label="Don\'t show this again"]');
-  await Promise.all([
-    page.waitForNavigation({ url: 'https://www.microsoft.com/en-us/?wa=wsignin1.0' }),
-    page.click('input[type="submit"]'),
-  ]);
-
-  const cookies = (await page.context().cookies()).filter(c => c.value !== '');
-  const storage = await page.evaluate(() => ({ sessionStorage, localStorage }));
-  await page.close();
-
-  loggedInState = { ...storage, cookies };
-
-  return overrideContext(context, loggedInState);
-}
-
-async function overrideContext(context: BrowserContext, loggedInState: any): Promise<BrowserContext> {
-  await context.addCookies(loggedInState.cookies);
-  await context.addInitScript((loggedInState: any) => {
-    if (new URL(location.href).origin.endsWith('microsoft.com')) {
-      for (const name of Object.keys(loggedInState.session))
-        sessionStorage[name] = loggedInState.sessionStorage[name];
-      for (const name of Object.keys(loggedInState.local))
-        localStorage[name] = loggedInState.localStorage[name];
-    }
-  }, loggedInState);
-  return context;
-}
-
 // Custom environment
 class LoggedInEnv {
+  private loggedInState: any;
+
+  async loginOnce(context: BrowserContext) {
+    if (this.loggedInState) return this.overrideContext.bind(this)(context, this.loggedInState);
+
+    const page = await context.newPage();
+
+    // Perform real log in.
+    await page.goto('https://www.microsoft.com/en-us/');
+    await page.click('a[aria-label="Sign in to your account"]');
+    await page.fill('input[aria-label="Enter your email, phone, or Skype."]', process.env.SECRET_USERNAME);
+    await page.click('input[type="submit"]');
+    await page.fill(`input[aria-label="Enter the password for ${process.env.SECRET_USERNAME}"]`, process.env.SECRET_PASSWORD);
+    await page.click('input[type="submit"]');
+    await page.check('input[aria-label="Don\'t show this again"]');
+    await Promise.all([
+      page.waitForNavigation({ url: 'https://www.microsoft.com/en-us/?wa=wsignin1.0' }),
+      page.click('input[type="submit"]'),
+    ]);
+
+    const cookies = (await page.context().cookies()).filter(c => c.value !== '');
+    const storage = await page.evaluate(() => ({ sessionStorage, localStorage }));
+    await page.close();
+
+    this.loggedInState = { ...storage, cookies };
+
+    return this.overrideContext(context, this.loggedInState);
+  }
+
+  async overrideContext(context: BrowserContext, loggedInState: any): Promise<BrowserContext> {
+    await context.addCookies(loggedInState.cookies);
+    await context.addInitScript((loggedInState: any) => {
+      if (new URL(location.href).origin.endsWith('microsoft.com')) {
+        for (const name of Object.keys(loggedInState.session))
+          sessionStorage[name] = loggedInState.sessionStorage[name];
+        for (const name of Object.keys(loggedInState.local))
+          localStorage[name] = loggedInState.localStorage[name];
+      }
+    }, loggedInState);
+    return context;
+  }
+
   beforeEach() {
     return {
-      loginOnce,
+      loginOnce: this.loginOnce.bind(this),
     };
   }
 }
