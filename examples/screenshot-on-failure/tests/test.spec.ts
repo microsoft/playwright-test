@@ -16,8 +16,9 @@
 
 import { test, expect } from '@playwright/test';
 
-test('is a basic test with the page', async ({ page, browserName }) => {
+test('is a basic test with the page', async ({ page, browserName }, testInfo) => {
   await page.setContent(`<div style="height: 500px; background-color: red">
+    This test's title is ${testInfo.title}<br>
     It is opening in ${browserName}!
   </div>`);
   expect(await page.innerText('body')).toBe('Nooo!');
