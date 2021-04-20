@@ -110,7 +110,9 @@ export class PlaywrightEnv implements folio.Env<PlaywrightTestArgs> {
     this._allPages = [];
     this._context.on('page', page => this._allPages.push(page));
     this._page = await this._context.newPage();
-    testInfo.snapshotPathSegment = this._options.snapshotPathSegment || (this._browserName + '-' + process.platform);
+    testInfo.snapshotPathSegment = this._options.snapshotPathSegment === undefined
+      ? (this._browserName + '-' + process.platform)
+      : this._options.snapshotPathSegment;
     return {
       playwright: this._playwright!,
       browserName: this._browserName,
