@@ -96,8 +96,6 @@ $ npx folio --config=config.ts --retries=2
 $ npx folio --help
 ```
 
-Refer to the [command line documentation][folio-cli] for all options.
-
 #### Configure NPM scripts
 
 Save the run command as an NPM script.
@@ -274,10 +272,8 @@ Available testing options:
   - `retain-on-failure`  - Record video for each test, but remove all videos from successful test runs.
   - `retry-with-video` - Record video only when retrying a test.
 
-Most notable `setConfig` options, see the full list in [Folio documentation](https://github.com/microsoft/folio):
+Most notable configuration options, see the full list in [Folio documentation](https://github.com/microsoft/folio):
 - `retries: number` - Each failing test will be retried up to the certain number of times.
-- `testDir: string` - Directory where test runner should search for test files.
-- `timeout: number` - Timeout in milliseconds for each test.
 - `workers: number` - The maximum number of worker processes to run in parallel.
 
 #### Browser-specific options
@@ -339,32 +335,18 @@ test("no https errors in this test", options, async ({ page }) => {
 
 The Playwright test runner supports various reporters, including exporting as a JUnit compatible XML file.
 
-```diff
-// config.ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
-+ import { reporters, setReporters } from "@playwright/test";
+```sh
+# Specify output file as an environment variable
+# Linux/macOS
+$ export FOLIO_JUNIT_OUTPUT_NAME=junit.xml
+# Windows
+$ set FOLIO_JUNIT_OUTPUT_NAME=junit.xml
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
-  timeout: 30000,  // Each test is given 30 seconds.
-});
+# Use junit and CLI reporters
+$ npx folio --reporter=junit,line
 
-+ setReporters([
-+   // Report to the terminal with "line" reporter.
-+   new reporters.line(),
-+   // Additionally, output a JUnit XML file.
-+   new reporters.junit({ outputFile: 'junit.xml' }),
-+ ]);
-
-const options = {
-  headless: true,  // Run tests in headless browsers.
-  viewport: { width: 1280, height: 720 },
-};
-
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-test.runWith(new WebKitEnv(options), { tag: 'webkit' });
+# See all supported reporters
+$ npx folio --help
 ```
 
 [multi-page]: https://playwright.dev/docs/multi-pages
@@ -372,4 +354,3 @@ test.runWith(new WebKitEnv(options), { tag: 'webkit' });
 [browser-context]: https://playwright.dev/docs/api/class-browsercontext
 [page]: https://playwright.dev/docs/api/class-page
 [folio-annotations]: https://github.com/microsoft/folio#annotations
-[folio-cli]: https://github.com/microsoft/folio#command-line
