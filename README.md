@@ -2,14 +2,13 @@
 
 # 🎭 Playwright test runner [![npm version](https://img.shields.io/npm/v/@playwright/test.svg?style=flat)](https://www.npmjs.com/package/@playwright/test)
 
-Cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and built-in support for TypeScript.
+Zero config cross-browser end-to-end testing for web apps. Browser automation with [Playwright](https://playwright.dev), Jest-like assertions and built-in support for TypeScript.
 
 Playwright test runner is **available in preview** and minor breaking changes could happen. We welcome your feedback to shape this towards 1.0.
 
 - [Get started](#get-started)
   - [Installation](#installation)
   - [Write a test](#write-a-test)
-  - [Write a configuration file](#write-a-configuration-file)
   - [Run the test](#run-the-test)
 - [Examples](#examples)
   - [Multiple pages](#multiple-pages)
@@ -17,9 +16,9 @@ Playwright test runner is **available in preview** and minor breaking changes co
   - [Network mocking](#network-mocking)
   - [Visual comparisons](#visual-comparisons)
 - [Configuration](#configuration)
-  - [Modify options](#modify-options)
+  - [Modify context options](#modify-context-options)
+  - [Modify launch options](#modify-launch-options)
   - [Skip tests with annotations](#skip-tests-with-annotations)
-  - [Modify context options for a single test](#modify-context-options-for-a-single-test)
   - [Export JUnit report](#export-junit-report)
 
 ## Get started
@@ -34,71 +33,72 @@ npm i -D @playwright/test
 
 Create `foo.spec.ts` to define your test. The test function uses the [`page`][page] argument for browser automation.
 
-```ts
-import { test, expect } from "@playwright/test";
+```js
+import { it, expect } from "@playwright/test";
 
-test("is a basic test with the page", async ({ page }) => {
+it("is a basic test with the page", async ({ page }) => {
   await page.goto("https://playwright.dev/");
   const name = await page.innerText(".navbar__title");
   expect(name).toBe("Playwright");
 });
 ```
 
+#### Default arguments
+
 The test runner provides browser primitives as arguments to your test functions. Test functions can use one or more of these arguments.
 
 - `page`: Instance of [Page][page]. Each test gets a new isolated page to run the test.
-- `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context. Learn [how to configure](#modify-options) context creation.
-- `browser`: Instance of [Browser][browser]. Browsers are shared across tests to optimize resources. Learn [how to configure](#modify-options) browser launch.
-- `browserName`: The name of the browser currently running the test. Either `chromium`, `firefox` or `webkit`.
+- `context`: Instance of [BrowserContext][browser-context]. Each test gets a new isolated context to run the test. The `page` object belongs to this context.
+  - `contextOptions`: Default options passed to context creation. Learn [how to modify them](#modify-context-options).
+- `browser`: Instance of [Browser][browser]. Browsers are shared across tests to optimize resources. Each worker process gets a browser instance.
+  - `browserOptions`: Default options passed to browser/launch creation.
 
-### Write a configuration file
+#### Specs and assertions
 
-Create `config.ts` to configure your tests. Here is an example configuration that runs every test in Chromium, Firefox and WebKit.
+- Use `it` and `describe` to write test functions. Run a single test with `it.only` and skip a test with `it.skip`.
+- For assertions, use the [`expect` API](https://jestjs.io/docs/en/expect).
 
-```ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
+```js
+const { it, describe } = require("@playwright/test");
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
-  timeout: 30000,  // Each test is given 30 seconds.
+describe("feature foo", () => {
+  it("is working correctly", async ({ page }) => {
+    // Test function
+  });
 });
-
-const options = {
-  headless: true,  // Run tests in headless browsers.
-  viewport: { width: 1280, height: 720 },
-};
-
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-test.runWith(new WebKitEnv(options), { tag: 'webkit' });
 ```
 
 ### Run the test
 
-Tests can be run in single or multiple browsers, in parallel or sequentially.
+Tests can be run on single or multiple browsers and with flags to generate screenshot on test failures.
 
 ```sh
 # Run all tests across Chromium, Firefox and WebKit
-$ npx folio --config=config.ts
+npx folio
 
 # Run tests on a single browser
-$ npx folio --config=config.ts --tag=chromium
+npx folio --param browserName=chromium
 
-# Run tests in parallel
-$ npx folio --config=config.ts --workers=5
+# Run all tests in headful mode
+npx folio --param headful
 
-# Run tests sequentially
-$ npx folio --config=config.ts --workers=1
+# Run tests with slowMo (slows down Playwright operations by n milliseconds)
+npx folio --param slowMo=100
 
-# Retry failing tests
-$ npx folio --config=config.ts --retries=2
+# Save screenshots on failure in test-results directory
+npx folio --param screenshotOnFailure
+
+# Record videos
+npx folio --param video
+
+# Retry test failures
+npx folio --retries 3
 
 # See all options
-$ npx folio --help
+npx folio --help
 ```
 
-Refer to the [command line documentation][folio-cli] for all options.
+Test runner CLI can be customized with [Folio parameters][folio-parameters].
 
 #### Configure NPM scripts
 
@@ -107,33 +107,9 @@ Save the run command as an NPM script.
 ```json
 {
   "scripts": {
-    "test": "npx folio --config=config.ts"
+    "test": "npx folio --param screenshotOnFailure"
   }
 }
-```
-
-### Tests and assertions syntax
-
-- Use `test` to write test functions. Run a single test with `test.only` and skip a test with `test.skip`.
-- Use `test.describe` to group related tests together.
-- Use `test.beforeAll` and `test.afterAll` hooks to set up and tear down resources shared between tests.
-- Use `test.beforeEach` and `test.afterEach` hooks to set up and tear down resources for each test individually.
-- For assertions, use the [`expect` API](https://jestjs.io/docs/expect).
-
-```js
-const { test, expect } = require("@playwright/test");
-
-test.describe("feature foo", () => {
-  test.beforeEach(async ({ page }) => {
-    // Go to the starting url before each test.
-    await page.goto("https://my.start.url/feature-foo");
-  });
-
-  test("is working correctly", async ({ page }) => {
-    // Assertions use the expect API.
-    expect(page.url()).toBe("https://my.start.url/feature-foo");
-  });
-});
 ```
 
 -----------
@@ -145,9 +121,9 @@ test.describe("feature foo", () => {
 The default `context` argument is a [BrowserContext][browser-context]. Browser contexts are isolated execution environments that can host multiple pages. See [multi-page scenarios][multi-page] for more examples.
 
 ```js
-import { test } from "@playwright/test";
+import { it } from "@playwright/test";
 
-test("tests on multiple web pages", async ({ context }) => {
+it("tests on multiple web pages", async ({ context }) => {
   const pageFoo = await context.newPage();
   const pageBar = await context.newPage();
   // Test function
@@ -156,49 +132,57 @@ test("tests on multiple web pages", async ({ context }) => {
 
 ### Mobile emulation
 
-`options` in the configuration file can be used to configure mobile emulation in the default `context`.
+The `contextOptions` fixture defines default options used for context creation. This fixture can be overriden to configure mobile emulation in the default `context`.
 
-```diff
-// config.ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
-+ import { devices } from "playwright";
+```js
+import { folio } from "@playwright/test";
+import { devices } from "playwright";
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
-  timeout: 30000,  // Each test is given 30 seconds.
+const fixtures = folio.extend();
+fixtures.contextOptions.override(async ({ contextOptions }, runTest) => {
+  await runTest({
+    ...contextOptions,
+    ...devices["iPhone 11"]
+  });
 });
+const { it, describe, extend } = fixtures.build();
 
-const options = {
-  headless: true,  // Run tests in headless browsers.
--  viewport: { width: 1280, height: 720 },
-+  ...devices["iPhone 11"],
-};
-
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-test.runWith(new WebKitEnv(options), { tag: 'webkit' });
+it("uses mobile emulation", async ({ context }) => {
+  // Test function
+});
 ```
 
 ### Network mocking
 
-Define a custom route that mocks network calls for a browser context.
+Define a custom argument that mocks networks call for a browser context.
+
+```js
+// In fixtures.ts
+import { folio as base } from "@playwright/test";
+import { BrowserContext } from "playwright";
+
+// Extend base fixtures with a new test-level fixture
+const fixtures = base.extend<{ mockedContext: BrowserContext }>();
+
+fixtures.mockedContext.init(async ({ context }, runTest) => {
+  // Modify existing `context` fixture to add a route
+  context.route(/.css/, route => route.abort());
+  // Pass fixture to test functions
+  runTest(context);
+});
+
+export folio = fixtures.build();
+```
 
 ```js
 // In foo.spec.ts
-import { test, expect } from "@playwright/test";
+import { folio } from "./fixtures";
+const { it, expect } = folio;
 
-test.beforeEach(async ({ context }) => {
-  // Block any css requests for each test in this file.
-  await context.route(/.css/, route => route.abort());
-});
-
-test("loads page without css", async ({ page }) => {
-  // Alternatively, block any png requests just for this test.
-  await page.route(/.png/, route => route.abort());
-
-  // Test function code.
+it("loads pages without css requests", async ({ mockedContext }) => {
+  const page = await mockedContext.newPage();
   await page.goto("https://stackoverflow.com");
+  // Test function code
 });
 ```
 
@@ -207,12 +191,12 @@ test("loads page without css", async ({ page }) => {
 The `expect` API supports visual comparisons with `toMatchSnapshot`. This uses the [pixelmatch](https://github.com/mapbox/pixelmatch) library, and you can pass `threshold` as an option.
 
 ```js
-import { test, expect } from "@playwright/test";
+import { it, expect } from "@playwright/test";
 
-test("compares page screenshot", async ({ page }) => {
+it("compares page screenshot", async ({ page, browserName }) => {
   await page.goto("https://stackoverflow.com");
   const screenshot = await page.screenshot();
-  expect(screenshot).toMatchSnapshot(`test.png`, { threshold: 0.2 });
+  expect(screenshot).toMatchSnapshot(`test-${browserName}.png`, { threshold: 0.2 });
 });
 ```
 
@@ -227,87 +211,146 @@ npx folio --update-snapshots
 
 ## Configuration
 
-### Modify options
+### Modify context options
 
-You can modify browser launch options, context creation options and testing options in the configuration file.
+You can modify the built-in fixtures. This example modifies the default `contextOptions` with a custom viewport size.
 
-```diff
-// config.ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
+**Step 1**: Create a new file (say `test/fixtures.ts`) which contains our modifications.
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
--  timeout: 30000,  // Each test is given 30 seconds.
-+  timeout: 90000,  // Each test is given 90 seconds.
-+  retries: 2,  // Failing tests will be retried at most two times.
-});
+```ts
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
 
-const options = {
--  headless: true,  // Run tests in headless browsers.
--  viewport: { width: 1280, height: 720 },
-+  // Launch options:
-+  headless: false,
-+  slowMo: 50,
-+  // Context options:
-+  viewport: { width: 800, height: 600 },
-+  ignoreHTTPSErrors: true,
-+  // Testing options:
-+  video: 'retain-on-failure',
-};
+const builder = baseFolio.extend();
 
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-test.runWith(new WebKitEnv(options), { tag: 'webkit' });
+// Fixture modifications go here
+
+const folio = builder.build();
 ```
 
-See the full list of launch options in [`browserType.launch()`](https://playwright.dev/docs/api/class-browsertype#browsertypelaunchoptions) documentation.
-
-See the full list of context options in [`browser.newContext()`](https://playwright.dev/docs/api/class-browser#browsernewcontextoptions) documentation.
-
-Available testing options:
-- `screenshot: 'off' | 'on' | 'only-on-failure'` - Whether to capture a screenshot after each test, off by default.
-  - `off` - Do not capture screenshots.
-  - `on` - Capture screenshot after each test.
-  - `only-on-failure` - Capture screenshot after each test failure.
-- `video: 'off' | 'on' | 'retain-on-failure' | 'retry-with-video'` - Whether to record video for each test, off by default.
-  - `off` - Do not record video.
-  - `on` - Record video for each test.
-  - `retain-on-failure`  - Record video for each test, but remove all videos from successful test runs.
-  - `retry-with-video` - Record video only when retrying a test.
-
-Most notable `setConfig` options, see the full list in [Folio documentation](https://github.com/microsoft/folio):
-- `retries: number` - Each failing test will be retried up to the certain number of times.
-- `testDir: string` - Directory where test runner should search for test files.
-- `timeout: number` - Timeout in milliseconds for each test.
-- `workers: number` - The maximum number of worker processes to run in parallel.
-
-#### Browser-specific options
-
-You can specify different options for each browser when creating a corresponding environment.
+**Step 2**: Override the existing `contextOptions` fixture to configure viewport size and HTTPS error handling.
 
 ```diff
-// config.ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
++ import { BrowserContextOptions } from "playwright";
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
-  timeout: 30000,  // Each test is given 30 seconds.
+const builder = baseFolio.extend();
+
++ builder.contextOptions.override(async ({ contextOptions }, runTest) => {
++   const modifiedOptions: BrowserContextOptions = {
++     ...contextOptions, // default options
++     viewport: { width: 1440, height: 900 },
++     ignoreHTTPSErrors: true
++   }
++   await runTest(modifiedOptions);
++ });
+
+const folio = builder.build();
+```
+
+**Step 3**: Export `it` and other helpers from the modified fixtures. In your test files, import the modified fixture.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
+import { BrowserContextOptions } from "playwright";
+
+const builder = baseFolio.extend();
+
+builder.contextOptions.override(async ({ contextOptions }, runTest) => {
+  const modifiedOptions: BrowserContextOptions = {
+    ...contextOptions, // default options
+    viewport: { width: 1440, height: 900 }
+    ignoreHTTPSErrors: true
+  }
+  await runTest(modifiedOptions);
 });
 
-const options = {
-  headless: true,  // Run tests in headless browsers.
-  viewport: { width: 1280, height: 720 },
-};
+const folio = builder.build();
 
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-- test.runWith(new WebKitEnv(options), { tag: 'webkit' });
-+ test.runWith(new WebKitEnv({
-+   ...options,
-+   viewport: { width: 800, height: 600 },  // Use different viewport for WebKit.
-+ }), { tag: 'webkit' });
++ export const it = folio.it;
++ export const expect = folio.expect;
+```
+
+```ts
+// test/index.spec.ts
+import { it, expect } from "./fixtures";
+
+// Test functions go here
+it("should have modified viewport", async ({ context }) => {
+  // ...
+});
+```
+
+### Modify launch options
+
+You can modify the built-in fixtures. This example modifies the default `browserOptions` with a slowMo.
+
+**Step 1**: Create a new file (say `test/fixtures.ts`) which contains our modifications.
+
+```ts
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
+
+const builder = baseFolio.extend();
+
+// Fixture modifications go here
+
+const folio = builder.build();
+```
+
+**Step 2**: Override the existing `browserOptions` fixture to configure the slowMo.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
++ import { LaunchOptions } from "playwright";
+
+const builder = baseFolio.extend();
+
++ builder.browserOptions.override(async ({ browserOptions }, runTest) => {
++   const modifiedOptions: LaunchOptions = {
++     ...browserOptions, // Default options
++     slowMo: 50,
++   }
++   await runTest(modifiedOptions);
++ });
+
+const folio = builder.build();
+```
+
+**Step 3**: Export `it` and other helpers from the modified fixtures. In your test files, import the modified fixture.
+
+```diff
+// test/fixtures.ts
+import { folio as baseFolio } from "@playwright/test";
+import { LaunchOptions } from "playwright";
+
+const builder = baseFolio.extend();
+
+builder.browserOptions.override(async ({ browserOptions }, runTest) => {
+  const modifiedOptions: LaunchOptions = {
+    ...browserOptions, // default
+    slowMo: 50,
+  }
+  await runTest(modifiedOptions);
+});
+
+const folio = builder.build();
+
++ export const it = folio.it;
++ export const expect = folio.expect;
+```
+
+```ts
+// test/index.spec.ts
+import { it, expect } from "./fixtures";
+
+// Test functions go here
+it("should have the slow mo", async ({ context }) => {
+  // ...
+});
 ```
 
 ### Skip tests with annotations
@@ -315,24 +358,9 @@ test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
 The Playwright test runner can annotate tests to skip under certain parameters. This is enabled by [Folio annotations][folio-annotations].
 
 ```js
-test("should be skipped on firefox", async ({ page, browserName }) => {
-  test.skip(browserName === "firefox", "optional description for the skip");
-  // Test function
-});
-```
-
-### Modify context options for a single test
-
-Pass a second parameter that has `contextOptions` property to the `test` function:
-
-```js
-const options = {
-  contextOptions: {
-    ignoreHTTPSErrors: true,
-  }
-};
-
-test("no https errors in this test", options, async ({ page }) => {
+it("should be skipped on firefox", (test, { browserName }) => {
+  test.skip(browserName === "firefox", "optional description for the skip")
+}, async ({ page, browserName }) => {
   // Test function
 });
 ```
@@ -341,37 +369,25 @@ test("no https errors in this test", options, async ({ page }) => {
 
 The Playwright test runner supports various reporters, including exporting as a JUnit compatible XML file.
 
-```diff
-// config.ts
-import { ChromiumEnv, FirefoxEnv, WebKitEnv, test, setConfig } from "@playwright/test";
-+ import { reporters, setReporters } from "@playwright/test";
+```sh
+# Specify output file as an environment variable
+# Linux/macOS
+export FOLIO_JUNIT_OUTPUT_NAME=junit.xml
+# Windows
+set FOLIO_JUNIT_OUTPUT_NAME=junit.xml
 
-setConfig({
-  testDir: __dirname,  // Search for tests in this directory.
-  timeout: 30000,  // Each test is given 30 seconds.
-});
+# Use junit and CLI reporters
+npx folio --reporter=junit,line
 
-+ setReporters([
-+   // Report to the terminal with "line" reporter.
-+   new reporters.line(),
-+   // Additionally, output a JUnit XML file.
-+   new reporters.junit({ outputFile: 'junit.xml' }),
-+ ]);
-
-const options = {
-  headless: true,  // Run tests in headless browsers.
-  viewport: { width: 1280, height: 720 },
-};
-
-// Run tests in three browsers.
-test.runWith(new ChromiumEnv(options), { tag: 'chromium' });
-test.runWith(new FirefoxEnv(options), { tag: 'firefox' });
-test.runWith(new WebKitEnv(options), { tag: 'webkit' });
+# See all supported reporters
+npx folio --help
 ```
 
+[browser-opts]: https://playwright.dev/docs/api/class-browsertype#browsertypelaunchoptions
+[context-opts]: https://playwright.dev/docs/api/class-browser#browsernewcontextoptions
 [multi-page]: https://playwright.dev/docs/multi-pages
 [browser]: https://playwright.dev/docs/api/class-browser
 [browser-context]: https://playwright.dev/docs/api/class-browsercontext
 [page]: https://playwright.dev/docs/api/class-page
 [folio-annotations]: https://github.com/microsoft/folio#annotations
-[folio-cli]: https://github.com/microsoft/folio#command-line
+[folio-parameters]: https://github.com/microsoft/folio#parameters

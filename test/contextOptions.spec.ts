@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-import { test, expect } from './config';
+import { folio, expect } from '../out';
 
-test('no options by default', async ({ page, a }) => {
+const { it: it1 } = folio;
+it1('no options by default', async ({ page }) => {
   expect(page.viewportSize()).toEqual({ width: 1280, height: 720 });
-  expect(a).toBe(42);
 });
 
-const viewportOptions = { contextOptions: { viewport: { width: 500, height: 600} } };
-test('overridden contextOptions', viewportOptions, async ({ page, a }) => {
+const fixtures = folio.extend();
+fixtures.contextOptions.override(async ({contextOptions}, run) => {
+  await run({ ...contextOptions, viewport: { width: 500, height: 600} });
+});
+const { it: it2 } = fixtures.build();
+
+it2('overridden contextOptions', async ({ page }) => {
   expect(page.viewportSize()).toEqual({ width: 500, height: 600 });
-  expect(a).toBe(42);
 });
