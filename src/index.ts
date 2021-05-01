@@ -14,188 +14,419 @@
  * limitations under the License.
  */
 
-import { config, folio as baseFolio } from 'folio';
-import type { Browser, BrowserContext, BrowserContextOptions, BrowserType, LaunchOptions, Page } from 'playwright';
-export { expect, config } from 'folio';
+import { Browser, BrowserContext, BrowserContextOptions, Page, LaunchOptions, ViewportSize, Geolocation, HTTPCredentials } from 'playwright';
+import * as folio from 'folio';
+import * as fs from 'fs';
+import * as util from 'util';
 
-// Test timeout for e2e tests is 30 seconds.
-config.timeout = 30000;
+/**
+ * The name of the browser supported by Playwright.
+ */
+export type BrowserName = 'chromium' | 'firefox' | 'webkit';
 
-// Parameters ------------------------------------------------------------------
-// ... these can be used to run tests in different modes.
+/**
+ * Browser channel name. Used to run tests in different browser flavors,
+ * for example Google Chrome Beta, or Microsoft Edge Stable.
+ * @see BrowserContextOptions
+ */
+export type BrowserChannel = Exclude<LaunchOptions['channel'], undefined>;
 
-type PlaywrightParameters = {
-  // Browser type name.
-  browserName: 'chromium' | 'firefox' | 'webkit';
-  // Whether to run tests headless or headful.
-  headful: boolean;
-  // Operating system.
-  platform: 'win32' | 'linux' | 'darwin';
-  // Generate screenshot on failure.
-  screenshotOnFailure: boolean;
-  // Slows down Playwright operations by the specified amount of milliseconds.
-  slowMo: number;
-  // Whether to record videos for all tests.
-  video: boolean;
+/**
+ * Emulates `'prefers-colors-scheme'` media feature,
+ * supported values are `'light'`, `'dark'`, `'no-preference'`.
+ * @see BrowserContextOptions
+ */
+export type ColorScheme = Exclude<BrowserContextOptions['colorScheme'], undefined>;
+
+/**
+ * An object containing additional HTTP headers to be sent with every request. All header values must be strings.
+ * @see BrowserContextOptions
+ */
+export type ExtraHTTPHeaders = Exclude<BrowserContextOptions['extraHTTPHeaders'], undefined>;
+
+/**
+ * Proxy settings available for all tests, or individually per test.
+ * @see BrowserContextOptions
+ */
+export type Proxy = Exclude<BrowserContextOptions['proxy'], undefined>;
+
+/**
+ * Storage state for the test.
+ * @see BrowserContextOptions
+ */
+export type StorageState = Exclude<BrowserContextOptions['storageState'], undefined>;
+
+/**
+ * Options available to configure browser launch.
+ *   - Set options in config:
+ *   ```js
+ *     use: { browserName: 'webkit' }
+ *   ```
+ *   - Set options in test file:
+ *   ```js
+ *     test.use({ browserName: 'webkit' })
+ *   ```
+ *
+ * Available as arguments to the test function and all hooks (beforeEach, afterEach, beforeAll, afterAll).
+ */
+export type PlaywrightWorkerOptions = {
+  /**
+   * Name of the browser (`chromium`, `firefox`, `webkit`) that runs tests.
+   */
+  browserName: BrowserName;
+
+  /**
+   * Whether to run browser in headless mode. Takes priority over `launchOptions`.
+   * @see LaunchOptions
+   */
+  headless: boolean | undefined;
+
+  /**
+   * Browser distribution channel. Takes priority over `launchOptions`.
+   * @see LaunchOptions
+   */
+  channel: BrowserChannel | undefined;
+
+  /**
+   * Options used to launch the browser. Other options above (e.g. `headless`) take priority.
+   * @see LaunchOptions
+   */
+  launchOptions: LaunchOptions;
 };
 
+/**
+ * Options available to configure each test.
+ *   - Set options in config:
+ *   ```js
+ *     use: { video: 'on' }
+ *   ```
+ *   - Set options in test file:
+ *   ```js
+ *     test.use({ video: 'on' })
+ *   ```
+ *
+ * Available as arguments to the test function and beforeEach/afterEach hooks.
+ */
+export type PlaywrightTestOptions = {
+  /**
+   * Whether to capture a screenshot after each test, off by default.
+   * - `off`: Do not capture screenshots.
+   * - `on`: Capture screenshot after each test.
+   * - `only-on-failure`: Capture screenshot after each test failure.
+   */
+  screenshot: 'off' | 'on' | 'only-on-failure';
 
-// Worker fixture declarations -------------------------------------------------
-// ... these live as long as the worker process.
+  /**
+  * Whether to record video for each test, off by default.
+  * - `off`: Do not record video.
+  * - `on`: Record video for each test.
+  * - `retain-on-failure`: Record video for each test, but remove all videos from successful test runs.
+  * - `retry-with-video`: Record video only when retrying a test.
+  */
+  video: 'off' | 'on' | 'retain-on-failure' | 'retry-with-video';
 
-type PlaywrightWorkerFixtures = {
-  // Playwright library.
-  playwright: typeof import('playwright');
-  // Browser type (Chromium / WebKit / Firefox)
-  browserType: BrowserType<Browser>;
-  // Default browserType.launch() options.
-  browserOptions: LaunchOptions;
-  // Browser instance, shared for the worker.
-  browser: Browser;
-  // True iff browserName is Chromium
-  isChromium: boolean;
-  // True iff browserName is Firefox
-  isFirefox: boolean;
-  // True iff browserName is WebKit
-  isWebKit: boolean;
-  // True iff running on Windows.
-  isWindows: boolean;
-  // True iff running on Mac.
-  isMac: boolean;
-  // True iff running on Linux.
-  isLinux: boolean;
-};
+  /**
+   * Whether to automatically download all the attachments. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  acceptDownloads: boolean | undefined;
 
+  /**
+   * Toggles bypassing page's Content-Security-Policy. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  bypassCSP: boolean | undefined;
 
-// Test fixture definitions, those are created for each test ------------------
+  /**
+   * Emulates `'prefers-colors-scheme'` media feature, supported values are `'light'`, `'dark'`, `'no-preference'`.
+   * @see BrowserContextOptions
+   */
+  colorScheme: ColorScheme | undefined;
 
-type PlaywrightTestFixtures = {
-  // Default browser.newContext() options.
+  /**
+   * Specify device scale factor (can be thought of as dpr). Defaults to `1`.
+   * @see BrowserContextOptions
+   */
+  deviceScaleFactor: number | undefined;
+
+  /**
+   * An object containing additional HTTP headers to be sent with every request. All header values must be strings.
+   * @see BrowserContextOptions
+   */
+  extraHTTPHeaders: ExtraHTTPHeaders | undefined;
+
+  /**
+   * Context geolocation. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  geolocation: Geolocation | undefined;
+
+  /**
+   * Specifies if viewport supports touch events. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  hasTouch: boolean | undefined;
+
+  /**
+   * Credentials for [HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication).
+   * @see BrowserContextOptions
+   */
+  httpCredentials: HTTPCredentials | undefined;
+
+  /**
+   * Whether to ignore HTTPS errors during navigation. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  ignoreHTTPSErrors: boolean | undefined;
+
+  /**
+   * Whether the `meta viewport` tag is taken into account and touch events are enabled. Not supported in Firefox.
+   * @see BrowserContextOptions
+   */
+  isMobile: boolean | undefined;
+
+  /**
+   * Whether or not to enable JavaScript in the context. Defaults to `true`.
+   * @see BrowserContextOptions
+   */
+  javaScriptEnabled: boolean | undefined;
+
+  /**
+   * User locale, for example `en-GB`, `de-DE`, etc. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  locale: string | undefined;
+
+  /**
+   * Whether to emulate network being offline.
+   * @see BrowserContextOptions
+   */
+  offline: boolean | undefined;
+
+  /**
+   * A list of permissions to grant to all pages in this context. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  permissions: string[] | undefined;
+
+  /**
+   * Proxy setting used for all pages in the test. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  proxy: Proxy | undefined;
+
+  /**
+   * Populates context with given storage state. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  storageState: StorageState | undefined;
+
+  /**
+   * Changes the timezone of the context. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  timezoneId: string | undefined;
+
+  /**
+   * Specific user agent to use in this context.
+   * @see BrowserContextOptions
+   */
+  userAgent: string | undefined;
+
+  /**
+   * Viewport used for all pages in the test. Takes priority over `contextOptions`.
+   * @see BrowserContextOptions
+   */
+  viewport: ViewportSize | undefined;
+
+  /**
+   * Options used to create the context. Other options above (e.g. `viewport`) take priority.
+   * @see BrowserContextOptions
+   */
   contextOptions: BrowserContextOptions;
-  // Factory for creating a context with given additional options.
-  contextFactory: (options?: BrowserContextOptions) => Promise<BrowserContext>;
-  // Context instance for test.
+};
+
+
+/**
+ * Arguments available to the test function and all hooks (beforeEach, afterEach, beforeAll, afterAll).
+ */
+export type PlaywrightWorkerArgs = {
+  /**
+   * The Playwright instance.
+   */
+  playwright: typeof import('playwright');
+
+  /**
+   * Browser instance, shared between multiple tests.
+   */
+  browser: Browser;
+};
+
+/**
+ * Arguments available to the test function and beforeEach/afterEach hooks.
+ */
+export type PlaywrightTestArgs = {
+  /**
+   * BrowserContext instance, created fresh for each test.
+   */
   context: BrowserContext;
-  // Page instance for test.
+
+  /**
+   * Page instance, created fresh for each test.
+   */
   page: Page;
 };
 
-const fixtures = baseFolio.extend<PlaywrightTestFixtures, PlaywrightWorkerFixtures, PlaywrightParameters>();
-fixtures.browserName.initParameter('Browser type name', (process.env.BROWSER || 'chromium') as 'chromium' | 'firefox' | 'webkit');
-fixtures.headful.initParameter('Whether to run tests headless or headful', process.env.HEADFUL ? true : false);
-fixtures.platform.initParameter('Operating system', process.platform as ('win32' | 'linux' | 'darwin'));
-fixtures.screenshotOnFailure.initParameter('Generate screenshot on failure', false);
-fixtures.slowMo.initParameter('Slows down Playwright operations by the specified amount of milliseconds', 0);
-fixtures.video.initParameter('Record videos while running tests', false);
+let headedOption: { value?: boolean } | undefined;
+try {
+  headedOption = folio.registerCLIOption('headed', 'Run tests in headed browsers (default: headless)', { type: 'boolean' });
+} catch (e) {
+  if (!e.message.includes('must be called from a configuration file'))
+    throw e;
+}
 
-fixtures.browserOptions.init(async ({ headful, slowMo }, run) => {
-  await run({
-    handleSIGINT: false,
-    slowMo,
-    headless: !headful,
-  });
-}, { scope: 'worker' });
+/**
+ * These tests are executed in Playwright environment that launches the browser
+ * and provides a fresh page to each test.
+ */
+export const test = folio.test.extend<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>({
+  browserName: [ 'chromium', { scope: 'worker' } ],
+  playwright: [ require('playwright'), { scope: 'worker' } ],
+  headless: [ undefined, { scope: 'worker' } ],
+  channel: [ undefined, { scope: 'worker' } ],
+  launchOptions: [ {}, { scope: 'worker' } ],
 
-fixtures.playwright.init(async ({ }, run) => {
-  const playwright = require('playwright');
-  await run(playwright);
-}, { scope: 'worker' });
+  browser: [ async ({ playwright, browserName, headless, channel, launchOptions }, use) => {
+    if (!['chromium', 'firefox', 'webkit'].includes(browserName))
+      throw new Error(`Unexpected browserName "${browserName}", must be one of "chromium", "firefox" or "webkit"`);
+    const options: LaunchOptions = {
+      handleSIGINT: false,
+      ...launchOptions,
+    };
+    if (headless !== undefined)
+      options.headless = headless;
+    if (channel !== undefined)
+      options.channel = channel;
+    if (headedOption && headedOption.value)
+      options.headless = false;
+    const browser = await playwright[browserName].launch(options);
+    await use(browser);
+    await browser.close();
+  }, { scope: 'worker' } ],
 
-fixtures.browserType.init(async ({ playwright, browserName }, run) => {
-  const browserType = (playwright as any)[browserName];
-  await run(browserType);
-}, { scope: 'worker' });
+  screenshot: 'off',
+  video: 'off',
+  acceptDownloads: undefined,
+  bypassCSP: undefined,
+  colorScheme: undefined,
+  deviceScaleFactor: undefined,
+  extraHTTPHeaders: undefined,
+  geolocation: undefined,
+  hasTouch: undefined,
+  httpCredentials: undefined,
+  ignoreHTTPSErrors: undefined,
+  isMobile: undefined,
+  javaScriptEnabled: undefined,
+  locale: undefined,
+  offline: undefined,
+  permissions: undefined,
+  proxy: undefined,
+  storageState: undefined,
+  timezoneId: undefined,
+  userAgent: undefined,
+  viewport: undefined,
+  contextOptions: {},
 
-fixtures.browser.init(async ({ browserType, browserOptions }, run) => {
-  const browser = await browserType.launch(browserOptions);
-  await run(browser);
-  await browser.close();
-}, { scope: 'worker' });
+  context: async ({ browserName, browser, screenshot, video, acceptDownloads, bypassCSP, colorScheme, deviceScaleFactor, extraHTTPHeaders, hasTouch, geolocation, httpCredentials, ignoreHTTPSErrors, isMobile, javaScriptEnabled, locale, offline, permissions, proxy, storageState, viewport, timezoneId, userAgent, contextOptions }, use, testInfo) => {
+    testInfo.snapshotPathSegment = browserName + '-' + process.platform;
+    if (process.env.PWDEBUG)
+      testInfo.setTimeout(0);
 
-fixtures.isChromium.init(async ({ browserName }, run) => {
-  await run(browserName === 'chromium');
-}, { scope: 'worker' });
+    const recordVideo = video === 'on' || video === 'retain-on-failure' ||
+      (video === 'retry-with-video' && !!testInfo.retry);
+    const options: BrowserContextOptions = {
+      recordVideo: recordVideo ? { dir: testInfo.outputPath('') } : undefined,
+      ...contextOptions,
+    };
+    if (acceptDownloads !== undefined)
+      options.acceptDownloads = acceptDownloads;
+    if (bypassCSP !== undefined)
+      options.bypassCSP = bypassCSP;
+    if (colorScheme !== undefined)
+      options.colorScheme = colorScheme;
+    if (deviceScaleFactor !== undefined)
+      options.deviceScaleFactor = deviceScaleFactor;
+    if (extraHTTPHeaders !== undefined)
+      options.extraHTTPHeaders = extraHTTPHeaders;
+    if (geolocation !== undefined)
+      options.geolocation = geolocation;
+    if (hasTouch !== undefined)
+      options.hasTouch = hasTouch;
+    if (httpCredentials !== undefined)
+      options.httpCredentials = httpCredentials;
+    if (ignoreHTTPSErrors !== undefined)
+      options.ignoreHTTPSErrors = ignoreHTTPSErrors;
+    if (isMobile !== undefined)
+      options.isMobile = isMobile;
+    if (javaScriptEnabled !== undefined)
+      options.javaScriptEnabled = javaScriptEnabled;
+    if (locale !== undefined)
+      options.locale = locale;
+    if (offline !== undefined)
+      options.offline = offline;
+    if (permissions !== undefined)
+      options.permissions = permissions;
+    if (proxy !== undefined)
+      options.proxy = proxy;
+    if (storageState !== undefined)
+      options.storageState = storageState;
+    if (timezoneId !== undefined)
+      options.timezoneId = timezoneId;
+    if (userAgent !== undefined)
+      options.userAgent = userAgent;
+    if (viewport !== undefined)
+      options.viewport = viewport;
 
-fixtures.isFirefox.init(async ({ browserName }, run) => {
-  await run(browserName === 'firefox');
-}, { scope: 'worker' });
+    const context = await browser.newContext(options);
+    const allPages: Page[] = [];
+    context.on('page', page => allPages.push(page));
 
-fixtures.isWebKit.init(async ({ browserName }, run) => {
-  await run(browserName === 'webkit');
-}, { scope: 'worker' });
+    await use(context);
 
-fixtures.isWindows.init(async ({ platform }, run) => {
-  await run(platform === 'win32');
-}, { scope: 'worker' });
-
-fixtures.isMac.init(async ({ platform }, run) => {
-  await run(platform === 'darwin');
-}, { scope: 'worker' });
-
-fixtures.isLinux.init(async ({ platform }, run) => {
-  await run(platform === 'linux');
-}, { scope: 'worker' });
-
-fixtures.contextOptions.init(async ({ video, testInfo }, run) => {
-  if (video) {
-    await run({
-      videosPath: testInfo.outputPath(''),
-    });
-  } else {
-    await run({});
-  }
-});
-
-fixtures.contextFactory.init(async ({ browser, contextOptions, testInfo, screenshotOnFailure }, run) => {
-  const contexts: BrowserContext[] = [];
-  async function contextFactory(options: BrowserContextOptions = {}) {
-    const context = await browser.newContext({ ...contextOptions, ...options });
-    contexts.push(context);
-    return context;
-  }
-  await run(contextFactory);
-
-  if (screenshotOnFailure && (testInfo.status !== testInfo.expectedStatus)) {
-    let ordinal = 0;
-    for (const context of contexts) {
-      for (const page of context.pages())
-        await page.screenshot({ timeout: 5000, path: testInfo.outputPath(`test-failed-${++ordinal}.png`) });
+    const testFailed = testInfo.status !== testInfo.expectedStatus;
+    if (screenshot === 'on' || (screenshot === 'only-on-failure' && testFailed)) {
+      await Promise.all(allPages.map((page, index) => {
+        const screenshotPath = testInfo.outputPath(`test-${testFailed ? 'failed' : 'finished'}-${++index}.png`);
+        return page.screenshot({ timeout: 5000, path: screenshotPath }).catch(e => {});
+      }));
     }
-  }
-  for (const context of contexts)
     await context.close();
+
+    const deleteVideos = video === 'retain-on-failure' && !testFailed;
+    if (deleteVideos) {
+      await Promise.all(allPages.map(async page => {
+        const video = page.video();
+        if (!video)
+          return;
+        const videoPath = await video.path();
+        await util.promisify(fs.unlink)(videoPath).catch(e => {});
+      }));
+    }
+  },
+
+  page: async ({ context }, use) => {
+    await use(await context.newPage());
+  },
 });
+export * from 'folio';
+export default test;
 
-fixtures.context.init(async ({ contextFactory }, run) => {
-  const context = await contextFactory();
-  await run(context);
-  // Context factory is taking care of closing the context,
-  // so that it could capture a screenshot on failure.
-});
+export const it = test;
+export const describe: (typeof test)['describe'] = test.describe;
+export const beforeEach = test.beforeEach;
+export const afterEach = test.afterEach;
+export const beforeAll = test.beforeAll;
+export const afterAll = test.afterAll;
 
-fixtures.page.init(async ({ context }, run) => {
-  // Always create page off context so that they matched.
-  await run(await context.newPage());
-  // Context fixture is taking care of closing the page.
-});
-
-fixtures.testParametersPathSegment.override(async ({ browserName, platform }, run) => {
-  await run(browserName + '-' + platform);
-});
-
-export const folio = fixtures.build();
-export const it = folio.it;
-export const fit = folio.fit;
-export const xit = folio.xit;
-export const test = folio.test;
-export const describe = folio.describe;
-export const beforeEach = folio.beforeEach;
-export const afterEach = folio.afterEach;
-export const beforeAll = folio.beforeAll;
-export const afterAll = folio.afterAll;
-
-// If browser is not specified, we are running tests against all three browsers.
-
-folio.generateParametrizedTests(
-    'browserName',
-    process.env.BROWSER ? [process.env.BROWSER] as any : ['chromium', 'webkit', 'firefox']);
+export type PlaywrightTestProject<TestArgs = {}, WorkerArgs = {}> = folio.Project<PlaywrightTestOptions & TestArgs, PlaywrightWorkerOptions & WorkerArgs>;
+export type PlaywrightTestConfig<TestArgs = {}, WorkerArgs = {}> = folio.Config<PlaywrightTestOptions & TestArgs, PlaywrightWorkerOptions & WorkerArgs>;
