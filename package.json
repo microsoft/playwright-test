@@ -5,6 +5,9 @@
   "author": {
     "name": "Microsoft Corporation"
   },
+  "bin": {
+    "pwtest": "./cli.js"
+  },
   "engines": {
     "node": ">=10.17.0"
   },
@@ -14,14 +17,13 @@
     "watch": "tsc --build tsconfig.json --watch",
     "prepare": "npm run build",
     "prepublishOnly": "rm -rf out && npm run build",
-    "test": "folio -c test/"
+    "test": "node ./cli.js -c test"
   },
   "repository": "github:Microsoft/playwright-test",
   "description": "A test runner for running tests with Playwright.",
   "main": "out/index.js",
   "dependencies": {
-    "folio": "=0.4.0-alpha19",
-    "playwright": "=1.11.1",
+    "folio": "=0.4.0-alpha20",
     "rimraf": "^3.0.2"
   },
   "devDependencies": {
@@ -30,6 +32,7 @@
     "@typescript-eslint/parser": "^4.2.0",
     "eslint": "^7.8.1",
     "eslint-plugin-notice": "^0.9.10",
+    "playwright": "=1.11.1",
     "typescript": "^4.0.2"
   }
 }

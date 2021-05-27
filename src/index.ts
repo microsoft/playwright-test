@@ -277,14 +277,6 @@ export type PlaywrightTestArgs = {
   page: Page;
 };
 
-let headedOption: { value?: boolean } | undefined;
-try {
-  headedOption = folio.registerCLIOption('headed', 'Run tests in headed browsers (default: headless)', { type: 'boolean' });
-} catch (e) {
-  if (!e.message.includes('must be called from a configuration file'))
-    throw e;
-}
-
 /**
  * These tests are executed in Playwright environment that launches the browser
  * and provides a fresh page to each test.
@@ -307,7 +299,7 @@ export const test = folio.test.extend<PlaywrightTestArgs & PlaywrightTestOptions
       options.headless = headless;
     if (channel !== undefined)
       options.channel = channel;
-    if (headedOption && headedOption.value)
+    if (process.env.PWTEST_HEADED)
       options.headless = false;
     const browser = await playwright[browserName].launch(options);
     await use(browser);

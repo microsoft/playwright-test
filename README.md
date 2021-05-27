@@ -76,7 +76,7 @@ You can now run the test using the underlying [Folio] command line:
 
 ```sh
 # Assuming that test files are in the tests directory.
-npx folio -c tests
+npx pwtest -c tests
 ```
 
 ### Tests and assertions syntax
@@ -128,10 +128,10 @@ test.describe("feature foo", () => {
 
 ### Write a configuration file
 
-Create `folio.config.ts` file to configure your tests: specify browser launch options, run tests in multiple browsers and much more. Here is an example configuration that runs every test in Chromium, Firefox and WebKit.
+Create `pwtest.config.ts` file to configure your tests: specify browser launch options, run tests in multiple browsers and much more. Here is an example configuration that runs every test in Chromium, Firefox and WebKit.
 
 ```js
-// folio.config.js
+// pwtest.config.js
 module.exports = {
   // Each test is given 30 seconds.
   timeout: 30000,
@@ -175,7 +175,7 @@ module.exports = {
   <summary> TypeScript version </summary>
 
   ```ts
-  // folio.config.ts
+  // pwtest.config.ts
   import { PlaywrightTestConfig } from "@playwright/test";
 
   const config: PlaywrightTestConfig = {
@@ -227,27 +227,27 @@ Tests can be run in single or multiple browsers, in parallel or sequentially, us
 
 - Run all tests across Chromium, Firefox and WebKit
   ```sh
-  npx folio
+  npx pwtest
   ```
 
 - Run tests on a single browser
   ```sh
-  npx folio --project=chromium
+  npx pwtest --project=chromium
   ```
 
 - Run tests sequentially
   ```sh
-  npx folio --workers=1
+  npx pwtest --workers=1
   ```
 
 - Retry failing tests
   ```sh
-  npx folio --retries=2
+  npx pwtest --retries=2
   ```
 
 - See all options
   ```sh
-  npx folio --help
+  npx pwtest --help
   ```
 
 Refer to the [command line documentation][folio-cli] for all options.
@@ -259,7 +259,7 @@ Save the run command as an NPM script.
 ```json
 {
   "scripts": {
-    "test": "npx folio"
+    "test": "npx pwtest"
   }
 }
 ```
@@ -305,7 +305,7 @@ test("tests on multiple web pages", async ({ context }) => {
 `use` section in the configuration file can be used to configure mobile emulation in the default `context`.
 
 ```js
-// folio.config.js
+// pwtest.config.js
 const { devices } = require("playwright");
 
 module.exports = {
@@ -328,7 +328,7 @@ module.exports = {
   <summary> TypeScript version </summary>
 
   ```ts
-  // folio.config.ts
+  // pwtest.config.ts
   import { PlaywrightTestConfig } from "@playwright/test";
   import { devices } from "playwright";
 
@@ -434,7 +434,7 @@ On first execution, this will generate golden snapshots. Subsequent runs will co
 
 ```sh
 # Update golden snapshots when they differ from actual
-npx folio --update-snapshots
+npx pwtest --update-snapshots
 ```
 
 ### Page object model
@@ -545,7 +545,7 @@ Playwright test runner is based on the [Folio] framework, so it supports any con
 You can specify different options for each browser using projects in the configuration file. Below is an example that changes some global testing options, and Chromium browser configuration.
 
 ```js
-// folio.config.js
+// pwtest.config.js
 module.exports = {
   // Each test is given 90 seconds.
   timeout: 90000,
@@ -582,7 +582,7 @@ module.exports = {
   <summary> TypeScript version </summary>
 
   ```ts
-  // folio.config.ts
+  // pwtest.config.ts
   import { PlaywrightTestConfig } from "@playwright/test";
 
   const config: PlaywrightTestConfig = {
@@ -718,17 +718,17 @@ Tests are run in parallel by default, using multiple worker processes. You can c
 
 - Run just a single test at a time - no parallelization
   ```sh
-  npx folio --workers=1
+  npx pwtest --workers=1
   ```
 
 - Run up to 10 tests in parallel
   ```sh
-  npx folio --workers=10
+  npx pwtest --workers=10
   ```
 
 - Different value for CI
   ```js
-  // folio.config.js
+  // pwtest.config.js
   module.exports = {
     // No parallelization on CI, default value locally
     worker: process.env.CI ? 1 : undefined,
@@ -743,7 +743,7 @@ Tests are run in parallel by default, using multiple worker processes. You can c
     <summary> TypeScript version </summary>
 
     ```ts
-    // folio.config.ts
+    // pwtest.config.ts
     import { PlaywrightTestConfig } from "@playwright/test";
 
     const config: PlaywrightTestConfig = {
@@ -767,14 +767,14 @@ By default, test runner chooses the number of workers based on available CPUs.
 Playwright test runner comes with a few built-in reporters for different needs and ability to provide custom reporters. The easiest way to try out built-in reporters is to pass `--reporter` [command line option](#command-line). Built-in terminal reporters are minimalist `dot`, concise `line` and detailed `list`.
 
 ```sh
-npx folio --reporter=line
-npx folio --reporter=dot
-npx folio --reporter=list
+npx pwtest --reporter=line
+npx pwtest --reporter=dot
+npx pwtest --reporter=list
 ```
 
 Alternatively, you can specify the reporter in the configuration file.
 ```js
-// folio.config.js
+// pwtest.config.js
 module.exports = {
   // Concise 'dot' on CI, more interactive 'list' when running locally
   reporter: process.env.CI ? 'dot' : 'line',
@@ -789,7 +789,7 @@ module.exports = {
   <summary> TypeScript version </summary>
 
   ```ts
-  // folio.config.ts
+  // pwtest.config.ts
   import { PlaywrightTestConfig } from "@playwright/test";
 
   const config: PlaywrightTestConfig = {
@@ -810,7 +810,7 @@ module.exports = {
 The Playwright test runner includes reporters that produce a JUnit compatible XML file or a JSON file with test results.
 
 ```js
-// folio.config.js
+// pwtest.config.js
 module.exports = {
   testDir: 'tests',
   reporter: [
@@ -831,7 +831,7 @@ module.exports = {
   <summary> TypeScript version </summary>
 
   ```ts
-  // folio.config.ts
+  // pwtest.config.ts
   import { PlaywrightTestConfig } from "@playwright/test";
 
   const config: PlaywrightTestConfig = {
